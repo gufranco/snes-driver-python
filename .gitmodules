@@ -1,0 +1,6 @@
+[submodule "processor"]
+	path = processor
+	url = https://github.com/gufranco/mos65xx-python.git
+[submodule "mapper"]
+	path = mapper
+	url = https://github.com/gufranco/snes-mapper-python.git

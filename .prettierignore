@@ -1,0 +1,9 @@
+pnpm-lock.yaml
+package-lock.json
+node_modules/
+packages/
+processor/
+mapper/
+.coverage
+
+cartridges.manifest.json
