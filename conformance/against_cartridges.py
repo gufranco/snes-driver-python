@@ -16,6 +16,13 @@ part is the evidence, and this exists to produce it rather than to agree with
 something written down earlier. It fails only when a cartridge that should have a
 driver turns out to have none, which means the reader stopped seeing something it
 used to see.
+
+The two path insertions below are ordered, and the order is the whole point. This
+project and the mapper each carry a package called conformance, so whichever root
+sits earlier on the path decides which one `from conformance import ...` resolves
+to. The dependency goes on first so that this repository's own root ends up ahead
+of it. Reversed, the failure is not an import error: this project silently reads
+its dependency's modules, and the symptom is a run that finds no cartridges.
 """
 
 from __future__ import annotations
@@ -31,8 +38,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 
-sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "snes-mapper-python"))
+sys.path.insert(0, str(ROOT))
 
 from mapper import header
 

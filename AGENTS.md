@@ -70,6 +70,12 @@ never be reported as one.
 
 ## Things that will bite you
 
+**Prettier walks into submodules, and their files are not this project's to
+format.** A dependency records what its own recorder writes, in that recorder's
+format, and its ignore file exempts it. This project's ignore file has to exempt
+the whole submodule tree instead, or the gate fails on a file no change here
+touched and no change here may fix.
+
 **Run the suite as a machine that holds nothing.** A test that reaches a default
 which opens a real cartridge passes on a workstation holding a library and fails
 on a runner, and the local run gives no hint:
@@ -80,6 +86,13 @@ for f in snesdriver/*.test.py conformance/*.test.py; do
   SNES_CARTRIDGE_DIR="$EMPTY" python3 "$f" || echo "FAILED $f"
 done
 ```
+
+**Put this repository's own root on the path ahead of any dependency's.** Both
+this project and the mapper carry a package called `conformance`, so whichever
+root comes first decides which one `from conformance import ...` finds. Inserting
+a dependency's root last silently hands this project its dependency's modules, and
+the symptom is not an import error: it is a runner that reads zero cartridges and
+a suite that fails on attributes that exist in the wrong repository.
 
 **The directory a user keeps games in is called `cartridges`, and so is a module
 in `conformance`.** A bare `import cartridges` is ambiguous: the type checker

@@ -4,6 +4,13 @@ A skipped test contributes no coverage, so on a runner with an empty directory
 every line here would read as uncovered and fail the coverage gate for a reason
 that has nothing to do with the code. Keeping them in one file lets that file sit
 outside the gate while everything else stays inside it.
+
+The two path insertions below are ordered, and the order is the whole point. This
+project and the mapper each carry a package called conformance, so whichever root
+sits earlier on the path decides which one `from conformance import ...` resolves
+to. The dependency goes on first so that this repository's own root ends up ahead
+of it. Reversed, the failure is not an import error: this project silently reads
+its dependency's modules, and the symptom is a run that finds no cartridges.
 """
 
 import sys
@@ -13,8 +20,8 @@ from pathlib import Path
 from typing import Any, override
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "snes-mapper-python"))
+sys.path.insert(0, str(ROOT))
 
 from conformance import against_cartridges, cartridges
 

@@ -1,9 +1,8 @@
 pnpm-lock.yaml
 package-lock.json
 node_modules/
-packages/
-processor/
-mapper/
+mos65xx-python/
+snes-mapper-python/
 .coverage
 
 cartridges.manifest.json
