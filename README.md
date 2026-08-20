@@ -10,6 +10,7 @@
 [![CI](https://github.com/gufranco/snes-driver-python/actions/workflows/ci.yml/badge.svg)](https://github.com/gufranco/snes-driver-python/actions/workflows/ci.yml)
 [![Cartridges](https://img.shields.io/badge/read%20across-36%20cartridges-blue)](#what-real-cartridges-say)
 [![Coverage](https://img.shields.io/badge/coverage-100%25%20statement%20%2B%20branch-brightgreen)](#tests)
+[![Types](https://img.shields.io/badge/mypy-strict-blue)](pyproject.toml)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 </div>
@@ -124,6 +125,49 @@ for f in snesdriver/*.test.py conformance/*.test.py; do python3 "$f"; done
 | Sweep | [`conformance/against_cartridges.test.py`](conformance/against_cartridges.test.py) | Every cartridge present, read |
 
 The last one is skipped rather than passed when no cartridge is present, so a run that proved nothing never reads as a run that proved something. CI attempts it on every push and annotates the skip.
+
+Coverage is enforced at 100% of statements and branches, and it holds both on a
+machine with the whole library and on one holding nothing. That second half is the
+part worth stating: a suite whose number depends on what the machine happens to
+contain is not measuring the code. The only thing outside the gate is the test
+class whose subject is a real library, and it says so where it sits.
+
+## What each piece of evidence is worth
+
+| Evidence | What it settles | What it cannot |
+|:--|:--|:--|
+| The cartridge's own code, walked instruction by instruction | What a shipped game actually sends to the part | Anything no game sends |
+| The 65816 instruction set, through the disassembler | What each instruction is and how wide its access | Nothing about the part on the other end |
+| The layout the header declares, through the mapper | Which addresses reach the part | Nothing about what happens when they do |
+| Digests of every cartridge read | That the file read was the file named | Nothing about whether that release is the one you meant |
+
+A shape is evidence because it is the cartridge's own sequence in the order the
+console runs it. It is not evidence about what the part answers, which is the
+sibling project's job, and it says nothing about games nobody dumped.
+
+## Development
+
+| Command | Description |
+|:--|:--|
+| `ruff format .` | Format |
+| `ruff check .` | Lint |
+| `mypy` | Types, at strict, with every optional error class on |
+| `python3 -m coverage run -a <file>` | Run one test file under coverage |
+| `python3 -m coverage report` | Coverage, which fails below 100% |
+| `python3 conformance/against_cartridges.py` | Read every cartridge on this machine |
+| `pnpm run format:check` | Check that every JSON file is formatted |
+
+## Project conventions
+
+| Convention | Source |
+|:--|:--|
+| Commit format | [Conventional Commits](https://www.conventionalcommits.org/) |
+| Formatting and lint | [ruff](https://docs.astral.sh/ruff/), configured in [`pyproject.toml`](pyproject.toml) |
+| Types | [mypy](https://mypy.readthedocs.io/) at strict, configured in [`pyproject.toml`](pyproject.toml) |
+| Versioning | [semantic-release](https://semantic-release.gitbook.io/), from the commit history |
+| Tests | Beside the module, named `<module>.test.py` |
+| Agent instructions | [`AGENTS.md`](AGENTS.md) |
+| Current behaviour | [`specs/current/`](specs/current/), requirements with checkable scenarios |
 
 ## Built on
 

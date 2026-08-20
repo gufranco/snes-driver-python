@@ -7,3 +7,5 @@ mapper/
 .coverage
 
 cartridges.manifest.json
+.mypy_cache/
+.ruff_cache/

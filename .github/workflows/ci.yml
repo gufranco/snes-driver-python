@@ -21,17 +21,17 @@ jobs:
     name: Format and lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           submodules: recursive
 
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
       - uses: pnpm/action-setup@v4
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: pnpm
@@ -54,6 +54,29 @@ jobs:
       - name: Lint the workflows
         uses: raven-actions/actionlint@v2
 
+  types:
+    name: Types
+    runs-on: ubuntu-latest
+    steps:
+      # The disassembler and the mapper arrive through submodules, and the checker
+      # follows the imports into them. Without the checkout it would report the
+      # whole backend as missing rather than as wrong.
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install the type checker
+        run: pipx install mypy==1.14.1
+
+      # Strict, with every optional error class the version offers. The settings
+      # live in pyproject.toml so a local run and this one agree.
+      - name: Every annotation has to hold
+        run: mypy
+
   test:
     name: Tests on Python ${{ matrix.python }}
     runs-on: ubuntu-latest
@@ -62,11 +85,11 @@ jobs:
       matrix:
         python: ["3.12", "3.13", "3.14"]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           submodules: recursive
 
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python }}
 
@@ -92,11 +115,11 @@ jobs:
     name: Cartridges
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           submodules: recursive
 
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 

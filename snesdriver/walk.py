@@ -13,6 +13,13 @@ reads every access at the wrong size and reports a conversation the console neve
 had, so the width is carried along and reported with each access.
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, override
+
+if TYPE_CHECKING:  # pragma: no cover
+    from collections.abc import Iterator
+
 import sys
 from pathlib import Path
 
@@ -38,7 +45,7 @@ DEFAULT_LIMIT = 80
 class Step:
     """One instruction, and what it reached."""
 
-    def __init__(self, one, narrow):
+    def __init__(self, one: Any, narrow: bool) -> None:
         self.one = one
         self.narrow = narrow
         self.offset = one.offset
@@ -46,41 +53,54 @@ class Step:
         self.width = 1 if narrow else 2
 
     @property
-    def bank(self):
+    def bank(self) -> int | None:
         """The bank of the long address it reached, or nothing if it reached none."""
         if self.one.mode != "absoluteLong":
             return None
-        return (self.one.operand >> 16) & 0xFF
+        found = (self.one.operand >> 16) & 0xFF
+        assert isinstance(found, int)
+        return found
 
     @property
-    def address(self):
+    def address(self) -> int | None:
         """The address inside that bank."""
         if self.one.mode != "absoluteLong":
             return None
-        return self.one.operand & 0xFFFF
+        found = self.one.operand & 0xFFFF
+        assert isinstance(found, int)
+        return found
 
     @property
-    def reading(self):
+    def reading(self) -> bool:
         """Whether the access took a value from the part rather than giving one."""
         return not self.mnemonic.startswith("st")
 
     @property
-    def immediate(self):
+    def immediate(self) -> int | None:
         """The constant the instruction carries, or nothing if it carries none."""
         if self.one.mode not in IMMEDIATE:
             return None
-        return self.one.operand
+        found = self.one.operand
+        assert isinstance(found, int)
+        return found
 
     @property
-    def waiting(self):
+    def waiting(self) -> bool:
         """Whether the instruction branches backwards, which is how a routine waits."""
         return self.one.mode in BRANCHES and bool(self.one.operand & BACKWARDS)
 
-    def __repr__(self):
+    @override
+    def __repr__(self) -> str:
         return f"<Step {self.one.text} {'byte' if self.narrow else 'word'}>"
 
 
-def through(rom, offset, narrow=True, limit=DEFAULT_LIMIT, address=None):
+def through(
+    rom: bytes,
+    offset: int,
+    narrow: bool = True,
+    limit: int = DEFAULT_LIMIT,
+    address: int | None = None,
+) -> Iterator[Step]:
     """Walk a routine from an offset, yielding one step per instruction read."""
     at = address if address is not None else 0x8000 + offset % 0x8000
     for _ in range(limit):

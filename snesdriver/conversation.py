@@ -16,6 +16,13 @@ what each instruction reached, which is why a shape is evidence rather than a
 guess: it is the cartridge's own sequence, read in the order the console runs it.
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, override
+
+if TYPE_CHECKING:  # pragma: no cover
+    from collections.abc import Iterable
+
 import collections
 
 from snesdriver import walk, windows
@@ -34,54 +41,62 @@ LONG_BYTES = 4
 class Step:
     """One access a routine makes to the part."""
 
-    def __init__(self, what, width, address):
+    def __init__(self, what: str, width: int, address: int | None) -> None:
         self.what = what
         self.width = width
         self.address = address
 
-    def __repr__(self):
+    @override
+    def __repr__(self) -> str:
         return f"<{self.what} {self.width}>"
 
 
 class Conversation:
     """Everything one routine says to a part, in the order it says it."""
 
-    def __init__(self, steps, covered=()):
+    def __init__(self, steps: Iterable[Step], covered: Iterable[int] = ()) -> None:
         self.steps = tuple(steps)
         self.covered = frozenset(covered)
 
     @property
-    def written(self):
+    def written(self) -> int:
         return sum(step.width for step in self.steps if step.what == WRITE)
 
     @property
-    def read(self):
+    def read(self) -> int:
         return sum(step.width for step in self.steps if step.what == READ)
 
     @property
-    def polls(self):
+    def polls(self) -> int:
         return any(step.what == POLL for step in self.steps)
 
     @property
-    def shape(self):
+    def shape(self) -> str:
         """The exchange as a string, so two routines can be compared by it."""
         return " ".join(f"{step.what}{step.width}" for step in self.steps)
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         return bool(self.steps)
 
-    def __repr__(self):
+    @override
+    def __repr__(self) -> str:
         return f"<Conversation {self.shape or 'nothing'}>"
 
 
-def _reached(step, window):
+def _reached(step: walk.Step, window: windows.Window) -> str | None:
     """Which register an instruction touched, or nothing if it touched none."""
-    if step.bank is None:
+    if step.bank is None or step.address is None:
         return None
     return window.reaches(step.bank, step.address)
 
 
-def at(rom, offset, window, narrow=True, limit=walk.DEFAULT_LIMIT):
+def at(
+    rom: bytes,
+    offset: int,
+    window: windows.Window,
+    narrow: bool = True,
+    limit: int = walk.DEFAULT_LIMIT,
+) -> Conversation:
     """The conversation a routine at that offset has with a part at that window."""
     steps = []
     covered = []
@@ -97,7 +112,7 @@ def at(rom, offset, window, narrow=True, limit=walk.DEFAULT_LIMIT):
     return Conversation(steps, covered)
 
 
-def sites(rom, window):
+def sites(rom: bytes, window: windows.Window) -> tuple[int, ...]:
     """Every offset holding an instruction that reaches the part.
 
     A long load or store carries its whole address in the three bytes after the
@@ -115,7 +130,12 @@ def sites(rom, window):
     return tuple(found)
 
 
-def shapes(rom, window, narrow=True, limit=walk.DEFAULT_LIMIT):
+def shapes(
+    rom: bytes,
+    window: windows.Window,
+    narrow: bool = True,
+    limit: int = walk.DEFAULT_LIMIT,
+) -> dict[str, int]:
     """Every distinct exchange in an image, and how many routines have it.
 
     A site that an earlier walk already stepped over does not start a
@@ -123,8 +143,8 @@ def shapes(rom, window, narrow=True, limit=walk.DEFAULT_LIMIT):
     routine that writes and then reads is one exchange rather than two, and
     walking from its middle would report the tail as though it were the whole.
     """
-    counted = collections.Counter()
-    seen = set()
+    counted: collections.Counter[str] = collections.Counter()
+    seen: set[int] = set()
     for offset in sites(rom, window):
         if offset in seen:
             continue

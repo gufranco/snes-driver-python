@@ -15,6 +15,13 @@ layout together rather than by part alone.
 The ranges here are the ones a cartridge that runs on real hardware decodes.
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, override
+
+if TYPE_CHECKING:  # pragma: no cover
+    from collections.abc import Iterable
+
 DATA = "data"
 
 STATUS = "status"
@@ -27,14 +34,14 @@ class UnknownPart(Exception):
 class Window:
     """One part's two ranges, in the banks it answers in."""
 
-    def __init__(self, first_bank, last_bank, data, status, end):
+    def __init__(self, first_bank: int, last_bank: int, data: int, status: int, end: int) -> None:
         self.first_bank = first_bank
         self.last_bank = last_bank
         self.data = data
         self.status = status
         self.end = end
 
-    def reaches(self, bank, address):
+    def reaches(self, bank: int, address: int) -> str | None:
         """Which register an access lands on, or nothing if it misses."""
         if not self.first_bank <= bank <= self.last_bank:
             return None
@@ -44,7 +51,8 @@ class Window:
             return STATUS
         return None
 
-    def __repr__(self):
+    @override
+    def __repr__(self) -> str:
         return (
             f"<Window ${self.first_bank:02x}-${self.last_bank:02x}:"
             f"{self.data:04x} data, {self.status:04x} status>"
@@ -63,7 +71,7 @@ WINDOWS = {
 """The parts a window is known for, by the layout the cartridge declares."""
 
 
-def window_for(part, layout):
+def window_for(part: str, layout: str) -> Window | None:
     """Where that part answers under that layout, or nothing if it does not."""
     if part not in WINDOWS:
         raise UnknownPart(
@@ -72,7 +80,7 @@ def window_for(part, layout):
     return WINDOWS[part].get(layout)
 
 
-def busiest(layout, reaches):
+def busiest(layout: str, reaches: Iterable[tuple[int, int]]) -> str | None:
     """Which part a run of accesses is talking to, by how often each is reached."""
     tally = {}
     for part, layouts in WINDOWS.items():
@@ -84,4 +92,4 @@ def busiest(layout, reaches):
             tally[part] = hits
     if not tally:
         return None
-    return max(tally, key=tally.get)
+    return max(tally, key=lambda part: tally[part])

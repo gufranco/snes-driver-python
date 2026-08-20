@@ -18,6 +18,14 @@ driver turns out to have none, which means the reader stopped seeing something i
 used to see.
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, override
+
+if TYPE_CHECKING:  # pragma: no cover
+    from collections.abc import Iterable, Mapping, Sequence
+    from pathlib import Path
+
 import sys
 from pathlib import Path
 
@@ -25,11 +33,10 @@ ROOT = Path(__file__).resolve().parent.parent
 
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "snes-mapper-python"))
-sys.path.insert(0, str(ROOT / "conformance"))
 
 from mapper import header
 
-import cartridges
+from conformance import cartridges
 from snesdriver import conversation, windows
 
 PART = "dsp"
@@ -43,22 +50,35 @@ WHY_NOT = cartridges.WHY_NOT
 class Reading:
     """What one cartridge turned out to say to its part."""
 
-    def __init__(self, identity, layout, sites, shapes):
+    def __init__(
+        self,
+        identity: Any,
+        layout: str,
+        sites: Sequence[int],
+        shapes: Mapping[str, int],
+    ) -> None:
         self.identity = identity
         self.layout = layout
         self.sites = sites
         self.shapes = shapes
 
     @property
-    def speaks(self):
+    def speaks(self) -> bool:
         return bool(self.shapes)
 
-    def __repr__(self):
+    @override
+    def __repr__(self) -> str:
         return f"<Reading {self.identity.name}, {len(self.shapes)} shapes>"
 
 
-def read(image, identity, part=PART):
-    """What one cartridge says to that part, or nothing if it has no window."""
+def read(image: bytes, identity: Any, part: str = PART) -> Reading:
+    """What one cartridge says to that part.
+
+    A cartridge whose layout gives that part no window reads as a reading with no
+    sites and no shapes, rather than as nothing. It is a cartridge that was looked
+    at and had nothing to say, which is a different fact from a cartridge that was
+    never looked at, and the report distinguishes them.
+    """
     found = header.read(image)
     window = windows.window_for(part, found.layout)
     if window is None:
@@ -71,7 +91,11 @@ def read(image, identity, part=PART):
     )
 
 
-def sweep(where=None, catalogue=None, part=PART):
+def sweep(
+    where: Path | str | None = None,
+    catalogue: Mapping[str, Any] | None = None,
+    part: str = PART,
+) -> list[Reading]:
     """Every cartridge present, read."""
     return [
         read(path.read_bytes(), identity, part)
@@ -79,7 +103,7 @@ def sweep(where=None, catalogue=None, part=PART):
     ]
 
 
-def report(readings):
+def report(readings: Sequence[Reading]) -> list[str]:
     """The lines a person reads, one cartridge at a time."""
     lines = []
     for reading in readings:
@@ -92,12 +116,12 @@ def report(readings):
     return lines
 
 
-def silent(readings):
+def silent(readings: Iterable[Reading]) -> list[Reading]:
     """Every cartridge that turned out to say nothing to the part."""
     return [reading for reading in readings if not reading.speaks]
 
 
-def main(argv, catalogue=None):
+def main(argv: Sequence[str], catalogue: Mapping[str, Any] | None = None) -> int:
     where = Path(argv[0]) if argv else None
     readings = sweep(where, catalogue)
 
@@ -116,7 +140,7 @@ def main(argv, catalogue=None):
     return 1 if quiet else 0
 
 
-def command():
+def command() -> int:
     """The installed console command, which takes its arguments from the shell."""
     raise SystemExit(main(sys.argv[1:]))
 
