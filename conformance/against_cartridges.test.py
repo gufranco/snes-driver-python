@@ -13,7 +13,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
-sys.path.insert(0, str(ROOT / "mapper"))
+sys.path.insert(0, str(ROOT / "snes-mapper-python"))
 sys.path.insert(0, str(ROOT / "conformance"))
 
 import against_cartridges

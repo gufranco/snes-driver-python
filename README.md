@@ -127,10 +127,14 @@ The last one is skipped rather than passed when no cartridge is present, so a ru
 
 ## Built on
 
-| Package | Does |
-|:--------|:-----|
-| [`mos65xx`](https://github.com/gufranco/mos65xx-python) | Disassembles the 65816, which is what a driver routine is written in |
-| [`snes-mapper`](https://github.com/gufranco/snes-mapper-python) | Decides which layout a cartridge declares |
+Both sit at the repository root, each named after itself rather than buried under
+a generic folder, so what this is built on is visible the moment the repository
+is opened.
+
+| Package | At | Does |
+|:--|:--|:--|
+| [`mos65xx-python`](https://github.com/gufranco/mos65xx-python) | `mos65xx-python/` | Disassembles the 65816, which is what a driver routine is written in |
+| [`snes-mapper-python`](https://github.com/gufranco/snes-mapper-python) | `snes-mapper-python/` | Decides which layout a cartridge declares |
 
 ## Licence
 

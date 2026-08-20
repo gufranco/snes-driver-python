@@ -35,7 +35,7 @@ version = { attr = "snesdriver.version.VERSION" }
 mapper = ["*.test.py"]
 
 [tool.ruff]
-extend-exclude = ["processor", "mapper"]
+extend-exclude = ["mos65xx-python", "snes-mapper-python"]
 target-version = "py312"
 line-length = 100
 

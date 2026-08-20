@@ -16,7 +16,7 @@ had, so the width is carried along and reported with each access.
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "processor"))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "mos65xx-python"))
 
 from mos65xx import disassemble
 
