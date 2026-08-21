@@ -29,6 +29,7 @@
 from snesdriver import shapes, window_for
 
 shapes(open("Super Mario Kart (USA).sfc", "rb").read(), window_for("dsp", "hirom"))
+
 # {'write1 write2 write2 poll2 read2 read2': 2, ...}
 ```
 
@@ -166,8 +167,6 @@ sibling project's job, and it says nothing about games nobody dumped.
 | Types | [mypy](https://mypy.readthedocs.io/) at strict, configured in [`pyproject.toml`](pyproject.toml) |
 | Versioning | [semantic-release](https://semantic-release.gitbook.io/), from the commit history |
 | Tests | Beside the module, named `<module>.test.py` |
-| Agent instructions | [`AGENTS.md`](AGENTS.md) |
-| Current behaviour | [`specs/current/`](specs/current/), requirements with checkable scenarios |
 
 ## Built on
 
