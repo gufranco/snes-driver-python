@@ -1,0 +1,62 @@
+{
+  "note": "What this package asserts about where a coprocessor answers, and where each assertion comes from. No manufacturer document on this machine states any of it, so every entry names the evidence it does have and says plainly that it is not a document.",
+  "authority": {
+    "order": [
+      "the cartridge, because a driver was written by somebody who had the part on a desk and had to make it work",
+      "agreement across cartridges, because one driver could be wrong and thirty six agreeing could not be wrong the same way",
+      "nothing else"
+    ],
+    "why": "Most of these parts have no surviving datasheet, and the emulators that talk to them were written by people who read the same cartridge code this package reads. Taking a window from an emulator would be taking somebody's reading of the evidence rather than the evidence.",
+    "whatIsMissing": "Nintendo's development manual, Book I, documents the memory map and the header but not the address lines a cartridge board decodes for a coprocessor. Searched on 2026-08-21. The DSP-1 application note in Book II would be the document that settles this, and it is not on this machine."
+  },
+  "windows": [
+    {
+      "part": "dsp",
+      "layout": "lorom",
+      "banks": ["0x30", "0x3F"],
+      "data": "0x8000",
+      "status": "0xC000",
+      "end": "0xFFFF",
+      "selectBit": 14,
+      "verified": false,
+      "evidence": "Read out of the driver routine of every LoROM cartridge in the manifest that carries this part.",
+      "howToSettleIt": "The DSP-1 application note, or a continuity reading across a real cartridge board."
+    },
+    {
+      "part": "dsp",
+      "layout": "hirom",
+      "banks": ["0x00", "0x0F"],
+      "data": "0x6000",
+      "status": "0x7000",
+      "end": "0x7FFF",
+      "selectBit": 12,
+      "verified": false,
+      "evidence": "Read out of the driver routine of every HiROM cartridge in the manifest that carries this part.",
+      "howToSettleIt": "The DSP-1 application note, or a continuity reading across a real cartridge board."
+    },
+    {
+      "part": "st",
+      "layout": "lorom",
+      "banks": ["0x60", "0x67"],
+      "data": "0x0000",
+      "status": "0x0001",
+      "end": "0x0001",
+      "selectBit": 0,
+      "verified": false,
+      "evidence": "Read out of the driver routine of the Seta cartridges in the manifest.",
+      "howToSettleIt": "A Seta document, of which none is known, or a continuity reading across a real board."
+    }
+  ],
+  "decode": {
+    "claim": "A cartridge decodes a few address lines rather than all of them, so every address in the span reaches the same register and the part answers across a window rather than at one address.",
+    "verified": false,
+    "evidence": "It follows from the windows above: the same part answers at 0x8000 under one layout and 0x6000 under another, and the line that picks between its two registers moves with the layout rather than staying with the part. A part that decoded its own address could not do that.",
+    "howToSettleIt": "A cartridge board schematic, or a continuity reading."
+  },
+  "notStated": [
+    "Which address lines any cartridge board actually connects. Everything here is inferred from what the drivers do rather than read off a schematic.",
+    "Whether a window extends past the addresses the drivers in the manifest reach. A driver shows where a part answers, never where it stops answering.",
+    "Anything about timing. How long the console spends on one of these accesses belongs to snes-mapper-python, and how long the part then runs belongs to snes-dsp-python.",
+    "Any part with no cartridge in the manifest. A window is only asserted where a driver was read."
+  ]
+}

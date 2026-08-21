@@ -1,0 +1,64 @@
+name: Something is wrong
+description: A driver is read wrong, a window is wrong, or nothing works at all
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A report here is almost always about one cartridge and one routine. The
+        fields ask for what this package made of it, which is usually enough to
+        settle it.
+
+        Never attach a cartridge and never link to one. Its SHA-256 identifies it
+        exactly.
+
+  - type: textarea
+    id: what_it_read
+    attributes:
+      label: What this package made of the driver
+      description: Paste the output, complete rather than trimmed.
+      render: text
+      placeholder: |
+        python3 conformance/against_cartridges.py
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+      placeholder: |
+        the driver writes four bytes before reading, not three
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: What says otherwise
+      description: |
+        The address of the routine, and what you read there. A disassembly of the
+        cartridge's own code is the evidence this package accepts. An emulator
+        behaving differently is not, because those were written by people reading
+        the same code.
+    validations:
+      required: true
+
+  - type: input
+    id: cartridge
+    attributes:
+      label: The cartridge
+      description: Its name, its region, and its SHA-256. Never the file itself.
+      placeholder: "Super Mario Kart (USA), sha256 ..."
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: confirmations
+    attributes:
+      label: Before submitting
+      options:
+        - label: The output above is complete rather than trimmed
+          required: true
+        - label: I own the cartridge I am naming, and I have attached no part of it
+          required: true

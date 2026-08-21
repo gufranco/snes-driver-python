@@ -1,0 +1,14 @@
+# Every path, one owner. The repository has a single maintainer, so this file
+# exists to make review required rather than to route it: without an owner,
+# GitHub's branch protection has nobody to ask.
+*       @gufranco
+
+# The two files that decide what everything else is checked against. A change to
+# either one changes what "correct" means for the whole package.
+/conformance/hardware.json      @gufranco
+/conformance/divergences.json   @gufranco
+
+# What identifies a cartridge before a byte of it is read. A wrong entry here
+# means the wrong file is disassembled and a protocol nobody's hardware has is
+# reported as though it were real.
+/cartridges.manifest.json       @gufranco

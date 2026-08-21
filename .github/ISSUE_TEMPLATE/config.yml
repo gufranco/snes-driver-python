@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Why no window here is marked verified
+    url: https://github.com/gufranco/snes-driver-python/blob/main/conformance/divergences.json
+    about: No manufacturer document states any of them, and an emulator agreeing is not a second witness.
+  - name: What the part does once it is reached
+    url: https://github.com/gufranco/snes-dsp-python
+    about: This package reads what a driver says. Running the part is a different package.

@@ -1,0 +1,54 @@
+{
+  "comment": "Every place a source is weaker than it looks, and every place this package deliberately claims nothing. The facts themselves live in hardware.json; this file is about their standing.",
+  "sources": {
+    "cartridges": "The driver routines inside 36 cartridges, identified by digest in cartridges.manifest.json before a byte is read.",
+    "document": "None. Nintendo's Book I documents the memory map and not what a cartridge board decodes for a coprocessor.",
+    "implementations": "Emulators, which were written by people reading the same cartridge code this package reads. Not a separate source."
+  },
+  "divergences": [
+    {
+      "id": "no-document-for-any-window",
+      "parts": ["dsp", "st"],
+      "severity": "high",
+      "status": "open",
+      "documentSays": "Nothing. No manufacturer document on this machine gives the address lines a cartridge board decodes for a coprocessor.",
+      "referenceDoes": "Every driver read agrees with the window this package uses for its part and layout.",
+      "packageFollows": "reference",
+      "reasoning": "Agreement across dozens of independently written drivers is strong evidence and is not a document. One driver could be wrong; thirty six could not be wrong the same way. What it still cannot say is where a window stops, because a driver shows where a part answers and never where it does not.",
+      "wouldSettleIt": "The DSP-1 application note from Nintendo's Book II, or a continuity reading across a real cartridge board."
+    },
+    {
+      "id": "an-emulator-is-not-a-second-witness-here",
+      "parts": ["dsp", "st"],
+      "severity": "medium",
+      "status": "acknowledged",
+      "documentSays": "Nothing.",
+      "referenceDoes": "Emulators use the same windows.",
+      "packageFollows": "reference",
+      "reasoning": "That agreement is worth nothing as corroboration, because those emulators were written by people reading the same cartridge code. Counting it as a second witness would be counting the same evidence twice, and this is written down so nobody does.",
+      "wouldSettleIt": "Anything that did not come from reading a driver: a schematic, a board photograph, a continuity reading, or a manufacturer note."
+    },
+    {
+      "id": "a-window-with-no-cartridge-is-not-asserted",
+      "parts": ["dsp", "st"],
+      "severity": "low",
+      "status": "notModelled",
+      "documentSays": "Nothing.",
+      "referenceDoes": "Nothing either, for a part no cartridge in the manifest carries.",
+      "packageFollows": "neither",
+      "reasoning": "A window is only listed where a driver was actually read. A part with no cartridge present gets no entry rather than an entry copied from somewhere else, and a lookup for it raises instead of guessing.",
+      "wouldSettleIt": "A cartridge carrying that part, added to the manifest and read."
+    },
+    {
+      "id": "nothing-here-is-a-timing-claim",
+      "parts": ["dsp", "st"],
+      "severity": "low",
+      "status": "notModelled",
+      "documentSays": "Nothing about timing, and this package asks nothing about it.",
+      "referenceDoes": "n/a",
+      "packageFollows": "neither",
+      "reasoning": "What one of these accesses costs the console belongs to snes-mapper-python, and how long the part runs afterwards belongs to snes-dsp-python. This package reads what a driver says, not how long it waits.",
+      "wouldSettleIt": "n/a. This is a scope boundary rather than an unknown."
+    }
+  ]
+}
