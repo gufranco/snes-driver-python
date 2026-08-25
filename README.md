@@ -24,7 +24,7 @@
   <a href="https://github.com/gufranco/snes-driver-python/issues">Issues</a>
 </p>
 
-**36** cartridges read, **0** disagreements with their own digests · **2** layouts · **3** kinds of access · **410** tests · **100%** statement and branch coverage · no dependencies
+**36** cartridges read, **0** disagreements with their own digests · **2** layouts · **3** kinds of access · **415** tests · **100%** statement and branch coverage · no dependencies
 
 ```python
 from snesdriver import at, window_for
