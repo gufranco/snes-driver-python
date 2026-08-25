@@ -58,6 +58,11 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
+# conformance/family.test.py is the shared file every member carries identically,
+# so it carries directives for rules a given member may have turned off. RUF100
+# would report those as stale here; the reference copy has every one of those
+# rules on, which is where a genuinely stale directive is caught.
+"conformance/family.test.py" = ["RUF100"]
 # A test file sits beside the module it covers and is named after it, so its
 # module name carries a dot that N999 rejects. The layout is deliberate: a
 # module and its tests are read together.

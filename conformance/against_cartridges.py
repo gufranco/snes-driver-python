@@ -38,8 +38,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 
-sys.path.insert(0, str(ROOT / "snes-mapper-python"))
 sys.path.insert(0, str(ROOT))
+sys.path.append(str(ROOT / "snes-mapper-python"))
 
 from mapper import header
 
