@@ -67,6 +67,12 @@ ignore = [
 # module name carries a dot that N999 rejects. The layout is deliberate: a
 # module and its tests are read together.
 "*.test.py" = ["PLR2004", "N999"]
+# The doctor catches everything on purpose. It exists to report what this
+# machine did when something went wrong, and a refusal it did not anticipate is
+# the finding rather than a reason to stop with a traceback. Printing is its
+# output rather than a stray debug statement, for the same reason as the tools
+# below.
+"snesdriver/doctor.py" = ["BLE001", "T201"]
 # These are command line tools. Printing is their output, not a stray debug
 # statement left behind, and routing it through a logger would put a level and
 # a timestamp in front of a report meant to be read by a person.

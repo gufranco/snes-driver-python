@@ -24,7 +24,7 @@
   <a href="https://github.com/gufranco/snes-driver-python/issues">Issues</a>
 </p>
 
-**36** cartridges read, **0** disagreements with their own digests · **2** layouts · **3** kinds of access · **300** tests · **100%** statement and branch coverage · no dependencies
+**36** cartridges read, **0** disagreements with their own digests · **2** layouts · **3** kinds of access · **370** tests · **100%** statement and branch coverage · no dependencies
 
 ```python
 from snesdriver import at, window_for
@@ -297,6 +297,8 @@ python3 -m coverage report
 | Sweep | [`conformance/against_cartridges.test.py`](conformance/against_cartridges.test.py) | Every cartridge present, read |
 
 The last one is skipped rather than passed when no cartridge is present, so a run that proved nothing never reads as a run that proved something. CI attempts it on every push and annotates the skip.
+
+`python3 snesdriver/doctor.py` says what is actually on this machine: every window, a routine walked out of bytes assembled on the spot, and whether the submodules this repository needs are checked out. It is run as a file rather than with `-m` so that it still runs when the package itself will not import, which is the case it exists for. Its report is what an issue asks for, because a report is only as good as what it says about the machine that produced it.
 
 Coverage is enforced at 100% of statements and branches, and it holds both on a
 machine with the whole library and on one holding nothing. That second half is the
