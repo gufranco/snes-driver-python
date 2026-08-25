@@ -135,6 +135,6 @@ exclude_also = [
   'if TYPE_CHECKING:',
   # A protocol method has no body to run, whether the ellipsis sits on its own
   # line or after the signature. The same version split applies.
-  '^\\s*\\.\\.\\.$',
-  ': \\.\\.\\.$',
+  '^\s*\.\.\.$',
+  ': \.\.\.$',
 ]
