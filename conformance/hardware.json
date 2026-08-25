@@ -7,7 +7,11 @@
       "nothing else"
     ],
     "why": "Most of these parts have no surviving datasheet, and the emulators that talk to them were written by people who read the same cartridge code this package reads. Taking a window from an emulator would be taking somebody's reading of the evidence rather than the evidence.",
-    "whatIsMissing": "Nintendo's development manual, Book I, documents the memory map and the header but not the address lines a cartridge board decodes for a coprocessor. Searched on 2026-08-21. The DSP-1 application note in Book II would be the document that settles this, and it is not on this machine."
+    "whatIsMissing": "Nintendo's development manual, Book I, documents the memory map and the header but not the address lines a cartridge board decodes for a coprocessor. Searched on 2026-08-21. The DSP-1 application note in Book II would be the document that settles this, and it is not on this machine.",
+    "comparedAgainst": {
+      "runner": "conformance/against_cartridges.py",
+      "what": "The driver routine of every cartridge in the manifest, disassembled out of the cartridge's own code."
+    }
   },
   "documents": {},
   "documentsNote": "Empty on purpose. No document describes this part, and nothing here is reached through a sibling either: every window below was read out of the driver routine in cartridges that carry it, which is the artifact rather than a document about it. An empty block says there is nothing to cite, where a missing one would be indistinguishable from nobody having filled it in.",
