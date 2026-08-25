@@ -19,6 +19,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, override
 
+from .errors import UnknownPart
+
 if TYPE_CHECKING:  # pragma: no cover
     from collections.abc import Iterable
 
@@ -27,12 +29,10 @@ DATA = "data"
 STATUS = "status"
 
 
-class UnknownPart(Exception):
-    pass
-
-
 class Window:
     """One part's two ranges, in the banks it answers in."""
+
+    __slots__ = ("data", "end", "first_bank", "last_bank", "status")
 
     def __init__(self, first_bank: int, last_bank: int, data: int, status: int, end: int) -> None:
         self.first_bank = first_bank

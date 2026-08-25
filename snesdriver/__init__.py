@@ -18,6 +18,10 @@ Nothing here executes anything. It walks a routine in the order the console woul
 and reports what each instruction reached.
 """
 
+from . import conversation as conversation
+from . import errors as errors
+from . import walk as walk
+from . import windows as windows
 from .conversation import (
     POLL,
     READ,
@@ -27,13 +31,13 @@ from .conversation import (
     shapes,
     sites,
 )
+from .errors import UnknownPart
 from .version import VERSION
 from .walk import DEFAULT_LIMIT, through
 from .windows import (
     DATA,
     STATUS,
     WINDOWS,
-    UnknownPart,
     Window,
     busiest,
     window_for,

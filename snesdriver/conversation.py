@@ -41,6 +41,8 @@ LONG_BYTES = 4
 class Step:
     """One access a routine makes to the part."""
 
+    __slots__ = ("address", "what", "width")
+
     def __init__(self, what: str, width: int, address: int | None) -> None:
         self.what = what
         self.width = width
@@ -53,6 +55,8 @@ class Step:
 
 class Conversation:
     """Everything one routine says to a part, in the order it says it."""
+
+    __slots__ = ("covered", "steps")
 
     def __init__(self, steps: Iterable[Step], covered: Iterable[int] = ()) -> None:
         self.steps = tuple(steps)

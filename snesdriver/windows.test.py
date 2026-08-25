@@ -5,6 +5,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from snesdriver import windows
+from snesdriver.errors import UnknownPart
 
 
 class CatalogueTest(unittest.TestCase):
@@ -73,11 +74,11 @@ class ChoosingTest(unittest.TestCase):
         self.assertIsNone(windows.window_for("dsp", "exhirom"))
 
     def test_a_part_it_does_not_know_is_refused(self) -> None:
-        with self.assertRaises(windows.UnknownPart):
+        with self.assertRaises(UnknownPart):
             windows.window_for("nonsense", "lorom")
 
     def test_the_parts_it_knows_are_listed_in_the_refusal(self) -> None:
-        with self.assertRaises(windows.UnknownPart) as raised:
+        with self.assertRaises(UnknownPart) as raised:
             windows.window_for("nonsense", "lorom")
 
         self.assertIn("dsp", str(raised.exception))

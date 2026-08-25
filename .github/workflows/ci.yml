@@ -111,6 +111,21 @@ jobs:
       - name: Coverage must be total
         run: python -m coverage report
 
+  speed:
+    name: Throughput
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: A routine must still walk faster than the floor
+        run: python -m conformance.speed
+
   cartridges:
     name: Cartridges
     runs-on: ubuntu-latest
@@ -129,7 +144,7 @@ jobs:
           # when none is here. Only 1 is a failure: a hosted runner has no
           # cartridge and never will.
           status=0
-          python conformance/against_cartridges.py || status="$?"
+          python -m conformance.against_cartridges || status="$?"
           if [ "${status}" -eq 2 ]; then
             echo "::notice title=Cartridges::No cartridge is present on a hosted runner, so the driver sweep was skipped rather than passed. It confirms each cartridge against four digests, disassembles the routine that drives its coprocessor, and reports the exchange. Run it locally with copies you own, or point SNES_CARTRIDGE_DIR at them."
             exit 0

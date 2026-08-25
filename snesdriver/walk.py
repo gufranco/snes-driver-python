@@ -45,6 +45,8 @@ DEFAULT_LIMIT = 80
 class Step:
     """One instruction, and what it reached."""
 
+    __slots__ = ("mnemonic", "narrow", "offset", "one", "width")
+
     def __init__(self, one: Any, narrow: bool) -> None:
         self.one = one
         self.narrow = narrow
