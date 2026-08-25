@@ -157,7 +157,6 @@ conformance/
 mos65xx-python/          the disassembler, as a submodule
 snes-mapper-python/      the header and address decoding, as a submodule
 cartridges/              a user's own copies; nothing here is ever committed
-specs/current/           what this does now, as requirements with scenarios
 ```
 
 ## Things that will bite you
