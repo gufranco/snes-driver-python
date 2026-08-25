@@ -1,0 +1,23 @@
+cff-version: 1.2.0
+title: snes-driver-python
+message: >-
+  If you use this work, or the windows it was measured from, please cite it.
+type: software
+authors:
+  - given-names: Gustavo
+    family-names: Franco
+    alias: gufranco
+repository-code: https://github.com/gufranco/snes-driver-python
+url: https://github.com/gufranco/snes-driver-python
+abstract: >-
+  What a Super Nintendo cartridge says to its coprocessor, read out of the cartridge's own code rather than out of an emulator. Every window is taken from the driver routine of real cartridges, disassembled instruction by instruction, so the addresses a part answers at are measured rather than assumed.
+keywords:
+  - snes
+  - super-nintendo
+  - coprocessor
+  - disassembly
+  - driver
+  - hardware-model
+  - conformance
+license: MIT
+version: 0.0.0

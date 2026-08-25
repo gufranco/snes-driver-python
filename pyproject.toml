@@ -1,29 +1,16 @@
-[build-system]
-requires = ["setuptools>=77"]
-build-backend = "setuptools.build_meta"
-
-[project]
-name = "snesdriver"
-description = "Read what a SNES cartridge says to its coprocessor, out of the cartridge\u2019s own code."
-readme = "README.md"
-license = "MIT"
-license-files = ["LICENSE"]
-requires-python = ">=3.12"
-dynamic = ["version"]
-keywords = ["snes", "coprocessor", "dsp", "disassembly", "cartridge", "protocol"]
-classifiers = [
-  "Development Status :: 4 - Beta",
-  "Intended Audience :: Developers",
-  "Programming Language :: Python :: 3.12",
-  "Programming Language :: Python :: 3.13",
-  "Programming Language :: Python :: 3.14",
-  "Topic :: System :: Emulators",
-]
-
-[project.urls]
-Homepage = "https://github.com/gufranco/snes-driver-python"
-Source = "https://github.com/gufranco/snes-driver-python"
-Issues = "https://github.com/gufranco/snes-driver-python/issues"
+# This repository ships no packaging block, and that is deliberate.
+#
+# It consumes a sibling member as a submodule rather than as a version range, so
+# a wheel built from here would install cleanly and then raise on its first
+# import: the submodule is not in it and cannot be. The readme says the same
+# thing in prose. Keeping a `[project]` block beside that sentence would let
+# somebody `pip install git+...` and receive exactly the broken package the
+# sentence warns about.
+#
+# What the two members that consume nothing do instead is publish normally, with
+# a signed bill of materials proving the dependency tree is empty. The check that
+# holds this one to the same claim reads the imports rather than an environment,
+# because there is no environment to read.
 
 [tool.setuptools]
 packages = ["snesdriver"]
