@@ -103,3 +103,36 @@ jobs:
           fi
           exit "${status}"
         shell: bash
+
+  # A submodule pins a commit, and a pin goes stale the way any pin does. This
+  # reports how far behind each has fallen rather than waiting for somebody to
+  # wonder. It never bumps anything: moving a pin changes what this member does
+  # until the suite says otherwise, so it is a change somebody makes and tests.
+  pins:
+    name: How far behind the submodules are
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - name: Compare every pin against its upstream head
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          behind=0
+          git submodule status | while read -r sha path _rest; do
+            sha="${sha#[-+]}"
+            name="${path##*/}"
+            head=$(gh api "repos/${GITHUB_REPOSITORY%%/*}/${name}/commits?per_page=1" --jq '.[0].sha')
+            if [ "${sha}" = "${head}" ]; then
+              echo "${name}: at head"
+              continue
+            fi
+            count=$(gh api "repos/${GITHUB_REPOSITORY%%/*}/${name}/compare/${sha}...${head}" --jq '.ahead_by')
+            echo "::warning title=${name} is behind::${count} commits behind ${head}. Bump it, run the suite, and read what changed before recording any new output."
+          done
+          exit "${behind}"
+        shell: bash
