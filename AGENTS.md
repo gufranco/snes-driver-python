@@ -1,7 +1,9 @@
 # Working in this repository
 
-This file is for a coding agent. A person reading it will not be harmed, but
-[README.md](README.md) is the document written for them.
+Read [FAMILY.md](FAMILY.md) first. It is the standard every member of this
+family carries, byte for byte, and it decides most questions before they are
+asked. What follows is only what is true of this member. [README.md](README.md)
+is the document written for a person.
 
 ## What this project is, in one paragraph
 
@@ -37,9 +39,6 @@ this package makes is this package's, and inheriting one would make a caller's
 There is no clock. Nothing here is a model of a part.
 
 ## The authority ladder
-
-Every factual question is answered by the highest rung that has an answer, and a
-lower rung never overrules a higher one.
 
 1. **Manufacturer documentation.** For this project that is the 65816 instruction
    set and the cartridge address decoding. Anything printed decides.
