@@ -1,30 +1,10 @@
-<div align="center">
+# SNES Driver
 
-<h1>SNES Driver</h1>
-
-<strong>What a cartridge says to its coprocessor, read out of the cartridge's own code.</strong>
-
-<br>
-<br>
+What a cartridge says to its coprocessor, read out of the cartridge's own code.
 
 [![CI](https://github.com/gufranco/snes-driver-python/actions/workflows/ci.yml/badge.svg)](https://github.com/gufranco/snes-driver-python/actions/workflows/ci.yml)
-[![Cartridges](https://img.shields.io/badge/read%20across-36%20cartridges-blue)](#what-real-cartridges-say)
-[![Coverage](https://img.shields.io/badge/coverage-100%25%20statement%20%2B%20branch-brightgreen)](#tests)
-[![Types](https://img.shields.io/badge/mypy-strict-blue)](pyproject.toml)
-[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-</div>
-
-<p align="center">
-  <a href="#install">Install</a> &nbsp;|&nbsp;
-  <a href="#the-interface">The interface</a> &nbsp;|&nbsp;
-  <a href="#the-problem">The problem</a> &nbsp;|&nbsp;
-  <a href="#why-this-cannot-be-guessed">Why guessing fails</a> &nbsp;|&nbsp;
-  <a href="#is-it-right">Is it right</a> &nbsp;|&nbsp;
-  <a href="https://github.com/gufranco/snes-driver-python/issues">Issues</a>
-</p>
-
-**36** cartridges read, **0** disagreements with their own digests · **2** layouts · **3** kinds of access · **445** tests · **100%** statement and branch coverage · no dependencies
+**36** cartridges read, **0** disagreements with their own digests, **2** layouts, **3** kinds of access, **445** tests, **100%** statement and branch coverage, no dependencies
 
 ```python
 from snesdriver import at, window_for
@@ -64,7 +44,6 @@ One byte of command, a poll of the status register, then a two byte answer. That
 sequence is what a model has to be told, and the cartridge's own code is the only
 place it is written down.
 
----
 
 ## Install
 
