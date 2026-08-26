@@ -26,21 +26,29 @@ def declared() -> dict[str, Any]:
 
 
 def _declared_edges(row: dict[str, Any]) -> tuple[int, ...]:
-    """The five addresses hardware.json gives for one window."""
+    """The six addresses hardware.json gives for one window."""
     return (
         int(row["banks"][0], 16),
         int(row["banks"][1], 16),
         int(row["data"], 16),
         int(row["status"], 16),
         int(row["end"], 16),
+        int(row["statusEnd"], 16),
     )
 
 
 def _table_edges(row: dict[str, Any]) -> tuple[int, ...]:
-    """The five this package actually uses for the same window."""
+    """The six this package actually uses for the same window."""
     window = windows.window_for(row["part"], row["layout"])
     assert window is not None, f"{row['part']}/{row['layout']} is declared and not known"
-    return (window.first_bank, window.last_bank, window.data, window.status, window.end)
+    return (
+        window.first_bank,
+        window.last_bank,
+        window.data,
+        window.status,
+        window.end,
+        window.status_end,
+    )
 
 
 class DocumentTest(unittest.TestCase):

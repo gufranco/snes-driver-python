@@ -26,7 +26,8 @@
       "selectBit": 14,
       "verified": false,
       "evidence": "Read out of the driver routine of every LoROM cartridge in the manifest that carries this part.",
-      "howToSettleIt": "The DSP-1 application note, or a continuity reading across a real cartridge board."
+      "howToSettleIt": "The DSP-1 application note, or a continuity reading across a real cartridge board.",
+      "statusEnd": "0xFFFF"
     },
     {
       "part": "dsp",
@@ -38,7 +39,8 @@
       "selectBit": 12,
       "verified": false,
       "evidence": "Read out of the driver routine of every HiROM cartridge in the manifest that carries this part.",
-      "howToSettleIt": "The DSP-1 application note, or a continuity reading across a real cartridge board."
+      "howToSettleIt": "The DSP-1 application note, or a continuity reading across a real cartridge board.",
+      "statusEnd": "0x7FFF"
     },
     {
       "part": "st",
@@ -50,7 +52,21 @@
       "selectBit": 0,
       "verified": false,
       "evidence": "Read out of the driver routine of the Seta cartridges in the manifest.",
-      "howToSettleIt": "A Seta document, of which none is known, or a continuity reading across a real board."
+      "howToSettleIt": "A Seta document, of which none is known, or a continuity reading across a real board.",
+      "statusEnd": "0x0001"
+    },
+    {
+      "part": "st",
+      "layout": "lorom-shared",
+      "banks": ["0x68", "0x6F"],
+      "data": "0x0000",
+      "status": "0x0020",
+      "end": "0x0FFF",
+      "selectBit": 5,
+      "verified": false,
+      "evidence": "Read out of the driver routine of the Seta cartridges in the manifest. With the port window alone each ST010 cartridge yields one exchange; with this one they yield eighteen across eight shapes, and the Japanese and American releases agree on every shape. The bounds are the whole four kilobytes because the routines reach as far as 0x0FD5, and the control pair sits inside that rather than after it.",
+      "howToSettleIt": "A Seta document, of which none is known, or a continuity reading across a real board.",
+      "statusEnd": "0x0021"
     }
   ],
   "decode": {

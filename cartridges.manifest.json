@@ -178,6 +178,38 @@
       "badDumps": []
     },
     {
+      "name": "Exhaust Heat II - F1 Driver e no Michi (Japan).sfc",
+      "title": "EXHAUST HEAT2",
+      "bytes": 1048576,
+      "layout": "lorom",
+      "chipset": "0xf6",
+      "crc32": "e2c8e535",
+      "md5": "9b0dffe0222a9b7b7c8dcb98cc8ca058",
+      "sha1": "3600f81d5a7e2ec41f362cc22a16a58ce2612048",
+      "sha256": "1c78d8208a05cbfe88ee019edbc3a0c9cdabfd2b62089ca119215bbc7e581611",
+      "provenance": {
+        "kind": "localCopy",
+        "verifiedOn": "2026-08-25"
+      },
+      "badDumps": []
+    },
+    {
+      "name": "F1-ROC II - Race of Champions (USA).sfc",
+      "title": "F1 ROC II",
+      "bytes": 1048576,
+      "layout": "lorom",
+      "chipset": "0xf6",
+      "crc32": "3447609e",
+      "md5": "000ba16a5a4c08992ec93d0309d8ed6c",
+      "sha1": "fb81dd15b8a9ddf8f5564d3d2fb934c6f8bfb392",
+      "sha256": "405c33f64701faf40963a4e6a2d0d69420e6751caf436387ddd3e145b25ed46c",
+      "provenance": {
+        "kind": "localCopy",
+        "verifiedOn": "2026-08-25"
+      },
+      "badDumps": []
+    },
+    {
       "name": "Final Stretch (Japan).sfc",
       "title": "FINAL STRETCH",
       "bytes": 1572864,
@@ -206,6 +238,22 @@
       "provenance": {
         "kind": "localCopy",
         "verifiedOn": "2026-08-20"
+      },
+      "badDumps": []
+    },
+    {
+      "name": "Hayazashi Nidan Morita Shougi (Japan).sfc",
+      "title": "2DAN MORITA SHOUGI",
+      "bytes": 524288,
+      "layout": "lorom",
+      "chipset": "0xf6",
+      "crc32": "81e822ad",
+      "md5": "ea342f4da33bf6eb3dc1fd2f89aa751f",
+      "sha1": "82b4bca58918a18707f932ec6afc0a12a3c4b872",
+      "sha256": "85825a75ef662b28d0111c0462ec3c34234da1d78d10472b8022fcba3b9eaed5",
+      "provenance": {
+        "kind": "localCopy",
+        "verifiedOn": "2026-08-25"
       },
       "badDumps": []
     },

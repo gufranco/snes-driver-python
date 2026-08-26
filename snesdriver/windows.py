@@ -13,6 +13,18 @@ first case and bit 12 in the second. That is why a window is looked up by part a
 layout together rather than by part alone.
 
 The ranges here are the ones a cartridge that runs on real hardware decodes.
+
+The Seta parts have two windows rather than one, because address bit 19 decides
+which. Below it the console reaches a two byte port; above it, the four kilobyte
+memory both sides share, where the parameters go in, the answer comes back, and
+two bytes near the bottom act as the control pair. A layout name carries the
+second window because a window is looked up by part and layout, and there is no
+third thing to look one up by.
+
+Measured, rather than assumed: with only the port window, the two cartridges
+carrying an ST010 yield one exchange each. With the shared window they yield
+eighteen across eight shapes, and the Japanese and American releases agree on
+every one, which is what two builds of one driver routine should do.
 """
 
 from __future__ import annotations
@@ -30,25 +42,44 @@ STATUS = "status"
 
 
 class Window:
-    """One part's two ranges, in the banks it answers in."""
+    """One part's two ranges, in the banks it answers in.
 
-    __slots__ = ("data", "end", "first_bank", "last_bank", "status")
+    The status range is looked at first, which is what lets it sit inside the
+    data range rather than after it. On the DSP the two ranges are adjacent and
+    the order changes nothing. On the Seta parts the control pair is two bytes in
+    the middle of four kilobytes of shared memory, and a window that stopped at
+    the pair would report every access above it as reaching nothing.
 
-    def __init__(self, first_bank: int, last_bank: int, data: int, status: int, end: int) -> None:
+    `status_end` is where the status range stops, and defaults to `end` so the
+    adjacent case keeps spelling itself with four bounds.
+    """
+
+    __slots__ = ("data", "end", "first_bank", "last_bank", "status", "status_end")
+
+    def __init__(
+        self,
+        first_bank: int,
+        last_bank: int,
+        data: int,
+        status: int,
+        end: int,
+        status_end: int | None = None,
+    ) -> None:
         self.first_bank = first_bank
         self.last_bank = last_bank
         self.data = data
         self.status = status
         self.end = end
+        self.status_end = end if status_end is None else status_end
 
     def reaches(self, bank: int, address: int) -> str | None:
         """Which register an access lands on, or nothing if it misses."""
         if not self.first_bank <= bank <= self.last_bank:
             return None
-        if self.data <= address < self.status:
-            return DATA
-        if self.status <= address <= self.end:
+        if self.status <= address <= self.status_end:
             return STATUS
+        if self.data <= address <= self.end:
+            return DATA
         return None
 
     @override
@@ -66,6 +97,7 @@ WINDOWS = {
     },
     "st": {
         "lorom": Window(0x60, 0x67, 0x0000, 0x0001, 0x0001),
+        "lorom-shared": Window(0x68, 0x6F, 0x0000, 0x0020, 0x0FFF, 0x0021),
     },
 }
 """The parts a window is known for, by the layout the cartridge declares."""

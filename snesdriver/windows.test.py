@@ -26,6 +26,31 @@ class CatalogueTest(unittest.TestCase):
             for window in layouts.values():
                 self.assertLessEqual(window.first_bank, window.last_bank)
 
+    def test_the_seta_parts_answer_in_two_places_rather_than_one(self) -> None:
+        self.assertEqual(sorted(windows.WINDOWS["st"]), ["lorom", "lorom-shared"])
+
+    def test_the_shared_window_sits_above_the_port_window(self) -> None:
+        port = windows.WINDOWS["st"]["lorom"]
+        shared = windows.WINDOWS["st"]["lorom-shared"]
+
+        self.assertGreater(shared.first_bank, port.last_bank)
+
+    def test_the_control_pair_reads_as_status_in_the_shared_window(self) -> None:
+        shared = windows.WINDOWS["st"]["lorom-shared"]
+
+        self.assertEqual(
+            [shared.reaches(0x68, at) for at in (0x0000, 0x0010, 0x0020, 0x0021)],
+            [windows.DATA, windows.DATA, windows.STATUS, windows.STATUS],
+        )
+
+    def test_the_shared_window_covers_every_bank_the_part_mirrors_into(self) -> None:
+        shared = windows.WINDOWS["st"]["lorom-shared"]
+
+        self.assertEqual(
+            [shared.reaches(bank, 0x0020) for bank in (0x67, 0x68, 0x6F, 0x70)],
+            [None, windows.STATUS, windows.STATUS, None],
+        )
+
     def test_a_window_prints_as_the_range_it_covers(self) -> None:
         printed = repr(windows.WINDOWS["dsp"]["lorom"])
 
