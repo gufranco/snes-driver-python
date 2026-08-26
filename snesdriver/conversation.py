@@ -18,7 +18,7 @@ guess: it is the cartridge's own sequence, read in the order the console runs it
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, override
+from typing import TYPE_CHECKING, Protocol, override, runtime_checkable
 
 if TYPE_CHECKING:  # pragma: no cover
     from collections.abc import Iterable
@@ -39,14 +39,28 @@ LONG_BYTES = 4
 
 
 class Step:
-    """One access a routine makes to the part."""
+    """One access a routine makes to the part.
 
-    __slots__ = ("address", "what", "width")
+    The bank is carried alongside the address because a part with more than one
+    window is told apart by it: the Seta parts answer at a port in one bank range
+    and through shared memory in the next, and an address with the bank dropped
+    cannot say which of the two a routine meant.
+    """
 
-    def __init__(self, what: str, width: int, address: int | None) -> None:
+    __slots__ = ("address", "bank", "what", "width")
+
+    def __init__(self, what: str, width: int, address: int | None, bank: int | None = None) -> None:
         self.what = what
         self.width = width
         self.address = address
+        self.bank = bank
+
+    @property
+    def whole(self) -> int | None:
+        """Bank and address together, as the instruction carried them."""
+        if self.bank is None or self.address is None:
+            return None
+        return self.bank << 16 | self.address
 
     @override
     def __repr__(self) -> str:
@@ -87,7 +101,7 @@ class Conversation:
         return f"<Conversation {self.shape or 'nothing'}>"
 
 
-def _reached(step: walk.Step, window: windows.Window) -> str | None:
+def _reached(step: walk.Step, window: Reaching) -> str | None:
     """Which register an instruction touched, or nothing if it touched none."""
     if step.bank is None or step.address is None:
         return None
@@ -97,7 +111,7 @@ def _reached(step: walk.Step, window: windows.Window) -> str | None:
 def at(
     rom: bytes,
     offset: int,
-    window: windows.Window,
+    window: Reaching,
     narrow: bool = True,
     limit: int = walk.DEFAULT_LIMIT,
 ) -> Conversation:
@@ -110,13 +124,27 @@ def at(
         if register is None:
             continue
         if register == windows.STATUS:
-            steps.append(Step(POLL, step.width, step.address))
+            steps.append(Step(POLL, step.width, step.address, step.bank))
         else:
-            steps.append(Step(READ if step.reading else WRITE, step.width, step.address))
+            steps.append(Step(READ if step.reading else WRITE, step.width, step.address, step.bank))
     return Conversation(steps, covered)
 
 
-def sites(rom: bytes, window: windows.Window) -> tuple[int, ...]:
+@runtime_checkable
+class Reaching(Protocol):
+    """What `sites` and `at` need a window to be, which is one question.
+
+    Written as a protocol so a caller with a part that answers in more than one
+    place can hand over something that covers both, rather than walking the same
+    routine once per window and getting two halves of one exchange.
+    """
+
+    def reaches(self, bank: int, address: int) -> str | None:
+        """Which register an access lands on, or nothing if it misses."""
+        ...
+
+
+def sites(rom: bytes, window: Reaching) -> tuple[int, ...]:
     """Every offset holding an instruction that reaches the part.
 
     A long load or store carries its whole address in the three bytes after the
@@ -136,7 +164,7 @@ def sites(rom: bytes, window: windows.Window) -> tuple[int, ...]:
 
 def shapes(
     rom: bytes,
-    window: windows.Window,
+    window: Reaching,
     narrow: bool = True,
     limit: int = walk.DEFAULT_LIMIT,
 ) -> dict[str, int]:

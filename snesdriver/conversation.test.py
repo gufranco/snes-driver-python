@@ -177,5 +177,57 @@ class SurveyTest(unittest.TestCase):
         self.assertEqual(sum(found.values()), len(conversation.sites(rom, WINDOW)))
 
 
+class BankTest(unittest.TestCase):
+    def test_a_step_carries_the_bank_the_instruction_named(self) -> None:
+        one = conversation.Step(conversation.READ, 1, 0x0020, 0x68)
+
+        self.assertEqual(one.whole, 0x680020)
+
+    def test_a_step_with_no_bank_has_no_whole_address(self) -> None:
+        one = conversation.Step(conversation.READ, 1, 0x0020)
+
+        self.assertIsNone(one.whole)
+
+    def test_a_step_with_no_address_has_none_either(self) -> None:
+        one = conversation.Step(conversation.READ, 1, None, 0x68)
+
+        self.assertIsNone(one.whole)
+
+    def test_a_window_satisfies_the_one_question_a_walk_asks_it(self) -> None:
+        self.assertIsInstance(windows.WINDOWS["dsp"]["lorom"], conversation.Reaching)
+
+    def test_a_walk_takes_anything_else_that_answers_the_same_question(self) -> None:
+        class Both:
+            def __init__(self, covered: list[windows.Window]) -> None:
+                self.covered = covered
+
+            def reaches(self, bank: int, address: int) -> str | None:
+                for one in self.covered:
+                    found = one.reaches(bank, address)
+                    if found is not None:
+                        return found
+                return None
+
+        both = Both([windows.WINDOWS["st"]["lorom"], windows.WINDOWS["st"]["lorom-shared"]])
+        rom = bytearray(b"\xea" * 0x200)
+        rom[0:4] = bytes((0x8F, 0x00, 0x00, 0x60))
+        rom[4:8] = bytes((0x8F, 0x20, 0x00, 0x68))
+        rom[8:12] = bytes((0x8F, 0x00, 0x00, 0x7E))
+        rom[12] = 0x60
+
+        talk = conversation.at(bytes(rom), 0, both)
+
+        self.assertEqual([one.whole for one in talk.steps], [0x600000, 0x680020])
+
+    def test_a_walked_conversation_carries_the_bank_on_every_step(self) -> None:
+        rom = bytearray(b"\xea" * 0x200)
+        rom[0:4] = bytes((0x8F, 0x00, 0x00, 0x68))
+        rom[4] = 0x60
+
+        talk = conversation.at(bytes(rom), 0, windows.WINDOWS["st"]["lorom-shared"])
+
+        self.assertEqual([one.whole for one in talk.steps], [0x680000])
+
+
 if __name__ == "__main__":
     unittest.main()
