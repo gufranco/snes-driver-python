@@ -24,7 +24,7 @@
   <a href="https://github.com/gufranco/snes-driver-python/issues">Issues</a>
 </p>
 
-**36** cartridges read, **0** disagreements with their own digests · **2** layouts · **3** kinds of access · **441** tests · **100%** statement and branch coverage · no dependencies
+**36** cartridges read, **0** disagreements with their own digests · **2** layouts · **3** kinds of access · **445** tests · **100%** statement and branch coverage · no dependencies
 
 ```python
 from snesdriver import at, window_for
@@ -176,7 +176,7 @@ print(f"{high.data:#06x} {high.status:#06x}")
 ```
 
 ```
-{'dsp': ['hirom', 'lorom'], 'st': ['lorom', 'lorom-shared']}
+{'dsp': ['hirom', 'lorom'], 'obc1': ['lorom'], 'st': ['lorom', 'lorom-shared']}
 0x8000 0xc000
 0x6000 0x7000
 ```

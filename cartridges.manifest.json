@@ -274,6 +274,38 @@
       "badDumps": []
     },
     {
+      "name": "Metal Combat - Falcon's Revenge (Europe).sfc",
+      "title": "METAL COMBAT",
+      "bytes": 2097152,
+      "layout": "lorom",
+      "chipset": "0x25",
+      "crc32": "eb0039c4",
+      "md5": "44a7735d6dceed9fb4eab61113daa410",
+      "sha1": "1d92ec65457c4e1bb984162412f2530cbaf13156",
+      "sha256": "10d86e4f79d7bf966228067d963a5d2a40e0bddd79885436e3d18e24a2762e95",
+      "provenance": {
+        "kind": "localCopy",
+        "verifiedOn": "2026-08-25"
+      },
+      "badDumps": []
+    },
+    {
+      "name": "Metal Combat - Falcon's Revenge (USA).sfc",
+      "title": "METAL COMBAT",
+      "bytes": 2097152,
+      "layout": "lorom",
+      "chipset": "0x25",
+      "crc32": "c3131b49",
+      "md5": "d4bc4f3cb46cc09d8db58f0ce0142646",
+      "sha1": "da88fc5830ddb0cdf8ffc2e8340a607d0ad8eaa1",
+      "sha256": "d4f2cb6b209db29f7aec62e5a23846681c14665fb007e94d7bcfc7b5611e938b",
+      "provenance": {
+        "kind": "localCopy",
+        "verifiedOn": "2026-08-25"
+      },
+      "badDumps": []
+    },
+    {
       "name": "Michael Andretti's Indy Car Challenge (Japan).sfc",
       "title": "INDY CAR CHALLENGE",
       "bytes": 1048576,

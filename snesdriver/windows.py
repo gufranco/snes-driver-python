@@ -25,6 +25,12 @@ Measured, rather than assumed: with only the port window, the two cartridges
 carrying an ST010 yield one exchange each. With the shared window they yield
 eighteen across eight shapes, and the Japanese and American releases agree on
 every one, which is what two builds of one driver routine should do.
+
+The OBC1 window was arrived at the same way. Its eight kilobytes are ordinary
+memory and the top sixteen bytes are the register file, and the one cartridge
+carrying the part reaches exactly $7FF0 through $7FF3 and $7FF6 inside it, which
+is the register set the model of that part declares. Both the American and the
+European release agree.
 """
 
 from __future__ import annotations
@@ -98,6 +104,9 @@ WINDOWS = {
     "st": {
         "lorom": Window(0x60, 0x67, 0x0000, 0x0001, 0x0001),
         "lorom-shared": Window(0x68, 0x6F, 0x0000, 0x0020, 0x0FFF, 0x0021),
+    },
+    "obc1": {
+        "lorom": Window(0x00, 0x3F, 0x6000, 0x7FF0, 0x7FFF),
     },
 }
 """The parts a window is known for, by the layout the cartridge declares."""

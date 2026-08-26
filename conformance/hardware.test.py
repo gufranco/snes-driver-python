@@ -129,10 +129,25 @@ class TableTest(unittest.TestCase):
         wrong = [
             (row["part"], row["layout"])
             for row in self.rows
-            if int(row["data"], 16) ^ int(row["status"], 16) != 1 << row["selectBit"]
+            if row["selectBit"] is not None
+            and int(row["data"], 16) ^ int(row["status"], 16) != 1 << row["selectBit"]
         ]
 
         self.assertEqual(wrong, [])
+
+    def test_a_window_with_no_single_line_says_what_decodes_it_instead(self) -> None:
+        silent = [
+            (row["part"], row["layout"])
+            for row in self.rows
+            if row["selectBit"] is None and "one line" not in row["selectedBy"].lower()
+        ]
+
+        self.assertEqual(silent, [])
+
+    def test_and_every_window_says_which_of_the_two_it_is(self) -> None:
+        missing = [row["part"] for row in self.rows if not row.get("selectedBy")]
+
+        self.assertEqual(missing, [])
 
     def test_the_same_part_uses_a_different_bit_under_a_different_layout(self) -> None:
         by_layout = {row["layout"]: row["selectBit"] for row in self.rows if row["part"] == "dsp"}

@@ -27,7 +27,8 @@
       "verified": false,
       "evidence": "Read out of the driver routine of every LoROM cartridge in the manifest that carries this part.",
       "howToSettleIt": "The DSP-1 application note, or a continuity reading across a real cartridge board.",
-      "statusEnd": "0xFFFF"
+      "statusEnd": "0xFFFF",
+      "selectedBy": "One address line, named by selectBit."
     },
     {
       "part": "dsp",
@@ -40,7 +41,8 @@
       "verified": false,
       "evidence": "Read out of the driver routine of every HiROM cartridge in the manifest that carries this part.",
       "howToSettleIt": "The DSP-1 application note, or a continuity reading across a real cartridge board.",
-      "statusEnd": "0x7FFF"
+      "statusEnd": "0x7FFF",
+      "selectedBy": "One address line, named by selectBit."
     },
     {
       "part": "st",
@@ -53,7 +55,8 @@
       "verified": false,
       "evidence": "Read out of the driver routine of the Seta cartridges in the manifest.",
       "howToSettleIt": "A Seta document, of which none is known, or a continuity reading across a real board.",
-      "statusEnd": "0x0001"
+      "statusEnd": "0x0001",
+      "selectedBy": "One address line, named by selectBit."
     },
     {
       "part": "st",
@@ -66,7 +69,22 @@
       "verified": false,
       "evidence": "Read out of the driver routine of the Seta cartridges in the manifest. With the port window alone each ST010 cartridge yields one exchange; with this one they yield eighteen across eight shapes, and the Japanese and American releases agree on every shape. The bounds are the whole four kilobytes because the routines reach as far as 0x0FD5, and the control pair sits inside that rather than after it.",
       "howToSettleIt": "A Seta document, of which none is known, or a continuity reading across a real board.",
-      "statusEnd": "0x0021"
+      "statusEnd": "0x0021",
+      "selectedBy": "One address line, named by selectBit."
+    },
+    {
+      "part": "obc1",
+      "layout": "lorom",
+      "banks": ["0x00", "0x3F"],
+      "data": "0x6000",
+      "status": "0x7FF0",
+      "end": "0x7FFF",
+      "statusEnd": "0x7FFF",
+      "selectBit": null,
+      "verified": false,
+      "evidence": "Read out of the driver routine of the one cartridge that carries this part. Inside the eight kilobytes it answers in, that cartridge reaches exactly 0x7FF0 through 0x7FF3 and 0x7FF6, which is the register set the model of the part declares, and the American and European releases agree. This is the cartridge saying where the registers are rather than an emulator saying it.",
+      "howToSettleIt": "A Nintendo application note naming the part, or a continuity reading across a real board.",
+      "selectedBy": "Not one line. The register file is the top sixteen bytes of an eight kilobyte window, so the decode is the top nine address lines being all ones rather than a single line going high the way it does on the other two parts."
     }
   ],
   "decode": {

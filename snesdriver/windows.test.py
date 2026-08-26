@@ -51,6 +51,19 @@ class CatalogueTest(unittest.TestCase):
             [None, windows.STATUS, windows.STATUS, None],
         )
 
+    def test_the_sprite_remapper_answers_in_the_low_banks(self) -> None:
+        window = windows.WINDOWS["obc1"]["lorom"]
+
+        self.assertEqual((window.first_bank, window.last_bank), (0x00, 0x3F))
+
+    def test_its_register_file_is_the_top_of_its_window(self) -> None:
+        window = windows.WINDOWS["obc1"]["lorom"]
+
+        self.assertEqual(
+            [window.reaches(0x00, at) for at in (0x5FFF, 0x6000, 0x7FEF, 0x7FF0, 0x7FFF)],
+            [None, windows.DATA, windows.DATA, windows.STATUS, windows.STATUS],
+        )
+
     def test_a_window_prints_as_the_range_it_covers(self) -> None:
         printed = repr(windows.WINDOWS["dsp"]["lorom"])
 
