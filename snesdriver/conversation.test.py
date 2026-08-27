@@ -18,6 +18,7 @@ STORE_DATA = (0x8F, 0x00, 0x80, 0x3F)
 LOAD_DATA = (0xAF, 0x00, 0x80, 0x3F)
 LOAD_STATUS = (0xAF, 0x00, 0xC0, 0x3F)
 RETURN = (0x60,)
+STORE_ABSOLUTE = (0x8D, 0x00, 0x38)
 
 WINDOW = windows.WINDOWS["dsp"]["lorom"]
 
@@ -104,6 +105,21 @@ class ShapeIdentityTest(unittest.TestCase):
         found = conversation.at(assembled(NARROW, STORE_DATA, RETURN), 0, WINDOW)
 
         self.assertIn(found.shape, repr(found))
+
+    def test_a_conversation_of_long_accesses_carried_every_bank_it_reached(self) -> None:
+        found = conversation.at(assembled(NARROW, STORE_DATA, RETURN), 0, WINDOW)
+
+        self.assertTrue(found.banked)
+
+    def test_and_one_reached_absolutely_did_not(self) -> None:
+        """The bank of an absolute access is the routine's own, not the
+        instruction's, so a caller recording the shape has to be told.
+        """
+        window = windows.WINDOWS["st018"]["lorom"]
+
+        found = conversation.at(assembled(NARROW, STORE_ABSOLUTE, RETURN), 0, window)
+
+        self.assertEqual((found.shape, found.banked), ("write1", False))
 
     def test_a_conversation_that_touches_nothing_says_so(self) -> None:
         found = conversation.at(assembled((0xA9, 0x06), RETURN), 0, WINDOW, narrow=True)

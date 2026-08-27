@@ -42,31 +42,70 @@ BACKWARDS = 0x80
 DEFAULT_LIMIT = 80
 
 
+LONG = "absoluteLong"
+
+ABSOLUTE = "absolute"
+
+REACHING = (LONG, ABSOLUTE)
+"""The two modes that can name a coprocessor register.
+
+An indexed mode could reach one too, and is left out: the index is in a register
+this does not track, so the address an indexed access lands on is not something
+that can be read off the instruction. A mode nobody can resolve is worse here
+than a mode nobody reads, because the first reports a place the console never
+touched.
+"""
+
+
 class Step:
     """One instruction, and what it reached."""
 
-    __slots__ = ("mnemonic", "narrow", "offset", "one", "width")
+    __slots__ = ("in_bank", "mnemonic", "narrow", "offset", "one", "width")
 
-    def __init__(self, one: Any, narrow: bool) -> None:
+    def __init__(self, one: Any, narrow: bool, in_bank: int = 0) -> None:
         self.one = one
         self.narrow = narrow
+        self.in_bank = in_bank
         self.offset = one.offset
         self.mnemonic = one.mnemonic
         self.width = 1 if narrow else 2
 
     @property
-    def bank(self) -> int | None:
-        """The bank of the long address it reached, or nothing if it reached none."""
-        if self.one.mode != "absoluteLong":
-            return None
-        found = (self.one.operand >> 16) & 0xFF
-        assert isinstance(found, int)
+    def banked(self) -> bool:
+        """Whether the instruction carried the bank it reached.
+
+        A long load or store spells all three bytes, so the bank is read rather
+        than worked out. An ordinary absolute one spells two, and takes its bank
+        from the data bank register, which nothing here tracks. Everything that
+        reports a bank has to say which of the two it had, because a shape that
+        mixes them silently claims more than it knows.
+        """
+        found = self.one.mode == LONG
+        assert isinstance(found, bool)
         return found
+
+    @property
+    def bank(self) -> int | None:
+        """The bank it reached, or nothing if it reached none.
+
+        For an absolute access this is the bank the routine itself is executing
+        in, which is the assumption and not a reading. It is right whenever the
+        data bank register still holds the program bank, which is what the code
+        that reaches a part in its own bank usually arranges, and it is wrong
+        without warning otherwise. `banked` is how a caller tells the two apart.
+        """
+        if self.one.mode == LONG:
+            found = (self.one.operand >> 16) & 0xFF
+            assert isinstance(found, int)
+            return found
+        if self.one.mode == ABSOLUTE:
+            return self.in_bank
+        return None
 
     @property
     def address(self) -> int | None:
         """The address inside that bank."""
-        if self.one.mode != "absoluteLong":
+        if self.one.mode not in REACHING:
             return None
         found = self.one.operand & 0xFFFF
         assert isinstance(found, int)
@@ -102,15 +141,23 @@ def through(
     narrow: bool = True,
     limit: int = DEFAULT_LIMIT,
     address: int | None = None,
+    bank: int | None = None,
 ) -> Iterator[Step]:
-    """Walk a routine from an offset, yielding one step per instruction read."""
+    """Walk a routine from an offset, yielding one step per instruction read.
+
+    The bank the routine runs in defaults to the one a low cartridge puts that
+    offset in, which is the same rule this already uses to work out the address.
+    It matters only for an absolute access, where it stands in for a data bank
+    register nothing here tracks; see `Step.banked`.
+    """
     at = address if address is not None else 0x8000 + offset % 0x8000
+    in_bank = bank if bank is not None else offset // 0x8000
     for _ in range(limit):
         read = disassemble(rom, offset, at, count=1, m=narrow, x=True)
         if not read:
             return
         one = read[0]
-        yield Step(one, narrow)
+        yield Step(one, narrow, in_bank)
         if one.mnemonic in ("sep", "rep") and one.operand & ACCUMULATOR:
             narrow = one.mnemonic == "sep"
         if one.mnemonic in LEAVING:

@@ -49,6 +49,39 @@
       "packageFollows": "neither",
       "reasoning": "What one of these accesses costs the console belongs to snes-mapper-python, and how long the part runs afterwards belongs to snes-dsp-python. This package reads what a driver says, not how long it waits.",
       "wouldSettleIt": "n/a. This is a scope boundary rather than an unknown."
+    },
+    {
+      "id": "an-absolute-bank-is-assumed-not-read",
+      "parts": ["st018"],
+      "severity": "medium",
+      "status": "open",
+      "documentSays": "Nothing. This is about what this package can claim.",
+      "referenceDoes": "Nothing comparable: a reimplementation runs the code and never has to say where it thinks an access landed.",
+      "packageFollows": "neither",
+      "reasoning": "A long load or store spells all three bytes of its address, so the bank is read. An ordinary absolute one spells two and takes the third from the data bank register, which nothing here tracks. Until the ST018 every part this package knew was reached long, so an absolute access read as no access at all. It now answers with the bank the routine executes in, and Step.banked and Conversation.banked are how a caller tells a read bank from an assumed one, because a shape that mixed the two silently would claim more than it knows.",
+      "wouldSettleIt": "Tracking the data bank register through a walk, which needs an entry state a walk starting at one routine does not have."
+    },
+    {
+      "id": "a-call-cuts-an-exchange-short",
+      "parts": ["st018"],
+      "severity": "medium",
+      "status": "open",
+      "documentSays": "Nothing.",
+      "referenceDoes": "Nothing comparable.",
+      "packageFollows": "neither",
+      "reasoning": "A walk stops at the first instruction that leaves the routine, and a jsr counts as leaving even though it comes back, so everything after a routine's first call is invisible. The ST018's send routine at file offset 0x006873 is sep, then jsr to a guard, then sta $3802, and reads as an empty conversation; walked from 0x00687A it reads as write1. Its receive routine has the same shape and the same result.",
+      "wouldSettleIt": "Continuing the walk past a call rather than stopping at it. Every shape already recorded for a routine that calls out would grow, so the cartridges those shapes came from have to be read again."
+    },
+    {
+      "id": "a-status-write-is-recorded-as-a-poll",
+      "parts": ["st010", "st011", "st018"],
+      "severity": "medium",
+      "status": "open",
+      "documentSays": "Nothing.",
+      "referenceDoes": "Nothing comparable.",
+      "packageFollows": "neither",
+      "reasoning": "Any access landing in the status range becomes a poll, whichever direction it went, so a console writing a control register and a console reading it produce the same entry. The ST018's reset pulse is three writes to $3804 and reads as poll1 poll1 poll1. It is not new: the shapes already recorded for the Seta parts carry poll1@0x680020, and the console both reads that address and writes the command register there.",
+      "wouldSettleIt": "Splitting the status range by direction the way the data range already is. Every recorded shape touching a status range would change, so the shapes have to be re-read from the cartridges rather than edited."
     }
   ]
 }

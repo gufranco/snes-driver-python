@@ -93,38 +93,65 @@ belongs to whichever member models that part.
 **What would settle or reopen it.** Nothing. This is a boundary rather than a
 gap, and it is listed so a reader does not mistake the first for the second.
 
-### A part reached by an ordinary absolute access is invisible to this package.
+### The bank of an ordinary absolute access is assumed rather than read.
 
-**The document says.** Nothing. This is about what this package reads, not about
-a part.
+**The document says.** Nothing. This is about what this package can claim, not
+about a part.
 
-**What this project follows.** Neither. `sites` searches for long loads and
-stores and `Step.bank` answers nothing for any other addressing mode, so a
-conversation carried on absolute accesses reads as no conversation at all.
+**What this project follows.** The routine's own bank, and it says so. A long
+load or store spells all three bytes of its address, so the bank is read. An
+ordinary absolute one spells two and takes the third from the data bank
+register, which nothing here tracks. Until the ST018 every part this package
+knew was reached long, so the question never came up; `Step.bank` answered
+nothing for any other mode and a conversation carried on absolute accesses read
+as no conversation at all.
 
-**Why it was built that way, and why that was right until now.** A long load or
-store carries its bank in the three bytes after the opcode, so a search for one
-is exact. An absolute access carries two bytes and takes its bank from the data
-bank register, which nothing here tracks, so the same search would match any
-two bytes of data that happened to spell an address.
+It now answers, using the bank the routine executes in, and `Step.banked` and
+`Conversation.banked` are how a caller tells a read bank from an assumed one. A
+shape that mixed the two silently would claim more than it knows, which is why
+the weaker claim is labelled rather than hidden.
 
-**What exposed it.** The ST018, whose window this package now knows at
-`$3800`-`$3804`. Every one of the five routines the cartridge uses to talk to it
-reaches the part with `lda $3804` and `sta $3802`, which are absolute. Asked for
-the sites in that cartridge, this package answers none, and asked to walk any of
-the five routines it reports an empty conversation. Both answers are wrong and
-neither is a failure: the routines are at file offsets `0x006717`, `0x006862`,
-`0x006873`, `0x00687E` and `0x006892`, established by a reachability walk from
-the reset vector rather than by anything here.
+**What would settle or reopen it.** Tracking the data bank register through a
+walk, which needs an entry state that a walk starting at one routine does not
+have.; A part whose driver sets the register somewhere this package can see.
 
-**What would settle or reopen it.** Reading an absolute access as reaching a
-part when the address falls inside the window, and saying in the same breath
-that the bank was not established because the data bank register is not tracked.
-That is a weaker claim than the one this package makes today and it has to be
-labelled as one, because a shape that silently mixes established banks with
-assumed ones is worse than a shape that is missing.; Tracking the data bank
-register through a walk, which needs an entry state a walk from one routine does
-not have.
+### An exchange that spans a call is cut off at the call.
+
+**The document says.** Nothing.
+
+**What this project follows.** Neither. A walk stops at the first instruction
+that leaves the routine, and a `jsr` counts as leaving even though it comes
+back, so everything a routine does after its first call is invisible.
+
+**What exposed it.** The ST018. Its send routine at file offset `0x006873` is
+`sep`, then `jsr` to a guard, then `sta $3802`, and this package reports it as
+an empty conversation. Walked from `0x00687A`, after the call, the same routine
+reports `write1`. Its receive routine at `0x00687E` has the same shape and the
+same result.
+
+**What would settle or reopen it.** Continuing the walk past a call rather than
+stopping at it, which is what the console does. The cost is that every shape
+already recorded for a routine that calls out would grow, so it cannot be
+changed without re-reading the cartridges those shapes came from.
+
+### A write to a status register is recorded as a poll.
+
+**The document says.** Nothing.
+
+**What this project follows.** Neither. Any access landing in the status range
+becomes a `poll`, whichever direction it went, so a console writing a control
+register and a console reading it produce the same entry.
+
+**What exposed it, and why it is not new.** The ST018's reset pulse is three
+writes to `$3804` and reads as `poll1 poll1 poll1`. It is not new: the shapes
+already recorded for the Seta parts carry `poll1@0x680020`, and the console both
+reads that address and writes the command register there, so those entries
+conflate the two directions as well.
+
+**What would settle or reopen it.** Splitting the status range by direction the
+way the data range already is. Every recorded shape that touches a status range
+would change, so the shapes have to be re-read from the cartridges rather than
+edited.
 
 ## What is not in question
 

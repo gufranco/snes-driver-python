@@ -47,13 +47,21 @@ class Step:
     cannot say which of the two a routine meant.
     """
 
-    __slots__ = ("address", "bank", "what", "width")
+    __slots__ = ("address", "bank", "banked", "what", "width")
 
-    def __init__(self, what: str, width: int, address: int | None, bank: int | None = None) -> None:
+    def __init__(
+        self,
+        what: str,
+        width: int,
+        address: int | None,
+        bank: int | None = None,
+        banked: bool = True,
+    ) -> None:
         self.what = what
         self.width = width
         self.address = address
         self.bank = bank
+        self.banked = banked
 
     @property
     def whole(self) -> int | None:
@@ -93,6 +101,17 @@ class Conversation:
         """The exchange as a string, so two routines can be compared by it."""
         return " ".join(f"{step.what}{step.width}" for step in self.steps)
 
+    @property
+    def banked(self) -> bool:
+        """Whether every access here carried the bank it reached.
+
+        False when any of them was an ordinary absolute access, whose bank was
+        the routine's own rather than one the instruction spelled. A caller
+        recording a shape has to keep this beside it: the accesses are the same
+        either way, and what is known about where they landed is not.
+        """
+        return all(step.banked for step in self.steps)
+
     def __bool__(self) -> bool:
         return bool(self.steps)
 
@@ -123,10 +142,8 @@ def at(
         register = _reached(step, window)
         if register is None:
             continue
-        if register == windows.STATUS:
-            steps.append(Step(POLL, step.width, step.address, step.bank))
-        else:
-            steps.append(Step(READ if step.reading else WRITE, step.width, step.address, step.bank))
+        what = POLL if register == windows.STATUS else (READ if step.reading else WRITE)
+        steps.append(Step(what, step.width, step.address, step.bank, step.banked))
     return Conversation(steps, covered)
 
 
