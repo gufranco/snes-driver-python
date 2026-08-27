@@ -174,7 +174,7 @@ class DivergenceTest(unittest.TestCase):
         ]
 
     def test_each_entry_says_which_source_the_package_follows(self) -> None:
-        allowed = {"document", "reference", "neither"}
+        allowed = {"cartridges", "document", "reference", "neither"}
 
         self.assertEqual({entry["packageFollows"] for entry in self.entries} - allowed, set())
 

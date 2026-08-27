@@ -115,43 +115,44 @@ the weaker claim is labelled rather than hidden.
 walk, which needs an entry state that a walk starting at one routine does not
 have.; A part whose driver sets the register somewhere this package can see.
 
-### An exchange that spans a call is cut off at the call.
+### A call is not stepped into.
 
 **The document says.** Nothing.
 
-**What this project follows.** Neither. A walk stops at the first instruction
-that leaves the routine, and a `jsr` counts as leaving even though it comes
-back, so everything a routine does after its first call is invisible.
+**What this project follows.** Neither. A walk runs past a `jsr` and reads the
+instruction after it, which is what the console does, and it does not read the
+callee. A routine reaching a part only through a helper is therefore read as two
+routines rather than one.
 
-**What exposed it.** The ST018. Its send routine at file offset `0x006873` is
-`sep`, then `jsr` to a guard, then `sta $3802`, and this package reports it as
-an empty conversation. Walked from `0x00687A`, after the call, the same routine
-reports `write1`. Its receive routine at `0x00687E` has the same shape and the
-same result.
+**What exposed the half of this that is fixed.** The ST018. Its send routine at
+file offset `0x006873` is `sep`, then `jsr` to a guard, then `sta $3802`, and a
+walk that treated the call as leaving reported an empty conversation. `jsr` and
+`jsl` were removed from the leaving set, and every shape recorded before that
+was re-read from the cartridges rather than edited.
 
-**What would settle or reopen it.** Continuing the walk past a call rather than
-stopping at it, which is what the console does. The cost is that every shape
-already recorded for a routine that calls out would grow, so it cannot be
-changed without re-reading the cartridges those shapes came from.
+**What would settle or reopen it.** Stepping into the callee and returning to
+the caller, which needs a return stack a straight walk does not keep. The cost
+is the same as before: every recorded shape for a routine that calls out would
+grow, so the cartridges have to be read again.
 
-### A write to a status register is recorded as a poll.
+### A sweep cannot follow a computed jump.
 
 **The document says.** Nothing.
 
-**What this project follows.** Neither. Any access landing in the status range
-becomes a `poll`, whichever direction it went, so a console writing a control
-register and a console reading it produce the same entry.
+**What this project follows.** Neither. `conversation.reached` starts at the
+reset vector and follows every call, jump and branch whose destination is
+spelled in the instruction. `jmp ($1234)` and its two indexed relatives name a
+place to read the destination from rather than the destination, so the sweep
+stops there.
 
-**What exposed it, and why it is not new.** The ST018's reset pulse is three
-writes to `$3804` and reads as `poll1 poll1 poll1`. It is not new: the shapes
-already recorded for the Seta parts carry `poll1@0x680020`, and the console both
-reads that address and writes the command register there, so those entries
-conflate the two directions as well.
+**Why it is not treated as a gap in the evidence.** What the sweep reports is
+still an instruction the console reaches. What it cannot do is prove the absence
+of another routine, so a part it finds nothing for is unread rather than
+uncontacted, and that difference is why this is written down.
 
-**What would settle or reopen it.** Splitting the status range by direction the
-way the data range already is. Every recorded shape that touches a status range
-would change, so the shapes have to be re-read from the cartridges rather than
-edited.
+**What would settle or reopen it.** Running the image rather than reading it,
+which is a different package's job, or a jump table whose bounds this could
+read. Neither is planned.
 
 ## What is not in question
 

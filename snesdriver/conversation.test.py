@@ -245,5 +245,54 @@ class BankTest(unittest.TestCase):
         self.assertEqual([one.whole for one in talk.steps], [0x680000])
 
 
+def image(body: bytes, vector: int = 0x8000) -> bytes:
+    rom = bytearray(0x8000)
+    rom[: len(body)] = body
+    rom[0x7FFC:0x7FFE] = vector.to_bytes(2, "little")
+    return bytes(rom)
+
+
+LOAD_STATUS_ABSOLUTE = (0xAD, 0x04, 0x38)
+IF_EQUAL = (0xF0, 0x02)
+FILLER = (0xEA,)
+
+ABSOLUTE_WINDOW = windows.WINDOWS["st018"]["lorom"]
+
+BEHIND_A_BRANCH = image(assembled(IF_EQUAL, RETURN, FILLER, LOAD_STATUS_ABSOLUTE, RETURN))
+"""An image whose only access to the part is on the taken side of a branch."""
+
+
+class ReachedTest(unittest.TestCase):
+    def test_a_sweep_finds_an_absolute_access_a_search_for_bytes_cannot(self) -> None:
+        found = conversation.reached(BEHIND_A_BRANCH, ABSOLUTE_WINDOW)
+
+        self.assertEqual(found, (0x0004,))
+
+    def test_a_search_for_bytes_finds_no_absolute_access(self) -> None:
+        found = conversation.sites(BEHIND_A_BRANCH, ABSOLUTE_WINDOW)
+
+        self.assertEqual(found, ())
+
+    def test_a_sweep_finds_nothing_when_nothing_reaches_the_part(self) -> None:
+        found = conversation.reached(image(assembled(RETURN)), ABSOLUTE_WINDOW)
+
+        self.assertEqual(found, ())
+
+    def test_a_sweep_starts_where_it_is_told(self) -> None:
+        found = conversation.reached(BEHIND_A_BRANCH, ABSOLUTE_WINDOW, 0x8004)
+
+        self.assertEqual(found, (0x0004,))
+
+    def test_a_survey_can_be_given_another_way_of_finding_sites(self) -> None:
+        found = conversation.shapes(BEHIND_A_BRANCH, ABSOLUTE_WINDOW, find=conversation.reached)
+
+        self.assertEqual(found, {"poll1": 1})
+
+    def test_a_survey_that_searches_for_bytes_finds_nothing_there(self) -> None:
+        found = conversation.shapes(BEHIND_A_BRANCH, ABSOLUTE_WINDOW)
+
+        self.assertEqual(found, {})
+
+
 if __name__ == "__main__":
     unittest.main()

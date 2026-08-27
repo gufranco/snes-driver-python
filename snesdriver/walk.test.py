@@ -2,6 +2,7 @@ import sys
 import unittest
 from collections.abc import Iterable
 from pathlib import Path
+from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -126,6 +127,172 @@ class BranchTest(unittest.TestCase):
 
     def test_an_instruction_that_is_not_a_branch_is_not_a_wait(self) -> None:
         steps = list(walk.through(assembled(STORE_LONG, RETURN), 0))
+
+        self.assertFalse(steps[0].waiting)
+
+
+def image(body: bytes, vector: int = 0x8000, banks: int = 1) -> bytes:
+    rom = bytearray(0x8000 * banks)
+    rom[: len(body)] = body
+    rom[0x7FFC:0x7FFE] = vector.to_bytes(2, "little")
+    return bytes(rom)
+
+
+STORE_PART = (0x8D, 0x00, 0x38)
+LOAD_PART = (0xAD, 0x04, 0x38)
+CALL = (0x20, 0x10, 0x80)
+JUMP = (0x4C, 0x14, 0x80)
+IF_EQUAL = (0xF0, 0x02)
+FILLER = (0xEA,)
+STORE_LONG_PART = (0x8F, 0x02, 0x38, 0x00)
+
+BRANCHING = assembled(
+    STORE_PART, CALL, IF_EQUAL, RETURN, FILLER, LOAD_PART, JUMP, STORE_LONG_PART, RETURN
+)
+"""A routine whose only read of the part sits on the taken side of a branch, and
+whose only long access sits inside a call. A straight walk reaches neither.
+"""
+
+
+class SweepTest(unittest.TestCase):
+    def test_a_sweep_starts_at_the_reset_vector(self) -> None:
+        steps = list(walk.everywhere(image(BRANCHING)))
+
+        self.assertEqual(steps[0].offset, 0x0000)
+
+    def test_a_sweep_starts_where_it_is_told_instead(self) -> None:
+        steps = list(walk.everywhere(image(BRANCHING), 0x8010))
+
+        self.assertEqual(steps[0].mnemonic, "sta")
+
+    def test_a_sweep_takes_the_side_a_branch_jumps_to(self) -> None:
+        steps = list(walk.everywhere(image(BRANCHING)))
+
+        self.assertIn(0x000A, [step.offset for step in steps])
+
+    def test_a_sweep_takes_the_side_a_branch_falls_through_to(self) -> None:
+        steps = list(walk.everywhere(image(BRANCHING)))
+
+        self.assertIn(0x0008, [step.offset for step in steps])
+
+    def test_a_sweep_follows_a_call(self) -> None:
+        steps = list(walk.everywhere(image(BRANCHING)))
+
+        self.assertIn(0x0010, [step.offset for step in steps])
+
+    def test_a_sweep_decodes_nothing_control_flow_never_arrives_at(self) -> None:
+        steps = list(walk.everywhere(image(BRANCHING)))
+
+        self.assertNotIn(0x0009, [step.offset for step in steps])
+
+    def test_a_sweep_reads_each_address_once(self) -> None:
+        steps = list(walk.everywhere(image(assembled((0x4C, 0x00, 0x80)))))
+
+        self.assertEqual(len(steps), 1)
+
+    def test_a_sweep_stops_at_the_limit_it_is_given(self) -> None:
+        steps = list(walk.everywhere(image(BRANCHING), limit=1))
+
+        self.assertEqual(len(steps), 1)
+
+    def test_a_sweep_reads_nothing_below_the_cartridge(self) -> None:
+        steps = list(walk.everywhere(image(BRANCHING), 0x0000))
+
+        self.assertEqual(steps, [])
+
+    def test_a_sweep_stops_where_the_image_runs_out(self) -> None:
+        rom = bytearray(image(assembled((0x5C, 0xFF, 0xFF, 0x01)), banks=2))
+        rom[0xFFFF] = 0xAF
+
+        steps = list(walk.everywhere(bytes(rom)))
+
+        self.assertEqual([step.mnemonic for step in steps], ["jml"])
+
+    def test_a_sweep_stops_at_the_top_of_a_bank(self) -> None:
+        rom = bytearray(image(assembled((0x5C, 0xFF, 0xFF, 0x01)), banks=2))
+        rom[0xFFFF] = 0xEA
+
+        steps = list(walk.everywhere(bytes(rom)))
+
+        self.assertEqual([step.mnemonic for step in steps], ["jml", "nop"])
+
+    def test_a_sweep_carries_a_narrowed_accumulator_across_a_branch(self) -> None:
+        rom = image(assembled(NARROW, IF_EQUAL, RETURN, FILLER, STORE_LONG_PART, RETURN))
+
+        steps = list(walk.everywhere(rom))
+
+        self.assertTrue(steps[-2].narrow)
+
+    def test_a_sweep_carries_a_widened_index_across_a_branch(self) -> None:
+        rom = image(assembled((0xC2, 0x10), IF_EQUAL, RETURN, FILLER, (0xA0, 0x34, 0x12), RETURN))
+
+        steps = list(walk.everywhere(rom))
+
+        self.assertEqual(steps[-2].one.size, 3)
+
+    def test_a_sweep_does_not_follow_a_jump_out_of_the_image(self) -> None:
+        steps = list(walk.everywhere(image(assembled((0x5C, 0x00, 0x80, 0x7E), RETURN))))
+
+        self.assertEqual([step.mnemonic for step in steps], ["jml"])
+
+
+class PlaceTest(unittest.TestCase):
+    def test_an_address_below_the_window_is_kept_nowhere(self) -> None:
+        self.assertIsNone(walk._offset(0x00, 0x7FFF, 1))
+
+    def test_a_bank_the_image_does_not_have_is_kept_nowhere(self) -> None:
+        self.assertIsNone(walk._offset(0x02, 0x8000, 2))
+
+    def test_a_mirrored_bank_is_the_same_place_as_the_bank_it_mirrors(self) -> None:
+        self.assertEqual(walk._offset(0x81, 0x8000, 2), walk._offset(0x01, 0x8000, 2))
+
+
+class TargetTest(unittest.TestCase):
+    def only(self, *chunks: "Iterable[int]") -> Any:
+        return next(iter(walk.through(assembled(*chunks), 0))).one
+
+    def test_an_instruction_that_sends_control_nowhere_has_no_target(self) -> None:
+        self.assertIsNone(walk._target(self.only(STORE_LONG_PART), 0x00))
+
+    def test_an_instruction_with_no_operand_has_no_target(self) -> None:
+        self.assertIsNone(walk._target(self.only(RETURN), 0x00))
+
+    def test_an_indirect_jump_has_no_target_that_can_be_read(self) -> None:
+        self.assertIsNone(walk._target(self.only((0x6C, 0x00, 0x80)), 0x00))
+
+    def test_a_call_stays_in_the_bank_it_was_made_from(self) -> None:
+        self.assertEqual(walk._target(self.only(CALL), 0x12), (0x12, 0x8010))
+
+    def test_a_long_call_carries_the_bank_it_goes_to(self) -> None:
+        found = walk._target(self.only((0x22, 0x00, 0x90, 0x02)), 0x12)
+
+        self.assertEqual(found, (0x02, 0x9000))
+
+    def test_a_forward_branch_resolves_past_the_instruction(self) -> None:
+        self.assertEqual(walk._target(self.only(IF_EQUAL), 0x00), (0x00, 0x8004))
+
+    def test_a_backward_branch_resolves_before_the_instruction(self) -> None:
+        self.assertEqual(walk._target(self.only((0xF0, 0xFC)), 0x00), (0x00, 0x7FFE))
+
+    def test_a_long_branch_resolves_by_two_bytes_of_displacement(self) -> None:
+        found = walk._target(self.only((0x82, 0x00, 0x01)), 0x00)
+
+        self.assertEqual(found, (0x00, 0x8103))
+
+    def test_a_backward_long_branch_resolves_before_the_instruction(self) -> None:
+        found = walk._target(self.only((0x82, 0xFD, 0xFF)), 0x00)
+
+        self.assertEqual(found, (0x00, 0x8000))
+
+
+class LongBranchTest(unittest.TestCase):
+    def test_a_long_branch_backwards_is_a_wait(self) -> None:
+        steps = list(walk.through(assembled((0x82, 0xFD, 0xFF)), 0))
+
+        self.assertTrue(steps[0].waiting)
+
+    def test_a_long_branch_forwards_is_not_a_wait(self) -> None:
+        steps = list(walk.through(assembled((0x82, 0x00, 0x01)), 0))
 
         self.assertFalse(steps[0].waiting)
 

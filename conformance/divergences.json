@@ -62,26 +62,42 @@
       "wouldSettleIt": "Tracking the data bank register through a walk, which needs an entry state a walk starting at one routine does not have."
     },
     {
-      "id": "a-call-cuts-an-exchange-short",
+      "id": "a-call-is-not-stepped-into",
       "parts": ["st018"],
       "severity": "medium",
-      "status": "open",
-      "documentSays": "Nothing.",
-      "referenceDoes": "Nothing comparable.",
+      "status": "narrowed",
+      "documentSays": "nothing",
+      "referenceDoes": "nothing; this is about what this package can read, not about a part",
       "packageFollows": "neither",
-      "reasoning": "A walk stops at the first instruction that leaves the routine, and a jsr counts as leaving even though it comes back, so everything after a routine's first call is invisible. The ST018's send routine at file offset 0x006873 is sep, then jsr to a guard, then sta $3802, and reads as an empty conversation; walked from 0x00687A it reads as write1. Its receive routine has the same shape and the same result.",
-      "wouldSettleIt": "Continuing the walk past a call rather than stopping at it. Every shape already recorded for a routine that calls out would grow, so the cartridges those shapes came from have to be read again."
+      "reasoning": "The ST018 send routine at file offset 0x006873 is sep, then jsr to a guard, then sta $3802. A walk that treated the call as leaving reported an empty conversation, so jsr and jsl were removed from the leaving set and every shape recorded before that was re-read from the cartridges. What is left is that a routine reaching a part only through a helper reads as two routines.",
+      "wouldSettleIt": [
+        "stepping into the callee and returning, which needs a return stack a straight walk does not keep"
+      ]
     },
     {
       "id": "a-status-write-is-recorded-as-a-poll",
       "parts": ["st010", "st011", "st018"],
       "severity": "medium",
-      "status": "open",
+      "status": "closed",
       "documentSays": "Nothing.",
       "referenceDoes": "Nothing comparable.",
+      "packageFollows": "cartridges",
+      "reasoning": "Any access landing in a status range used to become a poll whichever way it went, so a console writing a control register and a console reading it made the same entry. The ST018 reset pulse is three writes to $3804 and read as poll1 poll1 poll1. The range is now split by direction the way the data range already was, and every recorded shape that touches a status range was re-read from the cartridges rather than edited.",
+      "wouldSettleIt": ["settled"]
+    },
+    {
+      "id": "a-sweep-cannot-follow-a-computed-jump",
+      "parts": ["st018"],
+      "severity": "medium",
+      "status": "open",
+      "documentSays": "nothing",
+      "referenceDoes": "nothing; this is about what this package can read, not about a part",
       "packageFollows": "neither",
-      "reasoning": "Any access landing in the status range becomes a poll, whichever direction it went, so a console writing a control register and a console reading it produce the same entry. The ST018's reset pulse is three writes to $3804 and reads as poll1 poll1 poll1. It is not new: the shapes already recorded for the Seta parts carry poll1@0x680020, and the console both reads that address and writes the command register there.",
-      "wouldSettleIt": "Splitting the status range by direction the way the data range already is. Every recorded shape touching a status range would change, so the shapes have to be re-read from the cartridges rather than edited."
+      "reasoning": "conversation.reached starts at the reset vector and decodes only what control flow arrives at, which is how a part reached by an ordinary absolute access is found at all. jmp ($1234) and its two indexed relatives are not followed, so what comes back is the routines that were found rather than proof there are no others. A part it finds nothing for is unread rather than uncontacted.",
+      "wouldSettleIt": [
+        "running the image rather than reading it, which belongs to another member",
+        "a jump table whose bounds this could read"
+      ]
     }
   ]
 }

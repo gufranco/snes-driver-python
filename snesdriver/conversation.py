@@ -32,6 +32,13 @@ WRITE = "write"
 READ = "read"
 
 POLL = "poll"
+"""A read of a status register, which is the only thing a poll can be.
+
+Every access landing in a status range was a poll until the ST018, whichever way
+it went, so a console writing a control register and a console reading it made
+the same entry. A write is a write wherever it lands; where it landed is already
+in the address beside it.
+"""
 
 LONG_STORE = 0x8F
 LONG_LOAD = 0xAF
@@ -142,9 +149,22 @@ def at(
         register = _reached(step, window)
         if register is None:
             continue
-        what = POLL if register == windows.STATUS else (READ if step.reading else WRITE)
+        reading_status = step.reading and register == windows.STATUS
+        what = POLL if reading_status else (READ if step.reading else WRITE)
         steps.append(Step(what, step.width, step.address, step.bank, step.banked))
     return Conversation(steps, covered)
+
+
+class Finding(Protocol):
+    """How `shapes` locates the instructions that reach a part.
+
+    A protocol rather than a choice of two names, so a caller with a part that
+    neither question suits can hand over its own.
+    """
+
+    def __call__(self, rom: bytes, window: Reaching) -> tuple[int, ...]:
+        """Every offset holding an instruction that reaches that part."""
+        ...
 
 
 @runtime_checkable
@@ -179,11 +199,35 @@ def sites(rom: bytes, window: Reaching) -> tuple[int, ...]:
     return tuple(found)
 
 
+def reached(rom: bytes, window: Reaching, entry: int | None = None) -> tuple[int, ...]:
+    """The same question as `sites`, asked by following control flow instead.
+
+    `sites` searches for the bytes that spell a long access, which is exact and
+    sees nothing else. A part reached by an ordinary absolute access needs this
+    one: it starts where the console starts and decodes only what control flow
+    arrives at, so an access it reports is an instruction rather than two bytes
+    of data that happened to spell an address.
+
+    It is the slower question and the less complete one. A computed jump is not
+    followed, so this finds routines rather than proving there are no others,
+    and a part whose driver is only reached through one will come back empty.
+    """
+    found = {
+        step.offset
+        for step in walk.everywhere(rom, entry)
+        if step.bank is not None
+        and step.address is not None
+        and window.reaches(step.bank, step.address)
+    }
+    return tuple(sorted(found))
+
+
 def shapes(
     rom: bytes,
     window: Reaching,
     narrow: bool = True,
     limit: int = walk.DEFAULT_LIMIT,
+    find: Finding = sites,
 ) -> dict[str, int]:
     """Every distinct exchange in an image, and how many routines have it.
 
@@ -191,10 +235,14 @@ def shapes(
     conversation of its own. Every instruction touching the part is a site, but a
     routine that writes and then reads is one exchange rather than two, and
     walking from its middle would report the tail as though it were the whole.
+
+    `find` is how the sites are located, and it is a parameter because the two
+    ways of locating them answer for different parts: `sites` for one reached by
+    a long access and `reached` for one reached absolutely.
     """
     counted: collections.Counter[str] = collections.Counter()
     seen: set[int] = set()
-    for offset in sites(rom, window):
+    for offset in find(rom, window):
         if offset in seen:
             continue
         found = at(rom, offset, window, narrow=narrow, limit=limit)

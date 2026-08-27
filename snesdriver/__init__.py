@@ -28,6 +28,7 @@ from .conversation import (
     WRITE,
     Conversation,
     at,
+    reached,
     shapes,
     sites,
 )
@@ -59,6 +60,7 @@ __all__ = [
     "Window",
     "at",
     "busiest",
+    "reached",
     "shapes",
     "sites",
     "through",
