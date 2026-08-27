@@ -108,6 +108,9 @@ WINDOWS = {
     "obc1": {
         "lorom": Window(0x00, 0x3F, 0x6000, 0x7FF0, 0x7FFF),
     },
+    "st018": {
+        "lorom": Window(0x00, 0x3F, 0x3800, 0x3804, 0x3803, 0x3804),
+    },
 }
 """The parts a window is known for, by the layout the cartridge declares."""
 

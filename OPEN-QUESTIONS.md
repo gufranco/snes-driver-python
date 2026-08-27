@@ -93,6 +93,39 @@ belongs to whichever member models that part.
 **What would settle or reopen it.** Nothing. This is a boundary rather than a
 gap, and it is listed so a reader does not mistake the first for the second.
 
+### A part reached by an ordinary absolute access is invisible to this package.
+
+**The document says.** Nothing. This is about what this package reads, not about
+a part.
+
+**What this project follows.** Neither. `sites` searches for long loads and
+stores and `Step.bank` answers nothing for any other addressing mode, so a
+conversation carried on absolute accesses reads as no conversation at all.
+
+**Why it was built that way, and why that was right until now.** A long load or
+store carries its bank in the three bytes after the opcode, so a search for one
+is exact. An absolute access carries two bytes and takes its bank from the data
+bank register, which nothing here tracks, so the same search would match any
+two bytes of data that happened to spell an address.
+
+**What exposed it.** The ST018, whose window this package now knows at
+`$3800`-`$3804`. Every one of the five routines the cartridge uses to talk to it
+reaches the part with `lda $3804` and `sta $3802`, which are absolute. Asked for
+the sites in that cartridge, this package answers none, and asked to walk any of
+the five routines it reports an empty conversation. Both answers are wrong and
+neither is a failure: the routines are at file offsets `0x006717`, `0x006862`,
+`0x006873`, `0x00687E` and `0x006892`, established by a reachability walk from
+the reset vector rather than by anything here.
+
+**What would settle or reopen it.** Reading an absolute access as reaching a
+part when the address falls inside the window, and saying in the same breath
+that the bank was not established because the data bank register is not tracked.
+That is a weaker claim than the one this package makes today and it has to be
+labelled as one, because a shape that silently mixes established banks with
+assumed ones is worse than a shape that is missing.; Tracking the data bank
+register through a walk, which needs an entry state a walk from one routine does
+not have.
+
 ## What is not in question
 
 So the boundary is visible rather than implied:

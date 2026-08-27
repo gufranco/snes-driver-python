@@ -85,6 +85,20 @@
       "evidence": "Read out of the driver routine of the one cartridge that carries this part. Inside the eight kilobytes it answers in, that cartridge reaches exactly 0x7FF0 through 0x7FF3 and 0x7FF6, which is the register set the model of the part declares, and the American and European releases agree. This is the cartridge saying where the registers are rather than an emulator saying it.",
       "howToSettleIt": "A Nintendo application note naming the part, or a continuity reading across a real board.",
       "selectedBy": "Not one line. The register file is the top sixteen bytes of an eight kilobyte window, so the decode is the top nine address lines being all ones rather than a single line going high the way it does on the other two parts."
+    },
+    {
+      "part": "st018",
+      "layout": "lorom",
+      "banks": ["0x00", "0x3F"],
+      "data": "0x3800",
+      "status": "0x3804",
+      "end": "0x3803",
+      "statusEnd": "0x3804",
+      "selectBit": 2,
+      "verified": false,
+      "evidence": "Read out of the driver routines of the one cartridge that carries this part, by a reachability walk from its reset vector rather than by the search this package uses for the others: every access is absolute, and this package only recognises a long one. Five routines in bank 0x00 are the whole of the console side, at file offsets 0x006717, 0x006862, 0x006873, 0x00687E and 0x006892, and between them they reach 0x3800, 0x3802 and 0x3804 and no other address in the window.",
+      "howToSettleIt": "A Nintendo application note naming the part, or a continuity reading across a real board. The bank range in particular is the one the other LoROM parts decode rather than one this cartridge establishes: every access observed executes in bank 0x00.",
+      "selectedBy": "Address bit 2, which is high for the status byte and low for the two data bytes. Bit 1 picks between the two data bytes underneath it, one the console reads and one it writes, so the three addresses are two lines rather than one."
     }
   ],
   "decode": {

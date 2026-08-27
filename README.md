@@ -155,7 +155,7 @@ print(f"{high.data:#06x} {high.status:#06x}")
 ```
 
 ```
-{'dsp': ['hirom', 'lorom'], 'obc1': ['lorom'], 'st': ['lorom', 'lorom-shared']}
+{'dsp': ['hirom', 'lorom'], 'obc1': ['lorom'], 'st': ['lorom', 'lorom-shared'], 'st018': ['lorom']}
 0x8000 0xc000
 0x6000 0x7000
 ```

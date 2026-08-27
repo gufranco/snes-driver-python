@@ -70,12 +70,12 @@ class OneHomeTest(unittest.TestCase):
 
     def test_naming_a_part_this_package_does_not_cover_raises_the_one_defined_here(self) -> None:
         with self.assertRaises(errors.UnknownPart):
-            windows.window_for("st018", "lorom")
+            windows.window_for("cx4", "lorom")
 
     def test_and_the_refusal_names_the_parts_it_does_cover(self) -> None:
         """A refusal that does not say what would have worked costs a search."""
         with self.assertRaises(errors.UnknownPart) as caught:
-            windows.window_for("st018", "lorom")
+            windows.window_for("cx4", "lorom")
 
         self.assertIn("dsp", str(caught.exception))
 
