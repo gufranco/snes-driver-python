@@ -258,6 +258,22 @@
       "badDumps": []
     },
     {
+      "name": "Hayazashi Nidan Morita Shougi 2 (Japan).sfc",
+      "title": "NIDAN MORITASHOGI2",
+      "bytes": 524288,
+      "layout": "lorom",
+      "chipset": "0xf5",
+      "crc32": "dd852671",
+      "md5": "5851671aea79961658d0e7b0ba99fc8b",
+      "sha1": "b291ada870b9ec09326cd2f9470ea1519cbaa2e9",
+      "sha256": "40cec32f4c1b5a2564b8bb2e825ca1314d2171edb8e934956a74827e14bc9972",
+      "provenance": {
+        "kind": "localCopy",
+        "verifiedOn": "2026-08-27"
+      },
+      "badDumps": []
+    },
+    {
       "name": "Lock On (USA).sfc",
       "title": "Lock On",
       "bytes": 524288,
