@@ -40,7 +40,7 @@ Check a copy before supplying it:
 shasum -a 256 "Pilotwings (USA).sfc"
 ```
 
-## The 36 cartridges
+## The 42 cartridges
 
 | File | Layout | Chipset | Bytes |
 |------|--------|---------|------:|
@@ -55,9 +55,15 @@ shasum -a 256 "Pilotwings (USA).sfc"
 | `Dungeon Master (Europe).sfc` | lorom | 0x05 | 1048576 |
 | `Dungeon Master (Japan) (Rev 1).sfc` | lorom | 0x05 | 1048576 |
 | `Dungeon Master (USA).sfc` | lorom | 0x05 | 1048576 |
+| `Exhaust Heat II - F1 Driver e no Michi (Japan).sfc` | lorom | 0xf6 | 1048576 |
+| `F1-ROC II - Race of Champions (USA).sfc` | lorom | 0xf6 | 1048576 |
 | `Final Stretch (Japan).sfc` | hirom | 0x05 | 1572864 |
 | `Hanguk Pro Yagu (Korea).sfc` | lorom | 0x05 | 1572864 |
+| `Hayazashi Nidan Morita Shougi (Japan).sfc` | lorom | 0xf6 | 524288 |
+| `Hayazashi Nidan Morita Shougi 2 (Japan).sfc` | lorom | 0xf5 | 524288 |
 | `Lock On (USA).sfc` | hirom | 0x03 | 524288 |
+| `Metal Combat - Falcon's Revenge (Europe).sfc` | lorom | 0x25 | 2097152 |
+| `Metal Combat - Falcon's Revenge (USA).sfc` | lorom | 0x25 | 2097152 |
 | `Michael Andretti's Indy Car Challenge (Japan).sfc` | hirom | 0x03 | 1048576 |
 | `Michael Andretti's Indy Car Challenge (USA).sfc` | hirom | 0x03 | 1048576 |
 | `Pilotwings (Europe).sfc` | lorom | 0x03 | 524288 |
@@ -96,9 +102,15 @@ shasum -a 256 "Pilotwings (USA).sfc"
 | `Dungeon Master (Europe).sfc` | `89a67adf` | `1036e94c19d336069adde20d5a2ff15f` |
 | `Dungeon Master (Japan) (Rev 1).sfc` | `aa79fa33` | `19d50794ff397278e11dbf3fbef58a58` |
 | `Dungeon Master (USA).sfc` | `0dfd9ceb` | `3d1b171d7486438af2d9ec3d98b155cd` |
+| `Exhaust Heat II - F1 Driver e no Michi (Japan).sfc` | `e2c8e535` | `9b0dffe0222a9b7b7c8dcb98cc8ca058` |
+| `F1-ROC II - Race of Champions (USA).sfc` | `3447609e` | `000ba16a5a4c08992ec93d0309d8ed6c` |
 | `Final Stretch (Japan).sfc` | `8d29f41f` | `750c39bc838483b569976cffadfbc7b6` |
 | `Hanguk Pro Yagu (Korea).sfc` | `a21fb1d5` | `920d26154da3da96820ad07a3a05844a` |
+| `Hayazashi Nidan Morita Shougi (Japan).sfc` | `81e822ad` | `ea342f4da33bf6eb3dc1fd2f89aa751f` |
+| `Hayazashi Nidan Morita Shougi 2 (Japan).sfc` | `dd852671` | `5851671aea79961658d0e7b0ba99fc8b` |
 | `Lock On (USA).sfc` | `84f7e078` | `76a5cf0ba713446cbec55d072e20528b` |
+| `Metal Combat - Falcon's Revenge (Europe).sfc` | `eb0039c4` | `44a7735d6dceed9fb4eab61113daa410` |
+| `Metal Combat - Falcon's Revenge (USA).sfc` | `c3131b49` | `d4bc4f3cb46cc09d8db58f0ce0142646` |
 | `Michael Andretti's Indy Car Challenge (Japan).sfc` | `1128572b` | `2484f41a03392dee2116afb9c7d7bdc6` |
 | `Michael Andretti's Indy Car Challenge (USA).sfc` | `0fdb210e` | `8874a87e4e0ccfa742e244017b6c544c` |
 | `Pilotwings (Europe).sfc` | `def45776` | `b1e59f8246f1ab07670e5f1015189b3a` |
@@ -135,9 +147,15 @@ shasum -a 256 "Pilotwings (USA).sfc"
 | `Dungeon Master (Europe).sfc` | `30fc660fb1e78d0533f424da750112dcd615050a` | `e68eaed4eae2b1236264c0307b14bb2872e57471a166294e96ae56b7ba1a5e57` |
 | `Dungeon Master (Japan) (Rev 1).sfc` | `e6d33ef74366333999ea11495c7a62d4ba07df0f` | `35ff99319ecc7ce1216c5096f46fcc11659254d570614d683f0f8ef773ed75b8` |
 | `Dungeon Master (USA).sfc` | `e65ae62ec9a1c48a3512db66f929c7b0055ae2c3` | `2dfc2e037679a62a960dab9682bca6d1b2737f603edd336c8b2fdf05db10cc07` |
+| `Exhaust Heat II - F1 Driver e no Michi (Japan).sfc` | `3600f81d5a7e2ec41f362cc22a16a58ce2612048` | `1c78d8208a05cbfe88ee019edbc3a0c9cdabfd2b62089ca119215bbc7e581611` |
+| `F1-ROC II - Race of Champions (USA).sfc` | `fb81dd15b8a9ddf8f5564d3d2fb934c6f8bfb392` | `405c33f64701faf40963a4e6a2d0d69420e6751caf436387ddd3e145b25ed46c` |
 | `Final Stretch (Japan).sfc` | `3c8e37271d995d9507d733864ab79b43ab531e96` | `4e22d625595dac0cf3c3053d9e715dc227d3bbe24adad826d5b3f2a035553617` |
 | `Hanguk Pro Yagu (Korea).sfc` | `1e6b3ebdb5227626f4226ff9eef166294ffe063c` | `ce770d366ef5d956c865b803f98775f19f0c3b1e996f4499ef665bcaf697c47d` |
+| `Hayazashi Nidan Morita Shougi (Japan).sfc` | `82b4bca58918a18707f932ec6afc0a12a3c4b872` | `85825a75ef662b28d0111c0462ec3c34234da1d78d10472b8022fcba3b9eaed5` |
+| `Hayazashi Nidan Morita Shougi 2 (Japan).sfc` | `b291ada870b9ec09326cd2f9470ea1519cbaa2e9` | `40cec32f4c1b5a2564b8bb2e825ca1314d2171edb8e934956a74827e14bc9972` |
 | `Lock On (USA).sfc` | `1f5e53a0391a902de6ee9407ed10803c84e23cc3` | `7e1d6242ae2ec2c23afb876becdcf778098edd4d853234222dc16471cb51df9e` |
+| `Metal Combat - Falcon's Revenge (Europe).sfc` | `1d92ec65457c4e1bb984162412f2530cbaf13156` | `10d86e4f79d7bf966228067d963a5d2a40e0bddd79885436e3d18e24a2762e95` |
+| `Metal Combat - Falcon's Revenge (USA).sfc` | `da88fc5830ddb0cdf8ffc2e8340a607d0ad8eaa1` | `d4f2cb6b209db29f7aec62e5a23846681c14665fb007e94d7bcfc7b5611e938b` |
 | `Michael Andretti's Indy Car Challenge (Japan).sfc` | `ec07f7e81f13193805c3cd4b486118d218653da3` | `126081caccc4bac5d616608c20a3adec9cd50e8f2133824e693921160e835725` |
 | `Michael Andretti's Indy Car Challenge (USA).sfc` | `20b7fd6a8604fa36f75edf9ccb24380b13d8c905` | `d3180e4c20b12e78e7a94a40d1f168d5a8198b21df9586ade0512720b415f67e` |
 | `Pilotwings (Europe).sfc` | `d450d6d580d163fdfcc4f58d5bf8fafd7f510750` | `f70a72f3d3a65497cdc4d849877a29cf4f7bd10439bb7f5cb8675cdfc0e706d4` |

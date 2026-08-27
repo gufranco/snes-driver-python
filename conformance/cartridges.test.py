@@ -312,5 +312,35 @@ class SharedDirectoryRuleTest(unittest.TestCase):
         self.assertEqual(len(found), len(set(found)))
 
 
+class PublishedTableTest(unittest.TestCase):
+    """That the table a reader sees names exactly the cartridges the manifest does.
+
+    Two files carrying the same list is a drift waiting to happen, and it had
+    already happened: the table stopped at the DSP cartridges while the manifest
+    went on to name the Seta and OBC1 ones, so a reader cross-checking a digest
+    for either would have found nothing and concluded the file was not one this
+    project reads.
+    """
+
+    def names(self) -> set[str]:
+        held = Path(__file__).resolve().parent.parent / "cartridges" / "README.md"
+        rows = [one for one in held.read_text().split("\n") if one.startswith("| `")]
+        return {one.split("`")[1] for one in rows}
+
+    def declared(self) -> set[str]:
+        return {str(one["name"]) for one in cartridges.manifest()["cartridges"]}
+
+    def test_every_cartridge_the_manifest_names_is_in_the_table(self) -> None:
+        self.assertEqual(sorted(self.declared() - self.names()), [])
+
+    def test_and_the_table_names_no_cartridge_the_manifest_does_not(self) -> None:
+        self.assertEqual(sorted(self.names() - self.declared()), [])
+
+    def test_the_heading_counts_the_cartridges_there_are(self) -> None:
+        held = Path(__file__).resolve().parent.parent / "cartridges" / "README.md"
+
+        self.assertIn(f"## The {len(self.declared())} cartridges", held.read_text())
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -8,7 +8,7 @@ board decodes for a coprocessor. Everything here about where a part answers is
 inferred from what shipped drivers do.
 
 The settled surface is what a cartridge sends, taken from the cartridge's own
-code in the order the console runs it, across the 36 cartridges on hand. That is
+code in the order the console runs it, across the 42 cartridges on hand. That is
 strong evidence about those cartridges and it is not a document, and the
 difference is what this file is for.
 
@@ -18,8 +18,8 @@ and severity, so a program can read what a person reads here.
 
 ## Why agreement across drivers cannot close these
 
-Thirty six independently written drivers agreeing is strong. One could be wrong;
-thirty six could not be wrong the same way. What that agreement still cannot say
+Forty two independently written drivers agreeing is strong. One could be wrong;
+forty two could not be wrong the same way. What that agreement still cannot say
 is where a window **stops**, because a driver shows where a part answers and
 never where it does not.
 
