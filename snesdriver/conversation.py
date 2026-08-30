@@ -145,7 +145,8 @@ def at(
     steps = []
     covered = []
     for step in walk.through(rom, offset, narrow=narrow, limit=limit):
-        covered.append(step.offset)
+        if step.depth == 0:
+            covered.append(step.offset)
         register = _reached(step, window)
         if register is None:
             continue

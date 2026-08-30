@@ -297,5 +297,147 @@ class LongBranchTest(unittest.TestCase):
         self.assertFalse(steps[0].waiting)
 
 
+HELPER = (0xAD, 0x04, 0x38, 0x60)
+PUSH_CONSTANT = (0xF4, 0x00, 0x38)
+PUSH_RELATIVE = (0x62, 0x00, 0x38)
+
+
+def calling(helper: bytes, after: bytes) -> bytes:
+    """A routine that calls a helper laid out after it, then runs `after`.
+
+    The call and its destination are built together because they have to agree:
+    a target one byte off lands mid-instruction and decodes as something else.
+    """
+    body = bytearray((0x20, 0x00, 0x00))
+    body += after
+    at = 0x8000 + len(body)
+    body[1], body[2] = at & 0xFF, at >> 8
+    return bytes(body) + helper
+
+
+THROUGH_A_HELPER = calling(assembled(HELPER), assembled(STORE_PART, RETURN))
+"""Call a helper that reads the part, then store to it and return.
+
+A walk that stopped at the call saw neither access; one that stepped over the
+call saw only the store.
+"""
+
+
+class DescentTest(unittest.TestCase):
+    def test_a_walk_reads_what_a_helper_reaches(self) -> None:
+        steps = list(walk.through(THROUGH_A_HELPER, 0))
+
+        self.assertIn("lda $3804", [step.one.text for step in steps])
+
+    def test_and_comes_back_for_what_the_caller_reaches_after_it(self) -> None:
+        steps = list(walk.through(THROUGH_A_HELPER, 0))
+
+        self.assertEqual([step.one.text for step in steps][-2:], ["sta $3800", "rts"])
+
+    def test_an_instruction_inside_a_helper_says_how_deep_it_is(self) -> None:
+        steps = list(walk.through(THROUGH_A_HELPER, 0))
+
+        self.assertEqual([step.depth for step in steps], [0, 1, 1, 0, 0])
+
+    def test_a_walk_does_not_descend_past_the_depth_it_was_given(self) -> None:
+        steps = list(walk.through(THROUGH_A_HELPER, 0, depth=0))
+
+        self.assertNotIn("lda $3804", [step.one.text for step in steps])
+
+    def test_a_call_into_something_that_never_returns_is_stepped_over(self) -> None:
+        code = calling(bytes((0xEA, 0x00)), assembled(STORE_PART, RETURN))
+
+        steps = list(walk.through(code, 0))
+
+        self.assertEqual([step.depth for step in steps], [0, 0, 0])
+
+    def test_a_call_into_a_helper_that_loops_forever_is_stepped_over(self) -> None:
+        code = calling(bytes((0x80, 0xFE)), assembled(STORE_PART, RETURN))
+
+        steps = list(walk.through(code, 0))
+
+        self.assertEqual([step.depth for step in steps], [0, 0, 0])
+
+    def test_a_call_into_a_place_the_image_does_not_hold_is_stepped_over(self) -> None:
+        code = assembled((0x22, 0x00, 0x80, 0x7E), STORE_PART, RETURN)
+
+        steps = list(walk.through(code, 0))
+
+        self.assertEqual([step.depth for step in steps], [0, 0, 0])
+
+    def test_a_helper_that_runs_long_does_not_spend_the_caller_budget(self) -> None:
+        helper = assembled(*([(0xEA,)] * 40), HELPER)
+        code = calling(helper, assembled(STORE_PART, RETURN))
+
+        steps = list(walk.through(code, 0, limit=3))
+
+        self.assertIn("sta $3800", [step.one.text for step in steps])
+
+    def test_a_descent_that_never_ends_stops_at_the_second_bound(self) -> None:
+        helper = assembled(*([(0xEA,)] * 40), HELPER)
+        code = calling(helper, assembled(STORE_PART, RETURN))
+
+        steps = list(walk.through(code, 0, limit=1))
+
+        self.assertLessEqual(len(steps), walk.DESCENT_ROOM)
+
+
+class NotMemoryTest(unittest.TestCase):
+    def test_pushing_a_constant_reaches_no_address(self) -> None:
+        steps = list(walk.through(assembled(PUSH_CONSTANT, RETURN), 0))
+
+        self.assertIsNone(steps[0].address)
+
+    def test_and_names_no_bank_either(self) -> None:
+        steps = list(walk.through(assembled(PUSH_CONSTANT, RETURN), 0))
+
+        self.assertIsNone(steps[0].bank)
+
+    def test_pushing_a_computed_address_reaches_no_address(self) -> None:
+        steps = list(walk.through(assembled(PUSH_RELATIVE, RETURN), 0))
+
+        self.assertIsNone(steps[0].address)
+
+    def test_a_load_at_the_same_address_still_reaches_it(self) -> None:
+        steps = list(walk.through(assembled(LOAD_PART, RETURN), 0))
+
+        self.assertEqual(steps[0].address, 0x3804)
+
+
+class ReturnsTest(unittest.TestCase):
+    def test_a_routine_that_returns_is_followed(self) -> None:
+        self.assertTrue(walk._returns(assembled(HELPER), (0x00, 0x8000), True, 1))
+
+    def test_a_routine_that_reads_as_data_is_not(self) -> None:
+        self.assertFalse(walk._returns(assembled((0x00, 0xB7), RETURN), (0x00, 0x8000), True, 1))
+
+    def test_a_routine_running_off_the_image_is_not(self) -> None:
+        self.assertFalse(walk._returns(assembled((0xAF, 0x00)), (0x00, 0x8000), True, 1))
+
+    def test_a_destination_the_image_does_not_hold_is_not(self) -> None:
+        self.assertFalse(walk._returns(assembled(HELPER), (0x00, 0x0000), True, 1))
+
+    def test_a_jump_that_lands_on_a_return_is_followed(self) -> None:
+        code = assembled((0x4C, 0x04, 0x80), (0xEA,), RETURN)
+
+        self.assertTrue(walk._returns(code, (0x00, 0x8000), True, 1))
+
+    def test_a_jump_out_of_the_image_is_not(self) -> None:
+        code = assembled((0x5C, 0x00, 0x80, 0x7E), RETURN)
+
+        self.assertFalse(walk._returns(code, (0x00, 0x8000), True, 1))
+
+    def test_a_routine_that_runs_past_the_top_of_a_bank_is_not(self) -> None:
+        rom = bytearray(0x8000)
+        rom[0x7FFF] = 0xEA
+
+        self.assertFalse(walk._returns(bytes(rom), (0x00, 0xFFFF), True, 1))
+
+    def test_a_routine_longer_than_the_probe_allows_is_not(self) -> None:
+        code = assembled(*([(0xEA,)] * (walk.PROBE_LIMIT + 4)), RETURN)
+
+        self.assertFalse(walk._returns(code, (0x00, 0x8000), True, 1))
+
+
 if __name__ == "__main__":
     unittest.main()

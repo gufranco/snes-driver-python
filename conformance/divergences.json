@@ -62,17 +62,15 @@
       "wouldSettleIt": "Tracking the data bank register through a walk, which needs an entry state a walk starting at one routine does not have."
     },
     {
-      "id": "a-call-is-not-stepped-into",
+      "id": "a-call-that-cannot-be-proved-to-return-is-stepped-over",
       "parts": ["st018"],
       "severity": "medium",
       "status": "narrowed",
       "documentSays": "nothing",
       "referenceDoes": "nothing; this is about what this package can read, not about a part",
-      "packageFollows": "neither",
-      "reasoning": "The ST018 send routine at file offset 0x006873 is sep, then jsr to a guard, then sta $3802. A walk that treated the call as leaving reported an empty conversation, so jsr and jsl were removed from the leaving set and every shape recorded before that was re-read from the cartridges. What is left is that a routine reaching a part only through a helper reads as two routines.",
-      "wouldSettleIt": [
-        "stepping into the callee and returning, which needs a return stack a straight walk does not keep"
-      ]
+      "packageFollows": "cartridges",
+      "reasoning": "A walk now steps into a callee and comes back, and descends only into one it has first walked to a return. The condition is not caution for its own sake: a call whose destination is a jump table or a block of constants still disassembles, because every byte is some opcode, and an unconditional descent spent the budget there and never returned for the caller's own accesses. One F1-ROC II routine calls into a region that decodes as brk, and following it dropped the four accesses made afterwards: the longest ST010 exchange fell from six accesses to four. Made conditional, the same cartridge reads ten. What is left is a helper that reaches the part and exits through a computed jump, whose accesses are read as a routine of their own.",
+      "wouldSettleIt": ["running the image rather than reading it, which belongs to another member"]
     },
     {
       "id": "a-status-write-is-recorded-as-a-poll",

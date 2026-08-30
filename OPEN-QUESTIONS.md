@@ -115,25 +115,28 @@ the weaker claim is labelled rather than hidden.
 walk, which needs an entry state that a walk starting at one routine does not
 have.; A part whose driver sets the register somewhere this package can see.
 
-### A call is not stepped into.
+### A call this cannot prove returns is stepped over rather than followed.
 
 **The document says.** Nothing.
 
-**What this project follows.** Neither. A walk runs past a `jsr` and reads the
-instruction after it, which is what the console does, and it does not read the
-callee. A routine reaching a part only through a helper is therefore read as two
-routines rather than one.
+**What this project follows.** Neither. A walk now steps into a callee and comes
+back, which is what the console does. It descends only into a callee it has first
+walked to a return, because a call whose destination is a jump table or a block
+of constants still disassembles: every byte is some opcode, and the walk would
+spend its budget on nonsense and never come back for the caller's own accesses.
 
-**What exposed the half of this that is fixed.** The ST018. Its send routine at
-file offset `0x006873` is `sep`, then `jsr` to a guard, then `sta $3802`, and a
-walk that treated the call as leaving reported an empty conversation. `jsr` and
-`jsl` were removed from the leaving set, and every shape recorded before that
-was re-read from the cartridges rather than edited.
+**What that cost when it was not conditional.** An F1-ROC II routine calls into a
+region that decodes as `brk`. Descending into it lost the four accesses the
+caller made afterwards, and the longest ST010 exchange fell from six accesses to
+four. With the descent made conditional the same cartridge reads ten.
 
-**What would settle or reopen it.** Stepping into the callee and returning to
-the caller, which needs a return stack a straight walk does not keep. The cost
-is the same as before: every recorded shape for a routine that calls out would
-grow, so the cartridges have to be read again.
+**What is left.** A helper that reaches the part and that this cannot prove
+returns, because it exits through a computed jump or is longer than the probe
+allows, is stepped over as before. Its accesses are then read as a routine of
+their own rather than as part of the caller's exchange.
+
+**What would settle or reopen it.** Running the image rather than reading it,
+which belongs to another member.
 
 ### A sweep cannot follow a computed jump.
 

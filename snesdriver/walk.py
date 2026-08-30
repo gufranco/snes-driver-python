@@ -43,10 +43,9 @@ routine calls a guard and then makes its access, so stopping at the call reporte
 that routine as saying nothing at all. A call comes back, and the instruction
 after it is the next one the console runs.
 
-What the walk still does not do is follow the call. The callee's accesses belong
-to the callee, and a routine that reaches a part only through a helper is read as
-two routines rather than one. That is a smaller error than dropping the caller's
-own accesses, and it is the one this trades for.
+A return is only one of them at the top. Inside a callee the walk goes back to
+the caller, which is what `Frame` is for. A `jmp` is here because a straight walk
+has nowhere to go after one, and the sweep in `everywhere` is what follows those.
 """
 
 IMMEDIATE = ("immediate", "immediateA", "immediateX")
@@ -73,6 +72,18 @@ LONG = "absoluteLong"
 
 ABSOLUTE = "absolute"
 
+NOT_MEMORY = ("pea", "per")
+"""Instructions that carry an address and never touch memory at it.
+
+`pea` pushes the constant it names and `per` pushes an address it computes, and
+the disassembler gives both the same `absolute` mode a load or a store has. Until
+absolute accesses were read at all this cost nothing, because no part was reached
+absolutely. It costs a false access now: the ST018 answers in banks `$00` to
+`$3F`, so a `pea $3800` anywhere in that range would be recorded as a write to
+its data port, and the routine that pushed a constant would be reported as a
+routine that spoke to the part.
+"""
+
 REACHING = (LONG, ABSOLUTE)
 """The two modes that can name a coprocessor register.
 
@@ -87,12 +98,20 @@ touched.
 class Step:
     """One instruction, and what it reached."""
 
-    __slots__ = ("in_bank", "mnemonic", "narrow", "offset", "one", "width")
+    __slots__ = ("depth", "in_bank", "mnemonic", "narrow", "offset", "one", "width")
 
-    def __init__(self, one: Any, narrow: bool, in_bank: int = 0) -> None:
+    def __init__(self, one: Any, narrow: bool, in_bank: int = 0, depth: int = 0) -> None:
         self.one = one
         self.narrow = narrow
         self.in_bank = in_bank
+        self.depth = depth
+        """How many calls deep this instruction is from where the walk started.
+
+        A caller counting routines needs it. A walk that steps into a callee
+        reads instructions belonging to a routine somebody else also calls, so
+        treating those offsets as covered would let one walk absorb every other
+        routine that shares a helper. Zero is the routine that was asked for.
+        """
         self.offset = one.offset
         self.mnemonic = one.mnemonic
         self.width = 1 if narrow else 2
@@ -125,14 +144,14 @@ class Step:
             found = (self.one.operand >> 16) & 0xFF
             assert isinstance(found, int)
             return found
-        if self.one.mode == ABSOLUTE:
+        if self.one.mode == ABSOLUTE and self.mnemonic not in NOT_MEMORY:
             return self.in_bank
         return None
 
     @property
     def address(self) -> int | None:
         """The address inside that bank."""
-        if self.one.mode not in REACHING:
+        if self.one.mode not in REACHING or self.mnemonic in NOT_MEMORY:
             return None
         found = self.one.operand & 0xFFFF
         assert isinstance(found, int)
@@ -288,6 +307,43 @@ def _target(one: Any, bank: int) -> tuple[int, int] | None:
     return None
 
 
+RETURNING = ("rts", "rtl")
+
+DESCENT_ROOM = 16
+"""How much longer a walk may run than its limit, once callees are counted.
+
+The limit bounds the routine that was asked for, and a callee's instructions are
+not the caller's: a guard that spins in a wait loop would otherwise spend the
+caller's whole budget and the walk would come back having never reached the
+caller's own access. That is not hypothetical. Counting callee instructions
+against the limit shortened the longest ST010 exchange from six accesses to
+four.
+
+This second bound is the backstop that keeps a runaway descent finite, set far
+above anything a real routine needs rather than at what one costs.
+"""
+
+DEFAULT_DEPTH = 8
+"""How many calls deep a walk will follow before it stops descending.
+
+A bound rather than a budget: a routine that calls eight deep to reach a
+coprocessor is not a shape anybody wrote, and without a bound a recursive helper
+walks until the instruction limit instead of until the routine ends. The deepest
+chain in any cartridge read here is two.
+"""
+
+
+class Frame:
+    """Where a walk goes back to when the routine it stepped into returns."""
+
+    __slots__ = ("address", "bank", "offset")
+
+    def __init__(self, offset: int, address: int, bank: int) -> None:
+        self.offset = offset
+        self.address = address
+        self.bank = bank
+
+
 def through(
     rom: bytes,
     offset: int,
@@ -295,8 +351,18 @@ def through(
     limit: int = DEFAULT_LIMIT,
     address: int | None = None,
     bank: int | None = None,
+    depth: int = DEFAULT_DEPTH,
 ) -> Iterator[Step]:
     """Walk a routine from an offset, yielding one step per instruction read.
+
+    A call is followed into the routine it calls and the walk comes back, which
+    is what the console does. Until it did, a routine reaching a part only
+    through a helper was read as two routines, and the ST018's send routine,
+    which is a guard call and then one store, was read as the guard.
+
+    What a return does depends on where the walk is. Inside a callee it goes back
+    to the instruction after the call; at the top it ends the routine, because
+    there is no caller here to go back to.
 
     The bank the routine runs in defaults to the one a low cartridge puts that
     offset in, which is the same rule this already uses to work out the address.
@@ -305,15 +371,94 @@ def through(
     """
     at = address if address is not None else 0x8000 + offset % 0x8000
     in_bank = bank if bank is not None else offset // 0x8000
-    for _ in range(limit):
+    banks = max(len(rom) // 0x8000, 1)
+    stack: list[Frame] = []
+    spent = 0
+    total = 0
+    while spent < limit and total < limit * DESCENT_ROOM:
+        total += 1
         read = disassemble(rom, offset, at, count=1, m=narrow, x=True)
         if not read:
             return
         one = read[0]
-        yield Step(one, narrow, in_bank)
+        spent += 1 if not stack else 0
+        yield Step(one, narrow, in_bank, len(stack))
         if one.mnemonic in ("sep", "rep") and one.operand & ACCUMULATOR:
             narrow = one.mnemonic == "sep"
+
+        called = _called(one, in_bank, banks, rom, narrow) if len(stack) < depth else None
+        if called is not None:
+            stack.append(Frame(offset + one.size, at + one.size, in_bank))
+            in_bank, at = called
+            offset = _offset(in_bank, at, banks) or 0
+            continue
+
+        if one.mnemonic in RETURNING and stack:
+            back = stack.pop()
+            offset, at, in_bank = back.offset, back.address, back.bank
+            continue
         if one.mnemonic in LEAVING:
             return
         offset += one.size
         at += one.size
+
+
+PROBE_LIMIT = 200
+
+NOT_CODE = ("brk", "cop", "stp", "wdm")
+"""Instructions no driver routine contains, so decoding one means reading data.
+
+A call whose destination is a jump table, a block of constants or the tail of a
+compressed stream still disassembles: every byte is some opcode. What it does not
+do is come back, so a walk that descends into it spends its budget on nonsense
+and returns nothing. That is not hypothetical either. One F1-ROC II routine calls
+into a region that decodes as `brk`, and following it lost the four accesses the
+caller made afterwards.
+"""
+
+
+def _returns(rom: bytes, target: tuple[int, int], narrow: bool, banks: int) -> bool:
+    """Whether a routine at that address reaches a return without reading nonsense.
+
+    A descent is only safe into a callee that comes back, so this walks it first
+    without descending any further. Following a call this cannot prove returns
+    would trade the caller's own accesses, which are read, for a callee's, which
+    may not be a routine at all.
+    """
+    bank, at = target
+    seen: set[int] = set()
+    for _ in range(PROBE_LIMIT):
+        offset = _offset(bank, at, banks)
+        if offset is None or offset in seen:
+            return False
+        seen.add(offset)
+        read = disassemble(rom, offset, at, count=1, m=narrow, x=True)
+        if not read:
+            return False
+        one = read[0]
+        if one.mnemonic in NOT_CODE:
+            return False
+        if one.mnemonic in RETURNING:
+            return True
+        if one.mnemonic in LEAVING:
+            found = _target(one, bank)
+            if found is None or _offset(*found, banks) is None:
+                return False
+            bank, at = found
+            continue
+        at += one.size
+        if at > 0xFFFF:
+            return False
+    return False
+
+
+def _called(one: Any, bank: int, banks: int, rom: bytes, narrow: bool) -> tuple[int, int] | None:
+    """Where a call goes, or nothing when it is not a call this can follow."""
+    if one.mnemonic not in CALLS:
+        return None
+    target = _target(one, bank)
+    if target is None or _offset(*target, banks) is None:
+        return None
+    if not _returns(rom, target, narrow, banks):
+        return None
+    return target
