@@ -4,7 +4,7 @@ What a cartridge says to its coprocessor, read out of the cartridge's own code.
 
 [![CI](https://github.com/gufranco/snes-driver-python/actions/workflows/ci.yml/badge.svg)](https://github.com/gufranco/snes-driver-python/actions/workflows/ci.yml)
 
-**42** cartridges read, **0** disagreements with their own digests, **2** layouts, **3** kinds of access, **529** tests, **100%** statement and branch coverage, no dependencies
+**42** cartridges read, **0** disagreements with their own digests, **2** layouts, **3** kinds of access, **532** tests, **100%** statement and branch coverage, no dependencies
 
 ```python
 from snesdriver import at, window_for

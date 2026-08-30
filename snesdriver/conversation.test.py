@@ -294,5 +294,42 @@ class ReachedTest(unittest.TestCase):
         self.assertEqual(found, {})
 
 
+def calling(helper: bytes, after: bytes) -> bytes:
+    """A routine that calls a helper laid out after it, then runs `after`."""
+    body = bytearray((0x20, 0x00, 0x00))
+    body += after
+    at = 0x8000 + len(body)
+    body[1], body[2] = at & 0xFF, at >> 8
+    return bytes(body) + helper
+
+
+class ThroughAHelperTest(unittest.TestCase):
+    """That an exchange spanning a call is read as one exchange.
+
+    The ST018 is what made this matter: its send routine calls a guard and then
+    stores, so a walk that did not descend reported the store alone.
+    """
+
+    def routine(self) -> bytes:
+        return calling(assembled(LOAD_STATUS_ABSOLUTE, RETURN), assembled(STORE_ABSOLUTE, RETURN))
+
+    def test_an_exchange_carries_what_the_helper_reached(self) -> None:
+        found = conversation.at(self.routine(), 0, ABSOLUTE_WINDOW)
+
+        self.assertEqual(found.shape, "poll1 write1")
+
+    def test_only_the_calling_routine_counts_as_covered(self) -> None:
+        found = conversation.at(self.routine(), 0, ABSOLUTE_WINDOW)
+
+        self.assertEqual(sorted(found.covered), [0x0000, 0x0003, 0x0006])
+
+    def test_a_site_inside_the_helper_still_starts_its_own_exchange(self) -> None:
+        found = conversation.shapes(
+            image(self.routine()), ABSOLUTE_WINDOW, find=conversation.reached
+        )
+
+        self.assertEqual(found, {"write1": 1, "poll1": 1})
+
+
 if __name__ == "__main__":
     unittest.main()
