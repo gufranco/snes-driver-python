@@ -142,11 +142,17 @@ which belongs to another member.
 
 **The document says.** Nothing.
 
-**What this project follows.** Neither. `conversation.reached` starts at the
-reset vector and follows every call, jump and branch whose destination is
-spelled in the instruction. `jmp ($1234)` and its two indexed relatives name a
-place to read the destination from rather than the destination, so the sweep
-stops there.
+**What this project follows.** Neither. `conversation.reached` starts at every
+vector a low cartridge publishes and follows every call, jump and branch whose
+destination is spelled in the instruction. `jmp ($1234)` and its two indexed
+relatives name a place to read the destination from rather than the destination,
+so the sweep stops there.
+
+**How much that costs, measured.** Metal Combat seeded from reset alone reaches
+1,675 instructions, and from all ten vectors 2,080. Neither run reaches the OBC1
+once, while a search of the same image for the bytes that spell a long access
+finds 129 sites. That cartridge dispatches its driver through something this
+cannot follow.
 
 **Why it is not treated as a gap in the evidence.** What the sweep reports is
 still an instruction the console reaches. What it cannot do is prove the absence

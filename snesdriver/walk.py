@@ -198,6 +198,21 @@ there instead.
 
 RESET_VECTOR = 0x7FFC
 
+VECTORS = (0x7FE4, 0x7FE6, 0x7FE8, 0x7FEA, 0x7FEE, 0x7FF4, 0x7FF8, 0x7FFA, 0x7FFC, 0x7FFE)
+"""Every vector a low cartridge publishes, native and emulation.
+
+Reset is one of twelve and it is not where most driver code is reached from. A
+console spends its life in an interrupt handler, so a sweep seeded only from
+reset misses whatever the handlers call. Metal Combat is the case that showed
+it: from reset alone the sweep decoded 1,675 instructions and reached the OBC1
+not once, while a search of the same image for the bytes that spell a long
+access found 129 sites.
+
+The two unused slots at `0x7FEC` and `0x7FF6` are left out. They hold whatever
+the assembler put there, which is as likely to be a byte of the title as an
+address.
+"""
+
 EVERYWHERE_LIMIT = 400000
 """Instructions one sweep of an image will decode before giving up.
 
@@ -231,8 +246,7 @@ def everywhere(
     side and nothing on the other.
     """
     banks = len(rom) // 0x8000
-    at_reset = int.from_bytes(rom[RESET_VECTOR : RESET_VECTOR + 2], "little")
-    pending = [(0x00, entry if entry is not None else at_reset, True, True)]
+    pending = [(0x00, one, True, True) for one in _entries(rom, entry, banks)]
     seen: set[tuple[int, int]] = set()
     spent = 0
 
@@ -270,6 +284,18 @@ def everywhere(
             address += one.size
             if address > 0xFFFF:
                 break
+
+
+def _entries(rom: bytes, entry: int | None, banks: int) -> tuple[int, ...]:
+    """Where a sweep starts, which is every vector unless it was told one."""
+    if entry is not None:
+        return (entry,)
+    found = []
+    for at in VECTORS:
+        address = int.from_bytes(rom[at : at + 2], "little")
+        if _offset(0x00, address, banks) is not None and address not in found:
+            found.append(address)
+    return tuple(found)
 
 
 def _offset(bank: int, address: int, banks: int) -> int | None:

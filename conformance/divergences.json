@@ -91,7 +91,7 @@
       "documentSays": "nothing",
       "referenceDoes": "nothing; this is about what this package can read, not about a part",
       "packageFollows": "neither",
-      "reasoning": "conversation.reached starts at the reset vector and decodes only what control flow arrives at, which is how a part reached by an ordinary absolute access is found at all. jmp ($1234) and its two indexed relatives are not followed, so what comes back is the routines that were found rather than proof there are no others. A part it finds nothing for is unread rather than uncontacted.",
+      "reasoning": "conversation.reached starts at every vector a low cartridge publishes and decodes only what control flow arrives at, which is how a part reached by an ordinary absolute access is found at all. jmp ($1234) and its two indexed relatives are not followed, so what comes back is the routines that were found rather than proof there are no others. Metal Combat is the measured case: seeding from reset alone reached 1,675 instructions and from all ten vectors 2,080, and neither run reached the OBC1 once, while a search of the same image for the bytes that spell a long access finds 129 sites. That cartridge dispatches its driver through something this cannot follow. A part the sweep finds nothing for is unread rather than uncontacted.",
       "wouldSettleIt": [
         "running the image rather than reading it, which belongs to another member",
         "a jump table whose bounds this could read"

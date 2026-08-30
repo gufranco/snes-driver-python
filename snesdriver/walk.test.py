@@ -439,5 +439,53 @@ class ReturnsTest(unittest.TestCase):
         self.assertFalse(walk._returns(code, (0x00, 0x8000), True, 1))
 
 
+def vectored(body: bytes, **vectors: int) -> bytes:
+    """An image whose named vectors point where a test wants them to."""
+    rom = bytearray(0x8000)
+    rom[: len(body)] = body
+    for name, address in vectors.items():
+        at = getattr(walk, name)
+        rom[at : at + 2] = address.to_bytes(2, "little")
+    return bytes(rom)
+
+
+class EntryTest(unittest.TestCase):
+    def test_a_sweep_reads_every_vector_a_cartridge_publishes(self) -> None:
+        rom = vectored(assembled(STORE_PART, RETURN, LOAD_PART, RETURN))
+        held = bytearray(rom)
+        held[0x7FEA:0x7FEC] = (0x8004).to_bytes(2, "little")
+        held[0x7FFC:0x7FFE] = (0x8000).to_bytes(2, "little")
+
+        found = {step.offset for step in walk.everywhere(bytes(held))}
+
+        self.assertEqual(sorted(found), [0x0000, 0x0003, 0x0004, 0x0007])
+
+    def test_a_vector_pointing_below_the_cartridge_is_not_a_start(self) -> None:
+        rom = bytearray(vectored(assembled(STORE_PART, RETURN)))
+        rom[0x7FEA:0x7FEC] = (0x0100).to_bytes(2, "little")
+        rom[0x7FFC:0x7FFE] = (0x8000).to_bytes(2, "little")
+
+        found = list(walk.everywhere(bytes(rom)))
+
+        self.assertEqual([step.offset for step in found], [0x0000, 0x0003])
+
+    def test_two_vectors_naming_one_address_start_it_once(self) -> None:
+        found = walk._entries(vectored(assembled(RETURN), RESET_VECTOR=0x8000), None, 1)
+
+        self.assertEqual(found.count(0x8000), 1)
+
+    def test_a_named_entry_is_the_only_one_a_sweep_uses(self) -> None:
+        rom = vectored(assembled(STORE_PART, RETURN, LOAD_PART, RETURN), RESET_VECTOR=0x8000)
+
+        found = walk._entries(rom, 0x8004, 1)
+
+        self.assertEqual(found, (0x8004,))
+
+    def test_every_published_vector_sits_in_the_header(self) -> None:
+        outside = [one for one in walk.VECTORS if not 0x7FE4 <= one <= 0x7FFE]
+
+        self.assertEqual(outside, [])
+
+
 if __name__ == "__main__":
     unittest.main()
