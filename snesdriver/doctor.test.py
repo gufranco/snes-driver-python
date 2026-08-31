@@ -312,6 +312,22 @@ class ImportFailureTest(unittest.TestCase):
 
         self.assertEqual([one for one in found if " under " in one.name], [])
 
+    def test_every_model_is_put_on_the_path_when_none_of_them_is_there(self) -> None:
+        """The loop's body, which another module importing first can hide.
+
+        `walk` puts both models on the path when it is imported, so by the time
+        this runs they are usually already there and the loop does nothing. That
+        is correct and it is also why the body needs a run of its own: a guard
+        nobody has seen take its other branch is a guard nobody has checked.
+        """
+        wanted = {str(doctor.ROOT / one) for one in doctor.SUBMODULES}
+        held = [one for one in sys.path if one not in wanted and one != str(doctor.ROOT)]
+
+        with unittest.mock.patch.object(sys, "path", held):
+            doctor._loaded()
+
+            self.assertEqual(wanted - set(held), set())
+
     def test_the_repository_is_put_on_the_path_when_it_is_not_already_there(self) -> None:
         held = [one for one in sys.path if one != str(doctor.ROOT)]
 

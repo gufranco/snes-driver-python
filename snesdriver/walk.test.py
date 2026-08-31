@@ -487,5 +487,73 @@ class EntryTest(unittest.TestCase):
         self.assertEqual(outside, [])
 
 
+def a_high_cartridge() -> bytes:
+    """Two banks read as a high map, jumping from the reset routine into bank $C0.
+
+    The offsets are the point and they are not the low ones. Under a high map
+    bank `$00:$8000` sits at file `0x8000` and bank `$C0:$0000` sits at file `0`,
+    so the entry goes at the top of the second bank and its target at the very
+    start of the file.
+    """
+    rom = bytearray(0x10000)
+    rom[0x8000:0x8004] = bytes((0x5C, 0x00, 0x00, 0xC0))
+    rom[0x0000:0x0004] = assembled(LOAD_PART, RETURN)
+    rom[0x7FFC:0x7FFE] = (0x8000).to_bytes(2, "little")
+    return bytes(rom)
+
+
+class LayoutTest(unittest.TestCase):
+    """That a sweep follows the map the cartridge declares, not one map always.
+
+    Every part this package had a window for shipped in a low cartridge, so the
+    sweep assumed one. Street Fighter Alpha 2 leaves its reset routine with
+    `jml $c00000`, which a low map calls open bus, and the sweep stopped after
+    thirteen instructions and reported no accesses rather than reporting that it
+    could not follow. Twenty two of the forty two cartridges in the manifest
+    declare a high map.
+    """
+
+    def test_a_low_map_keeps_bank_zero_at_the_top_of_the_file(self) -> None:
+        self.assertEqual(walk._offset(0x00, 0x8000, 128), 0)
+
+    def test_a_low_map_calls_the_high_banks_open_bus(self) -> None:
+        self.assertIsNone(walk._offset(0xC0, 0x0000, 128))
+
+    def test_a_high_map_puts_bank_c0_at_the_top_of_the_file(self) -> None:
+        self.assertEqual(walk._offset(0xC0, 0x0000, 128, "hirom"), 0)
+
+    def test_and_resolves_an_address_inside_it(self) -> None:
+        self.assertEqual(walk._offset(0xC0, 0x053F, 128, "hirom"), 0x053F)
+
+    def test_the_two_maps_do_not_agree_on_where_bank_zero_sits(self) -> None:
+        low = walk._offset(0x00, 0x8000, 128)
+        high = walk._offset(0x00, 0x8000, 128, "hirom")
+
+        self.assertNotEqual(low, high)
+
+    def test_an_offset_past_the_end_of_the_image_is_kept_nowhere(self) -> None:
+        self.assertIsNone(walk._offset(0xC0, 0x8000, 1, "hirom"))
+
+    def test_work_ram_is_kept_nowhere_under_either_map(self) -> None:
+        found = [walk._offset(0x7E, 0x0000, 128, one) for one in ("lorom", "hirom")]
+
+        self.assertEqual(found, [None, None])
+
+    def test_a_sweep_told_a_high_map_follows_a_jump_into_the_high_banks(self) -> None:
+        found = list(walk.everywhere(a_high_cartridge(), kind="hirom"))
+
+        self.assertIn("lda $3804", [step.one.text for step in found])
+
+    def test_and_reaches_the_jump_that_took_it_there(self) -> None:
+        found = list(walk.everywhere(a_high_cartridge(), kind="hirom"))
+
+        self.assertEqual(found[0].one.text, "jml $c00000")
+
+    def test_the_same_image_read_as_a_low_one_never_reaches_the_target(self) -> None:
+        found = list(walk.everywhere(a_high_cartridge()))
+
+        self.assertNotIn("jml $c00000", [step.one.text for step in found])
+
+
 if __name__ == "__main__":
     unittest.main()

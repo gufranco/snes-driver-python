@@ -24,7 +24,9 @@ import sys
 from pathlib import Path
 
 sys.path.append(str(Path(__file__).resolve().parent.parent / "mos65xx-python"))
+sys.path.append(str(Path(__file__).resolve().parent.parent / "snes-mapper-python"))
 
+from mapper import layout
 from mos65xx import disassemble
 
 ACCUMULATOR = 0x20
@@ -66,6 +68,18 @@ the long branch matched nothing and every one of them read as forwards.
 """
 
 DEFAULT_LIMIT = 80
+
+DEFAULT_LAYOUT = layout.LOROM
+"""The map a sweep assumes when a caller does not name one.
+
+Low, because every part this package had a window for shipped in a low
+cartridge. It was not a choice so much as the only case, and it stopped being
+harmless the moment a sweep met a high one: Street Fighter Alpha 2 leaves its
+reset routine with `jml $c00000`, which a low map calls open bus, so the sweep
+stopped after thirteen instructions and reported no accesses at all rather than
+reporting that it could not follow. Twenty two of the forty two cartridges in
+the manifest declare a high map.
+"""
 
 
 LONG = "absoluteLong"
@@ -226,6 +240,7 @@ def everywhere(
     rom: bytes,
     entry: int | None = None,
     limit: int = EVERYWHERE_LIMIT,
+    kind: str = DEFAULT_LAYOUT,
 ) -> Iterator[Step]:
     """Every instruction control flow can reach, from the reset vector outward.
 
@@ -246,7 +261,7 @@ def everywhere(
     side and nothing on the other.
     """
     banks = len(rom) // 0x8000
-    pending = [(0x00, one, True, True) for one in _entries(rom, entry, banks)]
+    pending = [(0x00, one, True, True) for one in _entries(rom, entry, banks, kind)]
     seen: set[tuple[int, int]] = set()
     spent = 0
 
@@ -257,7 +272,7 @@ def everywhere(
             if (bank, address) in seen:
                 break
             seen.add((bank, address))
-            offset = _offset(bank, address, banks)
+            offset = _offset(bank, address, banks, kind)
             if offset is None:
                 break
             read = disassemble(rom, offset, address, count=1, m=narrow, x=index)
@@ -273,7 +288,7 @@ def everywhere(
                     index = one.mnemonic == "sep"
 
             target = _target(one, bank)
-            if target is not None and _offset(*target, banks) is not None:
+            if target is not None and _offset(*target, banks, kind) is not None:
                 if one.mnemonic in JUMPS:
                     bank, address = target
                     continue
@@ -286,26 +301,39 @@ def everywhere(
                 break
 
 
-def _entries(rom: bytes, entry: int | None, banks: int) -> tuple[int, ...]:
-    """Where a sweep starts, which is every vector unless it was told one."""
+def _entries(
+    rom: bytes, entry: int | None, banks: int, kind: str = DEFAULT_LAYOUT
+) -> tuple[int, ...]:
+    """Where a sweep starts, which is every vector unless it was told one.
+
+    The vectors sit where a low cartridge keeps its header even on a high map,
+    because that is where the console reads them from, so they are read at a
+    fixed file offset rather than through the layout.
+    """
     if entry is not None:
         return (entry,)
     found = []
     for at in VECTORS:
         address = int.from_bytes(rom[at : at + 2], "little")
-        if _offset(0x00, address, banks) is not None and address not in found:
+        if _offset(0x00, address, banks, kind) is not None and address not in found:
             found.append(address)
     return tuple(found)
 
 
-def _offset(bank: int, address: int, banks: int) -> int | None:
-    """Where a low cartridge keeps that address, or nothing if it keeps it nowhere."""
-    if address < 0x8000:
+def _offset(bank: int, address: int, banks: int, kind: str = DEFAULT_LAYOUT) -> int | None:
+    """Where the cartridge keeps that address, or nothing if it keeps it nowhere.
+
+    Delegates to `snes-mapper-python` rather than spelling one map out here.
+    Which bank holds what is that package's question, it is held to a corpus of
+    real cartridges, and a second copy of the rule here would be a second thing
+    to keep right.
+    """
+    found = layout.resolve(kind, (bank << 16) | address, banks=banks)
+    if not found.is_rom or found.offset is None or found.offset >= banks * 0x8000:
         return None
-    slot = bank & 0x7F
-    if slot >= banks:
-        return None
-    return slot * 0x8000 + (address - 0x8000)
+    at = found.offset
+    assert isinstance(at, int)
+    return at
 
 
 def _target(one: Any, bank: int) -> tuple[int, int] | None:

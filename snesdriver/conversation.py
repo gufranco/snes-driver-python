@@ -200,7 +200,12 @@ def sites(rom: bytes, window: Reaching) -> tuple[int, ...]:
     return tuple(found)
 
 
-def reached(rom: bytes, window: Reaching, entry: int | None = None) -> tuple[int, ...]:
+def reached(
+    rom: bytes,
+    window: Reaching,
+    entry: int | None = None,
+    kind: str = walk.DEFAULT_LAYOUT,
+) -> tuple[int, ...]:
     """The same question as `sites`, asked by following control flow instead.
 
     `sites` searches for the bytes that spell a long access, which is exact and
@@ -215,7 +220,7 @@ def reached(rom: bytes, window: Reaching, entry: int | None = None) -> tuple[int
     """
     found = {
         step.offset
-        for step in walk.everywhere(rom, entry)
+        for step in walk.everywhere(rom, entry, kind=kind)
         if step.bank is not None
         and step.address is not None
         and window.reaches(step.bank, step.address)
