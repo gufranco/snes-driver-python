@@ -45,6 +45,10 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
+# The environment checks are the same shape and exist for the same reason: they
+# report what a machine is, so a check that throws has to become a line in the
+# report rather than end the run, and its output is the product.
+"snesdriver/environment.py" = ["BLE001", "T201"]
 # conformance/family.test.py is the shared file every member carries identically,
 # so it carries directives for rules a given member may have turned off. RUF100
 # would report those as stale here; the reference copy has every one of those

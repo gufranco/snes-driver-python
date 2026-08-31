@@ -82,6 +82,8 @@ def _loaded() -> Any:
 
 ROOT = Path(__file__).resolve().parent.parent
 
+from snesdriver import environment  # noqa: E402
+
 MANIFEST = ROOT / "cartridges.manifest.json"
 
 DIRECTORY_VARIABLE = "SNES_CARTRIDGE_DIR"
@@ -356,6 +358,10 @@ def report(found: Sequence[Finding]) -> list[str]:
     """The lines a person pastes into an issue."""
     unwell = [one for one in found if not one.ok]
     lines = [f"snesdriver {VERSION} on {platform.python_version()}, {platform.system()}", ""]
+    lines.append("  the machine")
+    lines.extend(environment.lines(ROOT))
+    lines.append("")
+    lines.append("  this package")
     lines.extend(one.report for one in found)
     lines.append("")
     if unwell:
