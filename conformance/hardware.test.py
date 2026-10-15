@@ -1,11 +1,3 @@
-"""Hold the window table to the facts in hardware.json, and to their standing.
-
-Every window this package knows was read out of cartridge code rather than out of
-a document, and hardware.json says so for each one. This checks that the table in
-`snesdriver/windows.py` and the file agree, and that nothing in the file has
-quietly been promoted to verified without a document to promote it with.
-"""
-
 import json
 import sys
 import unittest
@@ -26,7 +18,6 @@ def declared() -> dict[str, Any]:
 
 
 def _declared_edges(row: dict[str, Any]) -> tuple[int, ...]:
-    """The six addresses hardware.json gives for one window."""
     return (
         int(row["banks"][0], 16),
         int(row["banks"][1], 16),
@@ -38,7 +29,6 @@ def _declared_edges(row: dict[str, Any]) -> tuple[int, ...]:
 
 
 def _table_edges(row: dict[str, Any]) -> tuple[int, ...]:
-    """The six this package actually uses for the same window."""
     window = windows.window_for(row["part"], row["layout"])
     assert window is not None, f"{row['part']}/{row['layout']} is declared and not known"
     return (

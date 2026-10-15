@@ -34,13 +34,6 @@ def a_catalogue(image: bytes, name: str = "made-up.sfc", **overrides: Any) -> di
 
 
 class RepairTest(unittest.TestCase):
-    """What can be done to a file the user already has.
-
-    A transform is applied, its result is hashed, and it is named only when the
-    hash matches something published. So a repair that is offered works, and a
-    file nothing helps is told that rather than handed a list of things to try.
-    """
-
     def test_a_file_carrying_a_copier_header_is_told_to_strip_it(self) -> None:
         image = an_image()
 
@@ -86,8 +79,6 @@ class RepairTest(unittest.TestCase):
 
 
 class BadDumpTest(unittest.TestCase):
-    """A damaged copy, told apart from a copy of the wrong thing."""
-
     def test_a_declared_bad_dump_is_named_as_damaged(self) -> None:
         image = an_image()
         broken = an_image(filler=0x01)
@@ -112,8 +103,6 @@ class BadDumpTest(unittest.TestCase):
 
 
 class ProvenanceTest(unittest.TestCase):
-    """Where each published digest came from."""
-
     def test_every_cartridge_says_where_its_digests_came_from(self) -> None:
         for one in cartridges.manifest()["cartridges"]:
             self.assertIn("provenance", one, one["name"])
@@ -273,14 +262,7 @@ class DirectoryTest(unittest.TestCase):
 
 
 class SharedDirectoryRuleTest(unittest.TestCase):
-    """The rule every member of this family uses to find a file it does not carry.
-
-    Byte-identical in all of them, so these check the behaviour that identity is
-    supposed to guarantee rather than the text of one copy.
-    """
-
     def test_the_project_above_is_looked_at_before_the_package_itself(self) -> None:
-        """Vendored, the parent owns the library, which is what ALONGSIDE is for."""
         found = cartridges.directories({})
 
         self.assertLess(
@@ -313,15 +295,6 @@ class SharedDirectoryRuleTest(unittest.TestCase):
 
 
 class PublishedTableTest(unittest.TestCase):
-    """That the table a reader sees names exactly the cartridges the manifest does.
-
-    Two files carrying the same list is a drift waiting to happen, and it had
-    already happened: the table stopped at the DSP cartridges while the manifest
-    went on to name the Seta and OBC1 ones, so a reader cross-checking a digest
-    for either would have found nothing and concluded the file was not one this
-    project reads.
-    """
-
     def names(self) -> set[str]:
         held = Path(__file__).resolve().parent.parent / "cartridges" / "README.md"
         rows = [one for one in held.read_text().split("\n") if one.startswith("| `")]
@@ -343,14 +316,6 @@ class PublishedTableTest(unittest.TestCase):
 
 
 class DecidingDigestTest(unittest.TestCase):
-    """That the manifest tells a reader which of its four digests decides.
-
-    The reader already knows: `DECIDES` names it and nothing else is compared
-    against. A person cross-checking a copy reads the manifest rather than the
-    module, so the manifest has to say it too, and this is what keeps the two
-    from drifting apart.
-    """
-
     def held(self) -> str:
         return str(cartridges.manifest()["decides"])
 

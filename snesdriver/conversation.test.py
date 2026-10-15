@@ -112,9 +112,6 @@ class ShapeIdentityTest(unittest.TestCase):
         self.assertTrue(found.banked)
 
     def test_and_one_reached_absolutely_did_not(self) -> None:
-        """The bank of an absolute access is the routine's own, not the
-        instruction's, so a caller recording the shape has to be told.
-        """
         window = windows.WINDOWS["st018"]["lorom"]
 
         found = conversation.at(assembled(NARROW, STORE_ABSOLUTE, RETURN), 0, window)
@@ -259,7 +256,6 @@ FILLER = (0xEA,)
 ABSOLUTE_WINDOW = windows.WINDOWS["st018"]["lorom"]
 
 BEHIND_A_BRANCH = image(assembled(IF_EQUAL, RETURN, FILLER, LOAD_STATUS_ABSOLUTE, RETURN))
-"""An image whose only access to the part is on the taken side of a branch."""
 
 
 class ReachedTest(unittest.TestCase):
@@ -295,7 +291,6 @@ class ReachedTest(unittest.TestCase):
 
 
 def calling(helper: bytes, after: bytes) -> bytes:
-    """A routine that calls a helper laid out after it, then runs `after`."""
     body = bytearray((0x20, 0x00, 0x00))
     body += after
     at = 0x8000 + len(body)
@@ -304,12 +299,6 @@ def calling(helper: bytes, after: bytes) -> bytes:
 
 
 class ThroughAHelperTest(unittest.TestCase):
-    """That an exchange spanning a call is read as one exchange.
-
-    The ST018 is what made this matter: its send routine calls a guard and then
-    stores, so a walk that did not descend reported the store alone.
-    """
-
     def routine(self) -> bytes:
         return calling(assembled(LOAD_STATUS_ABSOLUTE, RETURN), assembled(STORE_ABSOLUTE, RETURN))
 

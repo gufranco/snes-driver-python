@@ -149,9 +149,6 @@ STORE_LONG_PART = (0x8F, 0x02, 0x38, 0x00)
 BRANCHING = assembled(
     STORE_PART, CALL, IF_EQUAL, RETURN, FILLER, LOAD_PART, JUMP, STORE_LONG_PART, RETURN
 )
-"""A routine whose only read of the part sits on the taken side of a branch, and
-whose only long access sits inside a call. A straight walk reaches neither.
-"""
 
 
 class SweepTest(unittest.TestCase):
@@ -303,11 +300,6 @@ PUSH_RELATIVE = (0x62, 0x00, 0x38)
 
 
 def calling(helper: bytes, after: bytes) -> bytes:
-    """A routine that calls a helper laid out after it, then runs `after`.
-
-    The call and its destination are built together because they have to agree:
-    a target one byte off lands mid-instruction and decodes as something else.
-    """
     body = bytearray((0x20, 0x00, 0x00))
     body += after
     at = 0x8000 + len(body)
@@ -316,11 +308,6 @@ def calling(helper: bytes, after: bytes) -> bytes:
 
 
 THROUGH_A_HELPER = calling(assembled(HELPER), assembled(STORE_PART, RETURN))
-"""Call a helper that reads the part, then store to it and return.
-
-A walk that stopped at the call saw neither access; one that stepped over the
-call saw only the store.
-"""
 
 
 class DescentTest(unittest.TestCase):
@@ -440,7 +427,6 @@ class ReturnsTest(unittest.TestCase):
 
 
 def vectored(body: bytes, **vectors: int) -> bytes:
-    """An image whose named vectors point where a test wants them to."""
     rom = bytearray(0x8000)
     rom[: len(body)] = body
     for name, address in vectors.items():
@@ -488,13 +474,6 @@ class EntryTest(unittest.TestCase):
 
 
 def a_high_cartridge() -> bytes:
-    """Two banks read as a high map, jumping from the reset routine into bank $C0.
-
-    The offsets are the point and they are not the low ones. Under a high map
-    bank `$00:$8000` sits at file `0x8000` and bank `$C0:$0000` sits at file `0`,
-    so the entry goes at the top of the second bank and its target at the very
-    start of the file.
-    """
     rom = bytearray(0x10000)
     rom[0x8000:0x8004] = bytes((0x5C, 0x00, 0x00, 0xC0))
     rom[0x0000:0x0004] = assembled(LOAD_PART, RETURN)
@@ -503,16 +482,6 @@ def a_high_cartridge() -> bytes:
 
 
 class LayoutTest(unittest.TestCase):
-    """That a sweep follows the map the cartridge declares, not one map always.
-
-    Every part this package had a window for shipped in a low cartridge, so the
-    sweep assumed one. Street Fighter Alpha 2 leaves its reset routine with
-    `jml $c00000`, which a low map calls open bus, and the sweep stopped after
-    thirteen instructions and reported no accesses rather than reporting that it
-    could not follow. Twenty two of the forty two cartridges in the manifest
-    declare a high map.
-    """
-
     def test_a_low_map_keeps_bank_zero_at_the_top_of_the_file(self) -> None:
         self.assertEqual(walk._offset(0x00, 0x8000, 128), 0)
 

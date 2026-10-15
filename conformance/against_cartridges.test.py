@@ -1,18 +1,3 @@
-"""The checks that need real cartridges, which is why they live apart.
-
-A skipped test contributes no coverage, so on a runner with an empty directory
-every line here would read as uncovered and fail the coverage gate for a reason
-that has nothing to do with the code. Keeping them in one file lets that file sit
-outside the gate while everything else stays inside it.
-
-The two path insertions below are ordered, and the order is the whole point. This
-project and the mapper each carry a package called conformance, so whichever root
-sits earlier on the path decides which one `from conformance import ...` resolves
-to. The dependency goes on first so that this repository's own root ends up ahead
-of it. Reversed, the failure is not an import error: this project silently reads
-its dependency's modules, and the symptom is a run that finds no cartridges.
-"""
-
 import sys
 import tempfile
 import unittest
@@ -29,7 +14,6 @@ PRESENT = cartridges.present()
 
 
 def a_cartridge(layout: str = "lorom", drives: bool = True) -> bytes:
-    """A stand-in carrying a header and, if asked, a routine that drives a part."""
     at = 0x7FC0 if layout == "lorom" else 0xFFC0
     size = 0x100000 if layout == "lorom" else 0x200000
     rom = bytearray(size)
@@ -85,8 +69,6 @@ class ReadTest(unittest.TestCase):
 
 
 class CommandTest(unittest.TestCase):
-    """The installed console entry point, which only translates an exit code."""
-
     def test_it_leaves_by_raising_with_the_code_the_run_returned(self) -> None:
         held = sys.argv
         sys.argv = ["against-cartridges", "/nowhere/at/all"]
@@ -176,15 +158,6 @@ class MainTest(unittest.TestCase):
 
 @unittest.skipUnless(PRESENT, cartridges.WHY_NOT)
 class OnDiskTest(unittest.TestCase):  # pragma: no cover
-    """The cartridges this machine actually holds, if it holds any.
-
-    Outside the coverage gate, and the only thing here that is. A test whose
-    subject is a file nobody can distribute runs on one machine and not another,
-    so counting it would make the number mean something different depending on who
-    ran it. Everything it exercises is covered above by cartridges the tests write
-    themselves.
-    """
-
     def test_every_cartridge_on_disk_is_read(self) -> None:
         self.assertEqual(len(against_cartridges.sweep()), len(PRESENT))
 

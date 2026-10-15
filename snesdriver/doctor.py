@@ -1,37 +1,3 @@
-"""Look at this machine and say what is actually here, so a report can be believed.
-
-What goes wrong with this package is rarely a defect in it. It is a submodule
-that was never checked out, a cartridge library that was never put where the
-checks look, or a library that is there and holds files nothing recognises. All
-three look the same from outside: the run is green and it proved less than the
-reader thinks.
-
-The submodule is the sharp one. Every claim here about a driver routine was read
-by disassembling one, and the disassembler lives in another repository carried as
-a submodule. A checkout without `--recurse-submodules` leaves the directory there
-and empty, and what fails is an import rather than a check.
-
-Which is why nothing is imported from the package at the top of this file, and
-why this is run as a file rather than with `-m`. Either entry point reads the
-package's own `__init__` first, and that is the import that fails. Run it as
-
-    python3 snesdriver/doctor.py
-
-and every import that can fail happens inside the finding that needs it, where
-its failure is the report rather than the end of it.
-
-Two rules shape it, and they are the whole point.
-
-Nothing is hidden. A check that fails says what it saw, and a check that itself
-throws is caught and reported as what it threw, named by its type. An absent
-library is reported as absent rather than as a failure, because a fresh checkout
-has none and that is the normal state, but it is never reported as nothing at all.
-
-Nothing is inferred. Every line is something looked at on this machine just now,
-including a conversation actually walked out of bytes assembled here rather than
-a claim that the walker imports.
-"""
-
 from __future__ import annotations
 
 import json
@@ -47,11 +13,6 @@ if TYPE_CHECKING:  # pragma: no cover
 
 
 def _version(where: Path | None = None) -> str:
-    """The package version, read out of the file beside this one.
-
-    Read rather than imported. Importing it would go through the package, and
-    the package is what fails on the machine this exists to diagnose.
-    """
     found = re.search(
         r"""VERSION\s*[:=][^"']*["']([^"']+)["']""",
         (where or Path(__file__).resolve().parent / "version.py").read_text(),
@@ -63,13 +24,6 @@ VERSION = _version()
 
 
 def _loaded() -> Any:
-    """The package, imported now rather than when this file was read.
-
-    Imported by name rather than relatively, and with the repository put on the
-    path first, because this file is run as a script and a relative import has
-    no package to be relative to. A single place for it, so every finding fails
-    the same way when a submodule is absent.
-    """
     if str(ROOT) not in sys.path:
         sys.path.insert(0, str(ROOT))
     for one in SUBMODULES:
@@ -104,8 +58,6 @@ PROBE_PART = "dsp"
 
 
 class Finding:
-    """One thing that was looked at, and what was there."""
-
     __slots__ = ("advice", "detail", "name", "ok")
 
     def __init__(self, name: str, ok: bool, detail: str, advice: str | None = None) -> None:
@@ -116,12 +68,10 @@ class Finding:
 
     @property
     def line(self) -> str:
-        """The one-line form, which is what a reader scans."""
         return f"  {'ok  ' if self.ok else '   !'}  {self.name}: {self.detail}"
 
     @property
     def report(self) -> str:
-        """The same, with what to do about it when there is something to do."""
         if self.ok or not self.advice:
             return self.line
         return f"{self.line}\n         {self.advice}"
@@ -145,7 +95,6 @@ def _package() -> Finding:
 
 
 def _window(part: str, layout: str) -> Finding:
-    """Where a part answers under a layout, which is the package in one line."""
     try:
         _, windows = _loaded()
         found = windows.window_for(part, layout)
@@ -167,12 +116,6 @@ def _window(part: str, layout: str) -> Finding:
 
 
 def _routine(window: Any) -> bytes:
-    """A driver routine assembled here, so the walk has something real to read.
-
-    Written rather than borrowed. A routine taken out of a cartridge would put a
-    fragment of somebody's ROM in this file, and the walk only needs a load, a
-    store into the window and a return to have something to follow.
-    """
     return bytes(
         (
             0xA9,
@@ -189,7 +132,6 @@ def _routine(window: Any) -> bytes:
 
 
 def _walking(part: str = PROBE_PART, layout: str = PROBE_LAYOUT) -> Finding:
-    """That a conversation is walked out of bytes, not merely that walk imports."""
     try:
         walk, windows = _loaded()
         found = windows.window_for(part, layout)
@@ -214,12 +156,6 @@ def _walking(part: str = PROBE_PART, layout: str = PROBE_LAYOUT) -> Finding:
 
 
 def _submodule(name: str, root: Path = ROOT) -> Finding:
-    """Whether a submodule is checked out, since its absence is silent otherwise.
-
-    The marker is the manifest rather than the directory. Git creates the empty
-    directory for a submodule it has not fetched, so a check on the path alone
-    reports a present submodule on exactly the machine where it is missing.
-    """
     where = root / name
     if (where / "pyproject.toml").is_file():
         return Finding(f"submodule {name}", True, f"checked out at {where}")
@@ -233,7 +169,6 @@ def _submodule(name: str, root: Path = ROOT) -> Finding:
 
 
 def _manifest(path: Path | str = MANIFEST) -> Finding:
-    """How many cartridges the manifest names, or why it could not be read."""
     try:
         held = json.loads(Path(path).read_text())
     except OSError as trouble:
@@ -261,13 +196,6 @@ def _manifest(path: Path | str = MANIFEST) -> Finding:
 
 
 def _looking(environment: Mapping[str, str] | None = None) -> list[Finding]:
-    """Everywhere a cartridge is looked for, and which of them is chosen.
-
-    Reported as its own line because a named directory wins even when it is
-    empty, which is deliberate and surprising: a typo in the variable becomes a
-    run that finds nothing and says so, rather than one that silently falls back
-    and reports a pass over the wrong library.
-    """
     held = environment if environment is not None else os.environ
     named = held.get(DIRECTORY_VARIABLE)
     places = [*([Path(named)] if named else []), DEFAULT_DIRECTORY, ALONGSIDE]
@@ -286,13 +214,6 @@ def _looking(environment: Mapping[str, str] | None = None) -> list[Finding]:
 
 
 def _library(where: Path | str) -> Finding:
-    """Whether a library is there, and whether it holds anything readable.
-
-    The count of files is the line that matters. A directory that exists and
-    holds nothing reads as a present library to anything that only checks the
-    path, and the check against real cartridges then runs over nothing and
-    reports a pass.
-    """
     place = Path(where)
     if not place.is_dir():
         return Finding(
@@ -324,7 +245,6 @@ def examine(
     manifest: Path | str = MANIFEST,
     root: Path = ROOT,
 ) -> list[Finding]:
-    """Everything worth looking at on this machine, in the order a reader wants it."""
     found = [_python(), _package()]
     try:
         _, windows = _loaded()
@@ -355,7 +275,6 @@ def examine(
 
 
 def report(found: Sequence[Finding]) -> list[str]:
-    """The lines a person pastes into an issue."""
     unwell = [one for one in found if not one.ok]
     lines = [f"snesdriver {VERSION} on {platform.python_version()}, {platform.system()}", ""]
     lines.append("  the machine")
