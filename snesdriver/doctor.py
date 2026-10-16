@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib.util
 import json
 import os
 import platform
@@ -36,7 +37,16 @@ def _loaded() -> Any:
 
 ROOT = Path(__file__).resolve().parent.parent
 
-from snesdriver import environment  # noqa: E402
+ENVIRONMENT = Path(__file__).resolve().parent / "environment.py"
+
+
+def _environment() -> Any:
+    spec = importlib.util.spec_from_file_location("snesdriver_doctor_environment", ENVIRONMENT)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
 
 MANIFEST = ROOT / "cartridges.manifest.json"
 
@@ -198,7 +208,7 @@ def _manifest(path: Path | str = MANIFEST) -> Finding:
 def _looking(environment: Mapping[str, str] | None = None) -> list[Finding]:
     held = environment if environment is not None else os.environ
     named = held.get(DIRECTORY_VARIABLE)
-    places = [*([Path(named)] if named else []), DEFAULT_DIRECTORY, ALONGSIDE]
+    places = [*([Path(named)] if named else []), ALONGSIDE, DEFAULT_DIRECTORY]
     chosen = (
         Path(named) if named else next((one for one in places if one.is_dir()), DEFAULT_DIRECTORY)
     )
@@ -278,7 +288,7 @@ def report(found: Sequence[Finding]) -> list[str]:
     unwell = [one for one in found if not one.ok]
     lines = [f"snesdriver {VERSION} on {platform.python_version()}, {platform.system()}", ""]
     lines.append("  the machine")
-    lines.extend(environment.lines(ROOT))
+    lines.extend(_environment().lines(ROOT))
     lines.append("")
     lines.append("  this package")
     lines.extend(one.report for one in found)

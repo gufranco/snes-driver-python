@@ -1,3 +1,4 @@
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -7,6 +8,7 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from conformance import cartridges
 from snesdriver import doctor, walk, windows
 
 
@@ -227,6 +229,22 @@ class LookingTest(unittest.TestCase):
 
         self.assertEqual(found[-1].detail, str(held))
 
+    def test_with_both_places_present_it_chooses_the_one_the_sweep_reads(self) -> None:
+        # Arrange
+        alongside = a_directory()
+        default = a_directory()
+        places = (alongside, default)
+
+        # Act
+        with (
+            unittest.mock.patch.object(doctor, "DEFAULT_DIRECTORY", default),
+            unittest.mock.patch.object(doctor, "ALONGSIDE", alongside),
+        ):
+            found = doctor._looking({})
+
+        # Assert
+        self.assertEqual(found[-1].detail, str(cartridges.directory({}, places)))
+
 
 class LibraryTest(unittest.TestCase):
     def test_a_library_that_is_not_there_is_reported_as_absent_not_broken(self) -> None:
@@ -369,6 +387,30 @@ class MainTest(unittest.TestCase):
 
         self.assertIn(code, (0, 1))
         self.assertGreaterEqual(len(said), len(doctor.examine()))
+
+
+class RunAsTheReadmeSaysTest(unittest.TestCase):
+    def test_run_as_a_file_from_outside_the_repository_it_reports_rather_than_raises(
+        self,
+    ) -> None:
+        # Arrange
+        script = Path(doctor.__file__).resolve()
+        outside = tempfile.mkdtemp()
+
+        # Act
+        finished = subprocess.run(
+            [sys.executable, str(script)],
+            capture_output=True,
+            check=False,
+            text=True,
+            cwd=outside,
+            timeout=120,
+        )
+
+        # Assert
+        self.assertEqual(finished.stderr, "")
+        self.assertIn(finished.returncode, (0, 1))
+        self.assertRegex(finished.stdout.splitlines()[-1], r"checks(, nothing to report| did not)")
 
 
 if __name__ == "__main__":
