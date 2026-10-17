@@ -8,7 +8,7 @@
 [![Release](https://img.shields.io/github/v/release/gufranco/snes-driver-python)](https://github.com/gufranco/snes-driver-python/releases)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-**42** 個卡帶以四種摘要識別，**36** 個 DSP 卡帶在 **2** 種佈局下讀取，與自身摘要不符者 **0** 個，未向部件發出任何存取者 **0** 個，**3** 種存取，**655** 項測試，**100%** 語句及分支覆蓋率，無依賴套件
+**42** 個卡帶以四種摘要識別，**36** 個 DSP 卡帶在 **2** 種佈局下讀取，與自身摘要不符者 **0** 個，未向部件發出任何存取者 **0** 個，**3** 種存取，**667** 項測試，**100%** 語句及分支覆蓋率，無依賴套件
 
 ```python
 from snesdriver import at, window_for

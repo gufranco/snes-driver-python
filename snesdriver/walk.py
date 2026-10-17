@@ -255,9 +255,25 @@ def through(
             offset, at, in_bank = back.offset, back.address, back.bank
             continue
         if one.mnemonic in LEAVING:
-            return
+            landing = _inside_a_helper(one, in_bank, banks) if stack else None
+            if landing is None:
+                return
+            offset, in_bank, at = landing
+            continue
         offset += one.size
         at += one.size
+
+
+def _inside_a_helper(one: Any, bank: int, banks: int) -> tuple[int, int, int] | None:
+    if one.mnemonic not in JUMPS:
+        return None
+    target = _target(one, bank)
+    if target is None:
+        return None
+    offset = _offset(*target, banks)
+    if offset is None:
+        return None
+    return offset, *target
 
 
 PROBE_LIMIT = 200

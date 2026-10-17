@@ -255,6 +255,18 @@ class ShapeIdentityTest(unittest.TestCase):
         self.assertTrue(found)
 
 
+class ModuleContentsTest(unittest.TestCase):
+    def test_each_entry_in_steps_is_the_class_the_readme_names(self) -> None:
+        # Arrange
+        code = (NARROW, STORE_DATA, LOAD_STATUS, RETURN)
+
+        # Act
+        found = talk(*code)
+
+        # Assert
+        self.assertEqual({type(step) for step in found.steps}, {snesdriver.conversation.Step})
+
+
 class SiteTest(unittest.TestCase):
     def test_an_instruction_reaching_the_window_is_a_site(self) -> None:
         # Arrange

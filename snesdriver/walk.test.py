@@ -253,6 +253,18 @@ class ReachTest(unittest.TestCase):
         self.assertEqual(repr(steps[0]), "<Step bra $8014 byte>")
 
 
+class ModuleContentsTest(unittest.TestCase):
+    def test_each_step_is_the_class_the_readme_names(self) -> None:
+        # Arrange
+        code = assembled(STORE_LONG, RETURN)
+
+        # Act
+        steps = walked(code)
+
+        # Assert
+        self.assertEqual({type(step) for step in steps}, {snesdriver.walk.Step})
+
+
 class BranchTest(unittest.TestCase):
     def test_a_backward_branch_is_reported_as_a_wait(self) -> None:
         # Arrange

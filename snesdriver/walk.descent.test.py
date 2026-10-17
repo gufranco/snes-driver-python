@@ -231,15 +231,44 @@ class SteppedOverTest(unittest.TestCase):
 
 
 class ReturningTest(unittest.TestCase):
-    def test_a_helper_whose_jump_lands_on_a_return_is_followed_into(self) -> None:
+    def test_a_helper_whose_jump_lands_on_a_return_is_followed_back_to_the_caller(self) -> None:
         # Arrange
-        code = calling(assembled((0x4C, 0x14, 0x80), NOTHING, RETURN))
+        code = calling(assembled((0x4C, 0x16, 0x80), (0xAD, 0x02, 0x38), RETURN))
 
         # Act
         steps = walked(code)
 
         # Assert
-        self.assertEqual([(step.mnemonic, step.depth) for step in steps], [("jsr", 0), ("jmp", 1)])
+        self.assertEqual(
+            [(step.mnemonic, step.offset, step.depth) for step in steps],
+            [("jsr", 0, 0), ("jmp", 0x10, 1), ("rts", 0x16, 1), ("sta", 3, 0), ("rts", 6, 0)],
+        )
+
+    def test_a_helper_that_branches_always_is_followed_back_to_the_caller(self) -> None:
+        # Arrange
+        code = calling(assembled((0x80, 0x03), (0xAD, 0x02, 0x38), RETURN))
+
+        # Act
+        steps = walked(code)
+
+        # Assert
+        self.assertEqual([step.depth for step in steps], [0, 1, 1, 0, 0])
+
+    def test_a_long_jump_inside_a_helper_carries_the_bank_it_names(self) -> None:
+        # Arrange
+        rom = bytearray(0x10000)
+        rom[0:7] = CALLER
+        rom[0x10:0x14] = (0x5C, 0x00, 0x90, 0x01)
+        rom[0x9000:0x9004] = assembled(LOAD_PART, RETURN)
+
+        # Act
+        steps = walked(bytes(rom))
+
+        # Assert
+        self.assertEqual(
+            [(step.offset, step.bank, step.depth) for step in steps[1:4]],
+            [(0x10, 0x01, 1), (0x9000, 0x01, 1), (0x9003, None, 1)],
+        )
 
     def test_a_helper_that_returns_within_two_hundred_instructions_is_followed(self) -> None:
         # Arrange
@@ -270,6 +299,38 @@ class ReturningTest(unittest.TestCase):
 
         # Assert
         self.assertEqual([step.mnemonic for step in steps], ["jsr", "rtl", "sta", "rts"])
+
+
+class NarrowedInsideAHelperTest(unittest.TestCase):
+    def test_an_interrupt_return_the_narrowed_helper_reaches_ends_the_walk(self) -> None:
+        # Arrange
+        code = calling((0xE2, 0x20, 0xA9, 0xEA, 0x40, 0x60))
+
+        # Act
+        steps = walked(code, narrow=False)
+
+        # Assert
+        self.assertEqual([step.mnemonic for step in steps], ["jsr", "sep", "lda", "rti"])
+
+    def test_an_indirect_jump_the_narrowed_helper_reaches_ends_the_walk(self) -> None:
+        # Arrange
+        code = calling((0xE2, 0x20, 0xA9, 0xEA, 0x6C, 0xEA, 0xEA, 0x60))
+
+        # Act
+        steps = walked(code, narrow=False)
+
+        # Assert
+        self.assertEqual([step.mnemonic for step in steps], ["jsr", "sep", "lda", "jmp"])
+
+    def test_a_jump_out_of_the_image_the_narrowed_helper_reaches_ends_the_walk(self) -> None:
+        # Arrange
+        code = calling((0xE2, 0x20, 0xA9, 0xEA, 0x4C, 0xEA, 0x1A, 0x60))
+
+        # Act
+        steps = walked(code, narrow=False)
+
+        # Assert
+        self.assertEqual([step.mnemonic for step in steps], ["jsr", "sep", "lda", "jmp"])
 
 
 if __name__ == "__main__":
