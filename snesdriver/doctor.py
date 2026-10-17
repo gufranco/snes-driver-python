@@ -223,7 +223,7 @@ def _looking(environment: Mapping[str, str] | None = None) -> list[Finding]:
     ]
 
 
-def _library(where: Path | str) -> Finding:
+def _library(where: Path | str, shipped: Path = DEFAULT_DIRECTORY) -> Finding:
     place = Path(where)
     if not place.is_dir():
         return Finding(
@@ -239,6 +239,13 @@ def _library(where: Path | str) -> Finding:
         ]
     except OSError as trouble:
         return Finding("library", False, f"could not be read: {trouble}")
+    if not present and place == shipped:
+        return Finding(
+            "library",
+            True,
+            f"{place} holds no images yet, so the check against real cartridges will skip"
+            " rather than run",
+        )
     return Finding(
         "library",
         bool(present),

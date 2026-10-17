@@ -272,6 +272,16 @@ class LibraryTest(unittest.TestCase):
 
         self.assertFalse(one.ok, one.detail)
 
+    def test_the_directory_a_fresh_checkout_ships_empty_is_the_normal_state(self) -> None:
+        # Arrange
+        where = a_directory(("README.md",))
+
+        # Act
+        one = doctor._library(where, shipped=where)
+
+        # Assert
+        self.assertEqual((one.ok, "skip rather than run" in one.detail), (True, True))
+
     def test_because_that_is_what_a_run_over_nothing_looks_like(self) -> None:
         one = doctor._library(a_directory(("notes.txt",)))
 
