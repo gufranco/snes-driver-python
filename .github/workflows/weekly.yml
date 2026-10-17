@@ -32,7 +32,7 @@ concurrency:
 jobs:
   ahead:
     name: On Python ${{ matrix.python }}, newest tools
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     strategy:
       fail-fast: false
       matrix:
@@ -110,7 +110,7 @@ jobs:
   # until the suite says otherwise, so it is a change somebody makes and tests.
   pins:
     name: How far behind the submodules are
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     permissions:
       contents: read
     steps:
