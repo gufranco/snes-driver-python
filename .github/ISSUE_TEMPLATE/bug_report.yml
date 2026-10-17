@@ -1,3 +1,4 @@
+---
 name: Something is wrong
 description: A driver is read wrong, a window is wrong, or nothing works at all
 labels: ["bug"]

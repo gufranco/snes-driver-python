@@ -1,3 +1,4 @@
+---
 name: CI
 
 on:
@@ -54,6 +55,11 @@ jobs:
       - name: Lint the workflows
         uses: raven-actions/actionlint@v2
 
+      - name: Lint every YAML file
+        run: |
+          pipx install yamllint==1.38.0
+          yamllint --strict .
+
       - name: Lint the shell scripts
         run: |
           sudo apt-get update
@@ -64,10 +70,8 @@ jobs:
     name: Types
     runs-on: ubuntu-26.04
     steps:
-      # The disassembler and the mapper arrive through submodules, and the checker
-      # follows the imports into them. Without the checkout it would report the
-      # whole backend as missing rather than as wrong.
-      - uses: actions/checkout@v7
+      - name: Check out the submodules the checker follows imports into
+        uses: actions/checkout@v7
         with:
           submodules: recursive
 
@@ -78,8 +82,6 @@ jobs:
       - name: Install the type checker
         run: pipx install mypy==1.14.1
 
-      # Strict, with every optional error class the version offers. The settings
-      # live in pyproject.toml so a local run and this one agree.
       - name: Every annotation has to hold
         run: mypy
 
@@ -146,13 +148,17 @@ jobs:
 
       - name: Read the driver in every cartridge present
         run: |
-          # 0 when every cartridge spoke to the part, 1 when one did not, and 2
-          # when none is here. Only 1 is a failure: a hosted runner has no
-          # cartridge and never will.
           status=0
           python -m conformance.against_cartridges || status="$?"
           if [ "${status}" -eq 2 ]; then
-            echo "::notice title=Cartridges::No cartridge is present on a hosted runner, so the driver sweep was skipped rather than passed. It confirms each cartridge against four digests, disassembles the routine that drives its coprocessor, and reports the exchange. Run it locally with copies you own, or point SNES_CARTRIDGE_DIR at them."
+            note="No cartridge is present on a hosted runner,"
+            note="${note} so the driver sweep was skipped rather than passed."
+            note="${note} It confirms each cartridge against four digests,"
+            note="${note} disassembles the routine that drives its coprocessor,"
+            note="${note} and reports the exchange."
+            note="${note} Run it locally with copies you own,"
+            note="${note} or point SNES_CARTRIDGE_DIR at them."
+            echo "::notice title=Cartridges::${note}"
             exit 0
           fi
           exit "${status}"
