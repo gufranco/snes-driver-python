@@ -8,7 +8,7 @@
 [![Release](https://img.shields.io/github/v/release/gufranco/snes-driver-python)](https://github.com/gufranco/snes-driver-python/releases)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-**42** 个卡带以四种摘要标识，**36** 个 DSP 卡带按 **2** 种布局读取，与自身摘要不符的 **0** 个，未与芯片通信的 **0** 个，**3** 种访问，**652** 个测试，**100%** 语句与分支覆盖率，无依赖
+**42** 个卡带以四种摘要标识，**36** 个 DSP 卡带按 **2** 种布局读取，与自身摘要不符的 **0** 个，未与芯片通信的 **0** 个，**3** 种访问，**655** 个测试，**100%** 语句与分支覆盖率，无依赖
 
 ```python
 from snesdriver import at, window_for
@@ -218,7 +218,7 @@ print(shapes(image, window))
 | 调用 | 返回 |
 |:--|:--|
 | `sites(rom, window)` | 地址到达 `window` 的每条长加载（操作码 `$AF`）和长存储（操作码 `$8F`）的文件偏移。这是字节搜索：它也会在数据中找到这四个字节 |
-| `reached(rom, window, entry=None, kind="lorom")` | 从十个原生模式和仿真模式向量，或从 `entry` 出发遍历时，到达 `window` 的每条指令的文件偏移，遍历会跟随每个目标写在指令中的调用、跳转和分支。`kind` 是将地址映射到文件偏移的布局 |
+| `reached(rom, window, entry=None, kind="lorom")` | 从十个原生模式和仿真模式向量，或从 `entry` 出发遍历时，到达 `window` 的每条指令的文件偏移，遍历会跟随每个目标写在指令中的调用、跳转和分支。`kind` 是将地址映射到文件偏移的布局。遍历在 400,000 条指令后停止 |
 | `shapes(rom, window, narrow=True, limit=DEFAULT_LIMIT, find=sites)` | 每种不同的形态以及产生它的例程数量。`find` 返回的每个偏移都会用 `at` 开始一次遍历，除非之前的遍历已覆盖它 |
 
 ```python

@@ -8,7 +8,7 @@ English | [日本語](README.ja.md) | [简体中文](README.zh-Hans.md) | [繁�
 [![Release](https://img.shields.io/github/v/release/gufranco/snes-driver-python)](https://github.com/gufranco/snes-driver-python/releases)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-**42** cartridges named by four digests, **36** DSP cartridges read under **2** layouts, **0** disagreements with their own digests, **0** that said nothing to the part, **3** kinds of access, **652** tests, **100%** statement and branch coverage, no dependencies
+**42** cartridges named by four digests, **36** DSP cartridges read under **2** layouts, **0** disagreements with their own digests, **0** that said nothing to the part, **3** kinds of access, **655** tests, **100%** statement and branch coverage, no dependencies
 
 ```python
 from snesdriver import at, window_for
@@ -218,7 +218,7 @@ The routine has three sites and one shape. The walk from the first site covers t
 | Call | Returns |
 |:--|:--|
 | `sites(rom, window)` | File offsets of every long load, opcode `$AF`, and long store, opcode `$8F`, whose address reaches `window`. A byte search: it also finds those four bytes inside data |
-| `reached(rom, window, entry=None, kind="lorom")` | File offsets of every instruction that reaches `window` on a walk from the ten native and emulation vectors, or from `entry`, following every call, jump and branch whose destination is spelled in the instruction. `kind` is the layout that maps addresses to file offsets |
+| `reached(rom, window, entry=None, kind="lorom")` | File offsets of every instruction that reaches `window` on a walk from the ten native and emulation vectors, or from `entry`, following every call, jump and branch whose destination is spelled in the instruction. `kind` is the layout that maps addresses to file offsets. The walk stops after 400,000 instructions |
 | `shapes(rom, window, narrow=True, limit=DEFAULT_LIMIT, find=sites)` | Every distinct shape and how many routines produce it. Each offset `find` returns starts a walk with `at` unless an earlier walk covered it |
 
 ```python

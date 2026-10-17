@@ -1,6 +1,7 @@
 import subprocess
 import sys
 import tempfile
+import types
 import unittest
 import unittest.mock
 from pathlib import Path
@@ -8,19 +9,12 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from conformance import cartridges
-from snesdriver import doctor, walk, windows
+import snesdriver
+from snesdriver import doctor
 
 
 class Complaint(Exception):
     pass
-
-
-def a_directory(names: tuple[str, ...] = ()) -> Path:
-    where = Path(tempfile.mkdtemp())
-    for name in names:
-        (where / name).write_bytes(b"\x00" * 16)
-    return where
 
 
 def a_file(body: str) -> Path:
@@ -71,291 +65,291 @@ class FindingTest(unittest.TestCase):
         self.assertEqual(repr(one), "<Finding python ok>")
 
 
+def refusing(*_: Any, **__: Any) -> Any:
+    raise Complaint("no")
+
+
+def loading(walk: Any = None, windows: Any = snesdriver) -> Any:
+    return lambda: (walk if walk is not None else snesdriver, windows)
+
+
 class PythonTest(unittest.TestCase):
     def test_it_reports_the_python_it_is_running_on(self) -> None:
-        one = doctor._python()
+        # Arrange
+        oldest = doctor.OLDEST_PYTHON
 
-        self.assertTrue(one.ok, one.detail)
+        # Act
+        one = doctor.check_python()
 
-    def test_and_names_the_package(self) -> None:
-        one = doctor._package()
+        # Assert
+        self.assertEqual(one.ok, sys.version_info[:2] >= oldest, one.detail)
 
-        self.assertEqual(one.name, "snesdriver")
+    def test_and_names_the_package_with_its_version(self) -> None:
+        # Arrange
+        version = snesdriver.VERSION
+
+        # Act
+        one = doctor.check_package()
+
+        # Assert
+        self.assertEqual((one.name, one.detail), ("snesdriver", f"version {version}"))
 
 
 class WindowTest(unittest.TestCase):
     def test_every_published_pair_has_a_window(self) -> None:
-        unwell = [
-            f"{part} under {layout}"
-            for part, layouts in windows.WINDOWS.items()
-            for layout in layouts
-            if not doctor._window(part, layout).ok
+        # Arrange
+        pairs = [
+            (part, layout) for part, layouts in snesdriver.WINDOWS.items() for layout in layouts
         ]
 
+        # Act
+        unwell = [pair for pair in pairs if not doctor.check_window(*pair).ok]
+
+        # Assert
         self.assertEqual(unwell, [])
 
-    def test_the_version_is_read_out_of_the_file_rather_than_imported(self) -> None:
-        from snesdriver.version import VERSION
+    def test_a_window_is_described_by_its_banks_and_registers(self) -> None:
+        # Arrange
+        part, layout = "dsp", "hirom"
 
-        self.assertEqual(doctor.VERSION, VERSION)
+        # Act
+        one = doctor.check_window(part, layout)
+
+        # Assert
+        self.assertEqual(one.detail, "banks 0x00 to 0x0f, data 0x6000, status 0x7000")
+
+    def test_the_version_is_read_out_of_the_file_rather_than_imported(self) -> None:
+        # Arrange
+        where = Path(doctor.__file__).resolve().parent / "version.py"
+
+        # Act
+        found = doctor.installed_version(where)
+
+        # Assert
+        self.assertEqual((found, doctor.VERSION), (snesdriver.VERSION, snesdriver.VERSION))
 
     def test_a_version_file_naming_nothing_reads_as_unknown(self) -> None:
+        # Arrange
         where = Path(tempfile.mkdtemp()) / "version.py"
         where.write_text("NOTHING = 1\n")
 
-        self.assertEqual(doctor._version(where), "unknown")
+        # Act
+        found = doctor.installed_version(where)
+
+        # Assert
+        self.assertEqual(found, "unknown")
 
     def test_a_pair_with_no_window_is_reported_as_a_defect_here(self) -> None:
-        one = doctor._window("dsp", "exhirom")
+        # Arrange
+        part, layout = "dsp", "exhirom"
 
-        self.assertFalse(one.ok, one.detail)
+        # Act
+        one = doctor.check_window(part, layout)
+
+        # Assert
+        self.assertEqual(
+            (one.ok, one.detail), (False, "no window, and every published pair should have one")
+        )
 
     def test_and_a_part_the_package_refuses_reports_what_it_said(self) -> None:
-        one = doctor._window("no such part", "lorom")
+        # Arrange
+        part = "no such part"
 
-        self.assertIn("UnknownPart", one.detail)
+        # Act
+        one = doctor.check_window(part, "lorom")
+
+        # Assert
+        self.assertEqual((one.ok, one.detail.split(":")[0]), (False, "UnknownPart"))
 
 
 class WalkingTest(unittest.TestCase):
     def test_a_conversation_is_walked_out_of_bytes_assembled_here(self) -> None:
-        one = doctor._walking()
+        # Arrange
+        part, layout = doctor.PROBE_PART, doctor.PROBE_LAYOUT
 
-        self.assertTrue(one.ok, one.detail)
+        # Act
+        one = doctor.check_walking(part, layout)
 
-    def test_the_routine_it_assembles_stores_into_the_window(self) -> None:
-        found = windows.window_for(doctor.PROBE_PART, doctor.PROBE_LAYOUT)
-        assert found is not None
+        # Assert
+        self.assertEqual((one.ok, one.detail), (True, "4 steps read out of 9 bytes assembled here"))
 
-        held = doctor._routine(found)
+    def test_the_routine_it_assembles_stores_to_data_and_polls_status(self) -> None:
+        # Arrange
+        window = snesdriver.WINDOWS["dsp"]["lorom"]
 
-        self.assertIn(found.data & 0xFF, held)
+        # Act
+        held = doctor.probe_routine(window)
+
+        # Assert
+        self.assertEqual(held, bytes((0xA9, 0x42, 0x8D, 0x00, 0x80, 0xAD, 0x00, 0xC0, 0x60)))
 
     def test_a_walker_that_refuses_is_reported_as_what_it_said(self) -> None:
-        def refuse(*_: Any, **__: Any) -> Any:
-            raise Complaint("no")
+        # Arrange
+        load = loading(walk=types.SimpleNamespace(through=refusing))
 
-        with unittest.mock.patch.object(walk, "through", refuse):
-            one = doctor._walking()
+        # Act
+        one = doctor.check_walking(load=load)
 
-        self.assertIn("Complaint", one.detail)
+        # Assert
+        self.assertEqual((one.ok, one.detail), (False, "Complaint: no"))
 
     def test_and_a_routine_that_walks_to_nothing_is_not_well(self) -> None:
-        with unittest.mock.patch.object(walk, "through", lambda *_, **__: iter(())):
-            one = doctor._walking()
+        # Arrange
+        load = loading(walk=types.SimpleNamespace(through=lambda *_, **__: iter(())))
 
-        self.assertFalse(one.ok, one.detail)
+        # Act
+        one = doctor.check_walking(load=load)
+
+        # Assert
+        self.assertEqual(
+            (one.ok, one.detail), (False, "0 steps read out of 9 bytes assembled here")
+        )
+
+    def test_and_a_part_with_no_window_under_the_layout_is_not_walked(self) -> None:
+        # Arrange
+        layout = "exhirom"
+
+        # Act
+        one = doctor.check_walking(layout=layout)
+
+        # Assert
+        self.assertEqual((one.ok, one.detail), (False, "no dsp window under exhirom"))
 
 
 class SubmoduleTest(unittest.TestCase):
     def test_every_submodule_this_repository_carries_is_checked_out(self) -> None:
-        absent = [name for name in doctor.SUBMODULES if not doctor._submodule(name).ok]
+        # Arrange
+        names = doctor.SUBMODULES
 
+        # Act
+        absent = [name for name in names if not doctor.check_submodule(name).ok]
+
+        # Assert
         self.assertEqual(absent, [])
 
-    def test_a_submodule_that_is_not_there_is_reported(self) -> None:
-        one = doctor._submodule("absent", Path(tempfile.mkdtemp()))
+    def test_a_submodule_that_is_not_there_is_reported_and_not_well(self) -> None:
+        # Arrange
+        where = Path(tempfile.mkdtemp())
 
-        self.assertIn("is not there", one.detail)
+        # Act
+        one = doctor.check_submodule("absent", where)
+
+        # Assert
+        self.assertEqual((one.ok, one.detail), (False, f"{where / 'absent'} is not there"))
 
     def test_a_directory_git_left_empty_is_reported_as_empty(self) -> None:
+        # Arrange
         where = Path(tempfile.mkdtemp())
         (where / "hollow").mkdir()
 
-        one = doctor._submodule("hollow", where)
+        # Act
+        one = doctor.check_submodule("hollow", where)
 
-        self.assertIn("is empty", one.detail)
-
-    def test_and_neither_is_well_because_the_checks_will_skip(self) -> None:
-        one = doctor._submodule("absent", Path(tempfile.mkdtemp()))
-
-        self.assertFalse(one.ok)
+        # Assert
+        self.assertEqual((one.ok, one.detail), (False, f"{where / 'hollow'} is empty"))
 
 
 class ManifestTest(unittest.TestCase):
     def test_the_manifest_beside_the_package_names_cartridges(self) -> None:
-        one = doctor._manifest()
+        # Arrange
+        where = doctor.MANIFEST
 
+        # Act
+        one = doctor.check_manifest(where)
+
+        # Assert
         self.assertTrue(one.ok, one.detail)
 
     def test_a_manifest_that_is_not_there_is_reported(self) -> None:
-        one = doctor._manifest(Path(tempfile.mkdtemp()) / "absent.json")
+        # Arrange
+        where = Path(tempfile.mkdtemp()) / "absent.json"
 
-        self.assertFalse(one.ok)
+        # Act
+        one = doctor.check_manifest(where)
+
+        # Assert
+        self.assertEqual((one.ok, one.detail.startswith("could not be read")), (False, True))
 
     def test_a_manifest_that_is_not_json_is_reported_differently(self) -> None:
-        one = doctor._manifest(a_file("{"))
+        # Arrange
+        where = a_file("{")
 
-        self.assertIn("not readable as JSON", one.detail)
+        # Act
+        one = doctor.check_manifest(where)
+
+        # Assert
+        self.assertEqual((one.ok, one.detail.startswith("is not readable as JSON")), (False, True))
 
     def test_a_manifest_naming_nothing_is_not_well(self) -> None:
-        one = doctor._manifest(a_file('{"cartridges": []}'))
-
-        self.assertFalse(one.ok)
-
-
-class LookingTest(unittest.TestCase):
-    def test_a_named_directory_is_reported_as_named(self) -> None:
-        found = doctor._looking({doctor.DIRECTORY_VARIABLE: "/somewhere"})
-
-        self.assertIn("set to /somewhere", found[0].detail)
-
-    def test_and_it_is_the_one_chosen_even_when_it_is_not_there(self) -> None:
-        found = doctor._looking({doctor.DIRECTORY_VARIABLE: "/somewhere"})
-
-        self.assertEqual(found[-1].detail, "/somewhere")
-
-    def test_an_unset_variable_says_the_places_are_tried_in_order(self) -> None:
-        found = doctor._looking({})
-
-        self.assertIn("tried in order", found[0].detail)
-
-    def test_and_the_chosen_place_is_one_of_the_places_looked_in(self) -> None:
-        found = doctor._looking({})
-
-        self.assertIn(found[-1].detail, found[1].detail)
-
-    def test_the_real_environment_is_read_when_none_is_given(self) -> None:
-        found = doctor._looking()
-
-        self.assertEqual(len(found), 3)
-
-    def test_the_default_is_chosen_when_no_place_exists(self) -> None:
-        held = Path(tempfile.mkdtemp()) / "absent"
-        with (
-            unittest.mock.patch.object(doctor, "DEFAULT_DIRECTORY", held),
-            unittest.mock.patch.object(doctor, "ALONGSIDE", held),
-        ):
-            found = doctor._looking({})
-
-        self.assertEqual(found[-1].detail, str(held))
-
-    def test_with_both_places_present_it_chooses_the_one_the_sweep_reads(self) -> None:
         # Arrange
-        alongside = a_directory()
-        default = a_directory()
-        places = (alongside, default)
+        where = a_file('{"cartridges": []}')
 
         # Act
-        with (
-            unittest.mock.patch.object(doctor, "DEFAULT_DIRECTORY", default),
-            unittest.mock.patch.object(doctor, "ALONGSIDE", alongside),
-        ):
-            found = doctor._looking({})
+        one = doctor.check_manifest(where)
 
         # Assert
-        self.assertEqual(found[-1].detail, str(cartridges.directory({}, places)))
-
-
-class LibraryTest(unittest.TestCase):
-    def test_a_library_that_is_not_there_is_reported_as_absent_not_broken(self) -> None:
-        one = doctor._library(Path(tempfile.mkdtemp()) / "absent")
-
-        self.assertTrue(one.ok, one.detail)
-
-    def test_and_says_the_check_against_cartridges_will_skip(self) -> None:
-        one = doctor._library(Path(tempfile.mkdtemp()) / "absent")
-
-        self.assertIn("skip rather than run", one.detail)
-
-    def test_a_library_holding_images_counts_them(self) -> None:
-        one = doctor._library(a_directory(("a.sfc", "b.smc")))
-
-        self.assertIn("2 images", one.detail)
-
-    def test_and_is_well(self) -> None:
-        one = doctor._library(a_directory(("a.sfc",)))
-
-        self.assertTrue(one.ok, one.detail)
-
-    def test_a_directory_that_is_there_and_empty_is_not_well(self) -> None:
-        one = doctor._library(a_directory())
-
-        self.assertFalse(one.ok, one.detail)
-
-    def test_the_directory_a_fresh_checkout_ships_empty_is_the_normal_state(self) -> None:
-        # Arrange
-        where = a_directory(("README.md",))
-
-        # Act
-        one = doctor._library(where, shipped=where)
-
-        # Assert
-        self.assertEqual((one.ok, "skip rather than run" in one.detail), (True, True))
-
-    def test_because_that_is_what_a_run_over_nothing_looks_like(self) -> None:
-        one = doctor._library(a_directory(("notes.txt",)))
-
-        self.assertIn("holds nothing", one.detail)
-
-    def test_a_library_that_cannot_be_read_is_reported_as_what_it_said(self) -> None:
-        where = a_directory()
-
-        def refuse(*_: Any, **__: Any) -> Any:
-            raise OSError("permission denied")
-
-        with unittest.mock.patch.object(Path, "rglob", refuse):
-            one = doctor._library(where)
-
-        self.assertIn("permission denied", one.detail)
+        self.assertEqual((one.ok, one.detail), (False, "0 cartridges named"))
 
 
 class ExamineTest(unittest.TestCase):
-    def test_the_examination_produces_findings(self) -> None:
-        found = doctor.examine()
-
-        self.assertTrue(all(isinstance(one, doctor.Finding) for one in found))
-
-    def test_it_looks_at_every_published_part_under_every_layout(self) -> None:
-        named = {one.name for one in doctor.examine()}
+    def test_it_looks_at_every_published_part_under_every_layout_then_the_library(self) -> None:
+        # Arrange
         wanted = {
             f"{part} under {layout}"
-            for part, layouts in windows.WINDOWS.items()
+            for part, layouts in snesdriver.WINDOWS.items()
             for layout in layouts
         }
 
-        self.assertTrue(wanted <= named, named)
-
-    def test_and_at_the_library_last_because_that_is_the_answer(self) -> None:
+        # Act
         found = doctor.examine()
 
-        self.assertEqual(found[-1].name, "library")
+        # Assert
+        self.assertEqual((wanted <= {one.name for one in found}, found[-1].name), (True, "library"))
 
 
 class ImportFailureTest(unittest.TestCase):
     def test_a_package_that_will_not_import_is_reported_as_one_finding(self) -> None:
-        def refuse() -> Any:
-            raise Complaint("no")
+        # Arrange
+        load = refusing
 
-        with unittest.mock.patch.object(doctor, "_loaded", refuse):
-            named = [one.name for one in doctor.examine() if one.name == "windows"]
+        # Act
+        found = doctor.examine(load=load)
 
-        self.assertEqual(named, ["windows"])
+        # Assert
+        self.assertEqual([one.detail for one in found if one.name == "windows"], ["Complaint: no"])
 
     def test_and_the_pairs_below_it_are_not_reported_at_all(self) -> None:
-        def refuse() -> Any:
-            raise Complaint("no")
+        # Arrange
+        load = refusing
 
-        with unittest.mock.patch.object(doctor, "_loaded", refuse):
-            found = doctor.examine()
+        # Act
+        found = doctor.examine(load=load)
 
+        # Assert
         self.assertEqual([one for one in found if " under " in one.name], [])
 
     def test_every_model_is_put_on_the_path_when_none_of_them_is_there(self) -> None:
+        # Arrange
         wanted = {str(doctor.ROOT / one) for one in doctor.SUBMODULES}
         held = [one for one in sys.path if one not in wanted and one != str(doctor.ROOT)]
 
+        # Act
         with unittest.mock.patch.object(sys, "path", held):
-            doctor._loaded()
+            doctor.load_modules()
 
-            self.assertEqual(wanted - set(held), set())
+        # Assert
+        self.assertEqual(wanted - set(held), set())
 
     def test_the_repository_is_put_on_the_path_when_it_is_not_already_there(self) -> None:
+        # Arrange
         held = [one for one in sys.path if one != str(doctor.ROOT)]
 
+        # Act
         with unittest.mock.patch.object(sys, "path", held):
-            doctor._loaded()
+            doctor.load_modules()
 
-            self.assertIn(str(doctor.ROOT), held)
+        # Assert
+        self.assertIn(str(doctor.ROOT), held)
 
 
 class ReportTest(unittest.TestCase):

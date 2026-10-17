@@ -8,7 +8,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from snesdriver import errors, windows
+import snesdriver
+
+SOURCE = ROOT / "snesdriver" / "errors.py"
 
 
 def reaching_back(source: str) -> list[str]:
@@ -27,31 +29,59 @@ def reaching_back(source: str) -> list[str]:
     return borrowed
 
 
+def defined_errors() -> list[str]:
+    tree = ast.parse(SOURCE.read_text())
+    return [node.name for node in tree.body if isinstance(node, ast.ClassDef)]
+
+
 class OneHomeTest(unittest.TestCase):
-    def named(self) -> list[str]:
-        return [
-            name
-            for name, held in vars(errors).items()
-            if isinstance(held, type) and issubclass(held, Exception)
-        ]
-
     def test_the_module_defines_the_refusal_this_package_makes(self) -> None:
-        self.assertEqual(sorted(self.named()), ["UnknownPart"])
+        # Arrange
+        source = SOURCE
 
-    def test_it_derives_from_exception(self) -> None:
-        stray = [name for name in self.named() if not issubclass(getattr(errors, name), Exception)]
+        # Act
+        found = defined_errors()
 
-        self.assertEqual(stray, [])
+        # Assert
+        self.assertEqual(found, ["UnknownPart"], source.name)
+
+    def test_the_package_exports_each_one_under_its_own_name(self) -> None:
+        # Arrange
+        names = defined_errors()
+
+        # Act
+        found = {
+            name: getattr(snesdriver, name).__module__
+            for name in names
+            if name in snesdriver.__all__
+        }
+
+        # Assert
+        self.assertEqual(found, dict.fromkeys(names, "snesdriver.errors"))
+
+    def test_and_each_derives_from_exception(self) -> None:
+        # Arrange
+        names = defined_errors()
+
+        # Act
+        kinds = [issubclass(getattr(snesdriver, name), Exception) for name in names]
+
+        # Assert
+        self.assertEqual(kinds, [True] * len(names))
 
     def test_naming_a_part_this_package_does_not_cover_raises_the_one_defined_here(self) -> None:
-        with self.assertRaises(errors.UnknownPart):
-            windows.window_for("cx4", "lorom")
+        # Arrange
+        part = "cx4"
 
-    def test_and_the_refusal_names_the_parts_it_does_cover(self) -> None:
-        with self.assertRaises(errors.UnknownPart) as caught:
-            windows.window_for("cx4", "lorom")
+        # Act
+        with self.assertRaises(snesdriver.UnknownPart) as caught:
+            snesdriver.window_for(part, "lorom")
 
-        self.assertIn("dsp", str(caught.exception))
+        # Assert
+        self.assertEqual(
+            str(caught.exception),
+            "cx4 is not a part with a known window; there are dsp, obc1, st, st018",
+        )
 
 
 class NoCycleTest(unittest.TestCase):

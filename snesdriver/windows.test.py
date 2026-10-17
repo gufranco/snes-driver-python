@@ -4,140 +4,256 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from snesdriver import windows
-from snesdriver.errors import UnknownPart
+import snesdriver
+
+DATA = "data"
+STATUS = "status"
+
+
+def window(part: str, layout: str) -> snesdriver.Window:
+    found = snesdriver.window_for(part, layout)
+    assert found is not None
+    return found
 
 
 class CatalogueTest(unittest.TestCase):
-    def test_the_package_knows_where_several_parts_answer(self) -> None:
-        self.assertIn("dsp", windows.WINDOWS)
+    def test_the_package_knows_where_each_part_answers_under_each_layout(self) -> None:
+        # Arrange
+        catalogue = snesdriver.WINDOWS
 
-    def test_every_part_names_a_window_for_at_least_one_layout(self) -> None:
-        for part, layouts in windows.WINDOWS.items():
-            self.assertTrue(layouts, part)
+        # Act
+        found = {part: sorted(layouts) for part, layouts in catalogue.items()}
 
-    def test_every_window_puts_its_data_below_its_status(self) -> None:
-        for part, layouts in windows.WINDOWS.items():
-            for layout, window in layouts.items():
-                self.assertLess(window.data, window.status, (part, layout))
+        # Assert
+        self.assertEqual(
+            found,
+            {
+                "dsp": ["hirom", "lorom"],
+                "st": ["lorom", "lorom-shared"],
+                "obc1": ["lorom"],
+                "st018": ["lorom"],
+            },
+        )
 
-    def test_every_window_names_the_banks_it_answers_in(self) -> None:
-        for layouts in windows.WINDOWS.values():
-            for window in layouts.values():
-                self.assertLessEqual(window.first_bank, window.last_bank)
+    def test_the_two_register_names_are_the_strings_the_readme_gives(self) -> None:
+        # Arrange
+        names = (snesdriver.DATA, snesdriver.STATUS)
 
-    def test_the_seta_parts_answer_in_two_places_rather_than_one(self) -> None:
-        self.assertEqual(sorted(windows.WINDOWS["st"]), ["lorom", "lorom-shared"])
+        # Act
+        found = list(names)
+
+        # Assert
+        self.assertEqual(found, [DATA, STATUS])
 
     def test_the_shared_window_sits_above_the_port_window(self) -> None:
-        port = windows.WINDOWS["st"]["lorom"]
-        shared = windows.WINDOWS["st"]["lorom-shared"]
+        # Arrange
+        shared = window("st", "lorom-shared")
 
-        self.assertGreater(shared.first_bank, port.last_bank)
+        # Act
+        found = [shared.reaches(bank, 0x0000) for bank in (0x67, 0x68)]
+
+        # Assert
+        self.assertEqual(found, [None, DATA])
 
     def test_the_control_pair_reads_as_status_in_the_shared_window(self) -> None:
-        shared = windows.WINDOWS["st"]["lorom-shared"]
+        # Arrange
+        shared = window("st", "lorom-shared")
 
-        self.assertEqual(
-            [shared.reaches(0x68, at) for at in (0x0000, 0x0010, 0x0020, 0x0021)],
-            [windows.DATA, windows.DATA, windows.STATUS, windows.STATUS],
-        )
+        # Act
+        found = [shared.reaches(0x68, at) for at in (0x0000, 0x0010, 0x0020, 0x0021, 0x0022)]
+
+        # Assert
+        self.assertEqual(found, [DATA, DATA, STATUS, STATUS, DATA])
 
     def test_the_shared_window_covers_every_bank_the_part_mirrors_into(self) -> None:
-        shared = windows.WINDOWS["st"]["lorom-shared"]
+        # Arrange
+        shared = window("st", "lorom-shared")
 
-        self.assertEqual(
-            [shared.reaches(bank, 0x0020) for bank in (0x67, 0x68, 0x6F, 0x70)],
-            [None, windows.STATUS, windows.STATUS, None],
-        )
+        # Act
+        found = [shared.reaches(bank, 0x0020) for bank in (0x67, 0x68, 0x6F, 0x70)]
+
+        # Assert
+        self.assertEqual(found, [None, STATUS, STATUS, None])
 
     def test_the_sprite_remapper_answers_in_the_low_banks(self) -> None:
-        window = windows.WINDOWS["obc1"]["lorom"]
+        # Arrange
+        remapper = window("obc1", "lorom")
 
-        self.assertEqual((window.first_bank, window.last_bank), (0x00, 0x3F))
+        # Act
+        found = [remapper.reaches(bank, 0x6000) for bank in (0x00, 0x3F, 0x40)]
+
+        # Assert
+        self.assertEqual(found, [DATA, DATA, None])
 
     def test_its_register_file_is_the_top_of_its_window(self) -> None:
-        window = windows.WINDOWS["obc1"]["lorom"]
+        # Arrange
+        remapper = window("obc1", "lorom")
 
-        self.assertEqual(
-            [window.reaches(0x00, at) for at in (0x5FFF, 0x6000, 0x7FEF, 0x7FF0, 0x7FFF)],
-            [None, windows.DATA, windows.DATA, windows.STATUS, windows.STATUS],
-        )
+        # Act
+        found = [remapper.reaches(0x00, at) for at in (0x5FFF, 0x6000, 0x7FEF, 0x7FF0, 0x7FFF)]
+
+        # Assert
+        self.assertEqual(found, [None, DATA, DATA, STATUS, STATUS])
 
     def test_a_window_prints_as_the_range_it_covers(self) -> None:
-        printed = repr(windows.WINDOWS["dsp"]["lorom"])
+        # Arrange
+        dsp = window("dsp", "lorom")
 
-        self.assertIn("8000", printed)
+        # Act
+        printed = repr(dsp)
+
+        # Assert
+        self.assertEqual(printed, "<Window $30-$3f:8000 data, c000 status>")
+
+    def test_a_window_built_by_hand_ends_its_status_range_where_its_data_ends(self) -> None:
+        # Arrange
+        built = snesdriver.Window(0x00, 0x00, 0x1000, 0x1800, 0x1FFF)
+
+        # Act
+        found = [built.reaches(0x00, at) for at in (0x17FF, 0x1800, 0x1FFF, 0x2000)]
+
+        # Assert
+        self.assertEqual(found, [DATA, STATUS, STATUS, None])
 
 
 class ReachTest(unittest.TestCase):
     def test_an_address_inside_the_data_range_is_data(self) -> None:
-        window = windows.WINDOWS["dsp"]["lorom"]
+        # Arrange
+        dsp = window("dsp", "lorom")
 
-        self.assertEqual(window.reaches(0x30, 0x8000), windows.DATA)
+        # Act
+        found = dsp.reaches(0x30, 0x8000)
+
+        # Assert
+        self.assertEqual(found, DATA)
 
     def test_an_address_inside_the_status_range_is_status(self) -> None:
-        window = windows.WINDOWS["dsp"]["lorom"]
+        # Arrange
+        dsp = window("dsp", "lorom")
 
-        self.assertEqual(window.reaches(0x30, 0xC000), windows.STATUS)
+        # Act
+        found = dsp.reaches(0x30, 0xC000)
+
+        # Assert
+        self.assertEqual(found, STATUS)
 
     def test_the_last_address_of_each_range_still_counts(self) -> None:
-        window = windows.WINDOWS["dsp"]["lorom"]
+        # Arrange
+        dsp = window("dsp", "lorom")
 
-        self.assertEqual(window.reaches(0x3F, 0xBFFF), windows.DATA)
-        self.assertEqual(window.reaches(0x3F, 0xFFFF), windows.STATUS)
+        # Act
+        found = [dsp.reaches(0x3F, at) for at in (0xBFFF, 0xFFFF)]
+
+        # Assert
+        self.assertEqual(found, [DATA, STATUS])
 
     def test_a_bank_outside_the_range_reaches_nothing(self) -> None:
-        window = windows.WINDOWS["dsp"]["lorom"]
+        # Arrange
+        dsp = window("dsp", "lorom")
 
-        self.assertIsNone(window.reaches(0x10, 0x8000))
+        # Act
+        found = [dsp.reaches(bank, 0x8000) for bank in (0x2F, 0x40)]
+
+        # Assert
+        self.assertEqual(found, [None, None])
 
     def test_and_an_address_below_the_window_reaches_nothing(self) -> None:
-        window = windows.WINDOWS["dsp"]["lorom"]
+        # Arrange
+        dsp = window("dsp", "lorom")
 
-        self.assertIsNone(window.reaches(0x30, 0x7FFF))
+        # Act
+        found = dsp.reaches(0x30, 0x7FFF)
+
+        # Assert
+        self.assertIsNone(found)
 
     def test_the_high_layout_answers_lower_in_the_bank(self) -> None:
-        window = windows.WINDOWS["dsp"]["hirom"]
+        # Arrange
+        dsp = window("dsp", "hirom")
 
-        self.assertEqual(window.reaches(0x00, 0x6000), windows.DATA)
-        self.assertEqual(window.reaches(0x00, 0x7000), windows.STATUS)
+        # Act
+        found = [dsp.reaches(0x00, at) for at in (0x6000, 0x7000)]
+
+        # Assert
+        self.assertEqual(found, [DATA, STATUS])
 
 
 class ChoosingTest(unittest.TestCase):
     def test_a_layout_the_part_has_a_window_for_is_found(self) -> None:
-        self.assertIsNotNone(windows.window_for("dsp", "lorom"))
+        # Arrange
+        expected = snesdriver.WINDOWS["dsp"]["lorom"]
+
+        # Act
+        found = snesdriver.window_for("dsp", "lorom")
+
+        # Assert
+        self.assertIs(found, expected)
 
     def test_a_layout_it_has_none_for_answers_nothing(self) -> None:
-        self.assertIsNone(windows.window_for("dsp", "exhirom"))
+        # Arrange
+        layout = "exhirom"
 
-    def test_a_part_it_does_not_know_is_refused(self) -> None:
-        with self.assertRaises(UnknownPart):
-            windows.window_for("nonsense", "lorom")
+        # Act
+        found = snesdriver.window_for("dsp", layout)
 
-    def test_the_parts_it_knows_are_listed_in_the_refusal(self) -> None:
-        with self.assertRaises(UnknownPart) as raised:
-            windows.window_for("nonsense", "lorom")
+        # Assert
+        self.assertIsNone(found)
 
-        self.assertIn("dsp", str(raised.exception))
+    def test_a_part_it_does_not_know_is_refused_with_every_part_it_knows(self) -> None:
+        # Arrange
+        part = "nonsense"
+
+        # Act
+        with self.assertRaises(snesdriver.UnknownPart) as raised:
+            snesdriver.window_for(part, "lorom")
+
+        # Assert
+        self.assertEqual(
+            str(raised.exception),
+            "nonsense is not a part with a known window; there are dsp, obc1, st, st018",
+        )
 
 
 class GuessingTest(unittest.TestCase):
     def test_a_part_with_no_window_for_the_layout_is_passed_over(self) -> None:
+        # Arrange
         reaches = [(0x00, 0x6000)] * 5
 
-        self.assertEqual(windows.busiest("hirom", reaches), "dsp")
+        # Act
+        found = snesdriver.busiest("hirom", reaches)
+
+        # Assert
+        self.assertEqual(found, "dsp")
 
     def test_the_busiest_window_in_a_run_of_addresses_is_the_one_chosen(self) -> None:
-        reaches = [(0x30, 0x8000)] * 20 + [(0x00, 0x2140)] * 3
+        # Arrange
+        reaches = [(0x30, 0x8000)] * 2 + [(0x60, 0x0000)] * 3
 
-        self.assertEqual(windows.busiest("lorom", reaches), "dsp")
+        # Act
+        found = snesdriver.busiest("lorom", reaches)
+
+        # Assert
+        self.assertEqual(found, "st")
 
     def test_a_run_that_reaches_no_window_chooses_nothing(self) -> None:
-        self.assertIsNone(windows.busiest("lorom", [(0x00, 0x2140)] * 5))
+        # Arrange
+        reaches = [(0x00, 0x2140)] * 5
+
+        # Act
+        found = snesdriver.busiest("lorom", reaches)
+
+        # Assert
+        self.assertIsNone(found)
 
     def test_and_an_empty_run_chooses_nothing(self) -> None:
-        self.assertIsNone(windows.busiest("lorom", []))
+        # Arrange
+        reaches: list[tuple[int, int]] = []
+
+        # Act
+        found = snesdriver.busiest("lorom", reaches)
+
+        # Assert
+        self.assertIsNone(found)
 
 
 if __name__ == "__main__":

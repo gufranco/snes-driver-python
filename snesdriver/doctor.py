@@ -13,7 +13,7 @@ if TYPE_CHECKING:  # pragma: no cover
     from collections.abc import Callable, Mapping, Sequence
 
 
-def _version(where: Path | None = None) -> str:
+def installed_version(where: Path | None = None) -> str:
     found = re.search(
         r"""VERSION\s*[:=][^"']*["']([^"']+)["']""",
         (where or Path(__file__).resolve().parent / "version.py").read_text(),
@@ -21,10 +21,10 @@ def _version(where: Path | None = None) -> str:
     return found.group(1) if found else "unknown"
 
 
-VERSION = _version()
+VERSION = installed_version()
 
 
-def _loaded() -> Any:
+def load_modules() -> Any:
     if str(ROOT) not in sys.path:
         sys.path.insert(0, str(ROOT))
     for one in SUBMODULES:
@@ -91,7 +91,7 @@ class Finding:
         return f"<Finding {self.name} {'ok' if self.ok else 'not ok'}>"
 
 
-def _python() -> Finding:
+def check_python() -> Finding:
     return Finding(
         "python",
         sys.version_info[:2] >= OLDEST_PYTHON,
@@ -100,13 +100,13 @@ def _python() -> Finding:
     )
 
 
-def _package() -> Finding:
+def check_package() -> Finding:
     return Finding("snesdriver", True, f"version {VERSION}")
 
 
-def _window(part: str, layout: str) -> Finding:
+def check_window(part: str, layout: str, load: Callable[[], Any] = load_modules) -> Finding:
     try:
-        _, windows = _loaded()
+        _, windows = load()
         found = windows.window_for(part, layout)
     except Exception as trouble:
         return Finding(f"{part} under {layout}", False, f"{type(trouble).__name__}: {trouble}")
@@ -125,7 +125,7 @@ def _window(part: str, layout: str) -> Finding:
     )
 
 
-def _routine(window: Any) -> bytes:
+def probe_routine(window: Any) -> bytes:
     return bytes(
         (
             0xA9,
@@ -141,13 +141,15 @@ def _routine(window: Any) -> bytes:
     )
 
 
-def _walking(part: str = PROBE_PART, layout: str = PROBE_LAYOUT) -> Finding:
+def check_walking(
+    part: str = PROBE_PART, layout: str = PROBE_LAYOUT, load: Callable[[], Any] = load_modules
+) -> Finding:
     try:
-        walk, windows = _loaded()
+        walk, windows = load()
         found = windows.window_for(part, layout)
-        if found is None:  # pragma: no cover
+        if found is None:
             return Finding("walking a routine", False, f"no {part} window under {layout}")
-        held = list(walk.through(_routine(found), 0, address=0x8000))
+        held = list(walk.through(probe_routine(found), 0, address=0x8000))
     except Exception as trouble:
         return Finding(
             "walking a routine",
@@ -159,13 +161,13 @@ def _walking(part: str = PROBE_PART, layout: str = PROBE_LAYOUT) -> Finding:
     return Finding(
         "walking a routine",
         bool(held),
-        f"{len(held)} steps read out of {len(_routine(found))} bytes assembled here",
+        f"{len(held)} steps read out of {len(probe_routine(found))} bytes assembled here",
         "a routine that walks to nothing means the disassembler under this is not"
         " answering; check the mos65xx-python submodule below",
     )
 
 
-def _submodule(name: str, root: Path = ROOT) -> Finding:
+def check_submodule(name: str, root: Path = ROOT) -> Finding:
     where = root / name
     if (where / "pyproject.toml").is_file():
         return Finding(f"submodule {name}", True, f"checked out at {where}")
@@ -178,7 +180,7 @@ def _submodule(name: str, root: Path = ROOT) -> Finding:
     )
 
 
-def _manifest(path: Path | str = MANIFEST) -> Finding:
+def check_manifest(path: Path | str = MANIFEST) -> Finding:
     try:
         held = json.loads(Path(path).read_text())
     except OSError as trouble:
@@ -205,13 +207,15 @@ def _manifest(path: Path | str = MANIFEST) -> Finding:
     )
 
 
-def _looking(environment: Mapping[str, str] | None = None) -> list[Finding]:
+def check_looking(
+    environment: Mapping[str, str] | None = None,
+    alongside: Path = ALONGSIDE,
+    default: Path = DEFAULT_DIRECTORY,
+) -> list[Finding]:
     held = environment if environment is not None else os.environ
     named = held.get(DIRECTORY_VARIABLE)
-    places = [*([Path(named)] if named else []), ALONGSIDE, DEFAULT_DIRECTORY]
-    chosen = (
-        Path(named) if named else next((one for one in places if one.is_dir()), DEFAULT_DIRECTORY)
-    )
+    places = [*([Path(named)] if named else []), alongside, default]
+    chosen = Path(named) if named else next((one for one in places if one.is_dir()), default)
     return [
         Finding(
             DIRECTORY_VARIABLE,
@@ -223,7 +227,7 @@ def _looking(environment: Mapping[str, str] | None = None) -> list[Finding]:
     ]
 
 
-def _library(where: Path | str, shipped: Path = DEFAULT_DIRECTORY) -> Finding:
+def check_library(where: Path | str, shipped: Path = DEFAULT_DIRECTORY) -> Finding:
     place = Path(where)
     if not place.is_dir():
         return Finding(
@@ -261,10 +265,11 @@ def examine(
     environment: Mapping[str, str] | None = None,
     manifest: Path | str = MANIFEST,
     root: Path = ROOT,
+    load: Callable[[], Any] = load_modules,
 ) -> list[Finding]:
-    found = [_python(), _package()]
+    found = [check_python(), check_package()]
     try:
-        _, windows = _loaded()
+        _, windows = load()
         pairs = [
             (part, layout)
             for part, layouts in sorted(windows.WINDOWS.items())
@@ -281,13 +286,13 @@ def examine(
                 " could be looked at; the submodule lines say why",
             )
         )
-    found.extend(_window(part, layout) for part, layout in pairs)
-    found.append(_walking())
-    found.extend(_submodule(name, root) for name in SUBMODULES)
-    found.append(_manifest(manifest))
-    where = _looking(environment)
+    found.extend(check_window(part, layout, load) for part, layout in pairs)
+    found.append(check_walking(load=load))
+    found.extend(check_submodule(name, root) for name in SUBMODULES)
+    found.append(check_manifest(manifest))
+    where = check_looking(environment)
     found.extend(where)
-    found.append(_library(where[-1].detail))
+    found.append(check_library(where[-1].detail))
     return found
 
 

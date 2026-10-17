@@ -6,7 +6,7 @@ from typing import Any, override
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from snesdriver import windows
+import snesdriver
 
 HARDWARE = Path(__file__).resolve().parent / "hardware.json"
 
@@ -17,28 +17,38 @@ def declared() -> dict[str, Any]:
     return held
 
 
-def _declared_edges(row: dict[str, Any]) -> tuple[int, ...]:
-    return (
-        int(row["banks"][0], 16),
-        int(row["banks"][1], 16),
-        int(row["data"], 16),
-        int(row["status"], 16),
-        int(row["end"], 16),
-        int(row["statusEnd"], 16),
-    )
+def declared_register(row: dict[str, Any], bank: int, address: int) -> str | None:
+    first, last = (int(one, 16) for one in row["banks"])
+    if not first <= bank <= last:
+        return None
+    if int(row["status"], 16) <= address <= int(row["statusEnd"], 16):
+        return "status"
+    if int(row["data"], 16) <= address <= int(row["end"], 16):
+        return "data"
+    return None
 
 
-def _table_edges(row: dict[str, Any]) -> tuple[int, ...]:
-    window = windows.window_for(row["part"], row["layout"])
+def probes(row: dict[str, Any]) -> list[tuple[int, int]]:
+    edges = [int(row[name], 16) for name in ("data", "status", "end", "statusEnd")]
+    banks = [int(one, 16) for one in row["banks"]]
+    addresses = {one + step for one in edges for step in (-1, 0, 1)}
+    returned = {one + step for one in banks for step in (-1, 0, 1)}
+    return [
+        (bank, address)
+        for bank in sorted(returned)
+        for address in sorted(addresses)
+        if 0 <= bank <= 0xFF and 0 <= address <= 0xFFFF
+    ]
+
+
+def misread(row: dict[str, Any]) -> list[tuple[int, int]]:
+    window = snesdriver.window_for(row["part"], row["layout"])
     assert window is not None, f"{row['part']}/{row['layout']} is declared and not known"
-    return (
-        window.first_bank,
-        window.last_bank,
-        window.data,
-        window.status,
-        window.end,
-        window.status_end,
-    )
+    return [
+        (bank, address)
+        for bank, address in probes(row)
+        if window.reaches(bank, address) != declared_register(row, bank, address)
+    ]
 
 
 class DocumentTest(unittest.TestCase):
@@ -91,29 +101,53 @@ class TableTest(unittest.TestCase):
         self.rows: list[dict[str, Any]] = declared()["windows"]
 
     def test_every_declared_window_is_one_this_package_knows(self) -> None:
+        # Arrange
+        rows = self.rows
+
+        # Act
         missing = [
             f"{row['part']}/{row['layout']}"
-            for row in self.rows
-            if windows.window_for(row["part"], row["layout"]) is None
+            for row in rows
+            if snesdriver.window_for(row["part"], row["layout"]) is None
         ]
 
+        # Assert
         self.assertEqual(missing, [])
 
     def test_and_every_window_this_package_knows_is_declared(self) -> None:
+        # Arrange
         declared_pairs = {(row["part"], row["layout"]) for row in self.rows}
 
-        known = {(part, layout) for part, layouts in windows.WINDOWS.items() for layout in layouts}
+        # Act
+        known = {
+            (part, layout) for part, layouts in snesdriver.WINDOWS.items() for layout in layouts
+        }
 
+        # Assert
         self.assertEqual(known - declared_pairs, set())
 
-    def test_every_declared_address_matches_the_table(self) -> None:
-        wrong = [
-            (row["part"], row["layout"], _declared_edges(row), _table_edges(row))
-            for row in self.rows
-            if _declared_edges(row) != _table_edges(row)
-        ]
+    def test_every_declared_edge_is_where_the_window_answers(self) -> None:
+        # Arrange
+        rows = self.rows
 
-        self.assertEqual(wrong, [])
+        # Act
+        wrong = {f"{row['part']}/{row['layout']}": found for row in rows if (found := misread(row))}
+
+        # Assert
+        self.assertEqual(wrong, {})
+
+    def test_the_probes_cross_every_declared_edge(self) -> None:
+        # Arrange
+        row = next(one for one in self.rows if (one["part"], one["layout"]) == ("dsp", "lorom"))
+
+        # Act
+        found = probes(row)
+
+        # Assert
+        self.assertEqual(
+            (len(found), found[0], found[-1], (0x30, 0xBFFF) in found, (0x40, 0xC000) in found),
+            (6 * 8, (0x2F, 0x7FFF), (0x40, 0xFFFF), True, True),
+        )
 
     def test_the_select_bit_is_the_one_that_separates_data_from_status(self) -> None:
         wrong = [

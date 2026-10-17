@@ -109,9 +109,7 @@ JUMPS = ("jmp", "jml", "bra", "brl")
 
 DIRECT = ("absolutePC", LONG)
 
-RESET_VECTOR = 0x7FFC
-
-VECTORS = (0x7FE4, 0x7FE6, 0x7FE8, 0x7FEA, 0x7FEE, 0x7FF4, 0x7FF8, 0x7FFA, 0x7FFC, 0x7FFE)
+VECTORS = (0xFFE4, 0xFFE6, 0xFFE8, 0xFFEA, 0xFFEE, 0xFFF4, 0xFFF8, 0xFFFA, 0xFFFC, 0xFFFE)
 
 EVERYWHERE_LIMIT = 400000
 
@@ -169,7 +167,10 @@ def _entries(
     if entry is not None:
         return (entry,)
     found = []
-    for at in VECTORS:
+    for vector in VECTORS:
+        at = _offset(0x00, vector, banks, kind)
+        if at is None:
+            continue
         address = int.from_bytes(rom[at : at + 2], "little")
         if _offset(0x00, address, banks, kind) is not None and address not in found:
             found.append(address)

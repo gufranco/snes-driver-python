@@ -109,9 +109,9 @@ follow_imports = "skip"
 ignore_missing_imports = true
 
 [tool.coverage.run]
-source = ["snesdriver", "conformance"]
+source = ["."]
 branch = true
-omit = []
+omit = ["mos65xx-python/*", "snes-mapper-python/*"]
 
 [tool.coverage.report]
 fail_under = 100
@@ -121,10 +121,6 @@ exclude_also = [
   # there is nothing behind it left to exercise. Importing the module to cover
   # the guard would run the tool rather than test it.
   'if __name__ == "__main__":',
-  # The installed console command is that same guard wearing a name setuptools can
-  # point an entry point at. It reads argv and raises SystemExit around a function
-  # the tests drive directly.
-  "def command\\(\\):",
   # A type checking block never runs, by definition. Python 3.14 drops it before
   # coverage can see it and earlier versions do not, so leaving it in would make
   # the gate mean one thing on the newest runtime and another on the oldest

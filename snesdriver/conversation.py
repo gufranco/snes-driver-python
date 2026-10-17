@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Protocol, override, runtime_checkable
+from typing import TYPE_CHECKING, Protocol, override
 
 if TYPE_CHECKING:  # pragma: no cover
     from collections.abc import Iterable
@@ -27,8 +27,8 @@ class Step:
         self,
         what: str,
         width: int,
-        address: int | None,
-        bank: int | None = None,
+        address: int,
+        bank: int,
         banked: bool = True,
     ) -> None:
         self.what = what
@@ -38,9 +38,7 @@ class Step:
         self.banked = banked
 
     @property
-    def whole(self) -> int | None:
-        if self.bank is None or self.address is None:
-            return None
+    def whole(self) -> int:
         return self.bank << 16 | self.address
 
     @override
@@ -83,12 +81,6 @@ class Conversation:
         return f"<Conversation {self.shape or 'nothing'}>"
 
 
-def _reached(step: walk.Step, window: Reaching) -> str | None:
-    if step.bank is None or step.address is None:
-        return None
-    return window.reaches(step.bank, step.address)
-
-
 def at(
     rom: bytes,
     offset: int,
@@ -101,12 +93,15 @@ def at(
     for step in walk.through(rom, offset, narrow=narrow, limit=limit):
         if step.depth == 0:
             covered.append(step.offset)
-        register = _reached(step, window)
+        bank, address = step.bank, step.address
+        if bank is None or address is None:
+            continue
+        register = window.reaches(bank, address)
         if register is None:
             continue
         reading_status = step.reading and register == windows.STATUS
         what = POLL if reading_status else (READ if step.reading else WRITE)
-        steps.append(Step(what, step.width, step.address, step.bank, step.banked))
+        steps.append(Step(what, step.width, address, bank, step.banked))
     return Conversation(steps, covered)
 
 
@@ -114,7 +109,6 @@ class Finding(Protocol):
     def __call__(self, rom: bytes, window: Reaching) -> tuple[int, ...]: ...
 
 
-@runtime_checkable
 class Reaching(Protocol):
     def reaches(self, bank: int, address: int) -> str | None: ...
 

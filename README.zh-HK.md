@@ -8,7 +8,7 @@
 [![Release](https://img.shields.io/github/v/release/gufranco/snes-driver-python)](https://github.com/gufranco/snes-driver-python/releases)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-**42** 個卡帶以四種摘要識別，**36** 個 DSP 卡帶在 **2** 種佈局下讀取，與自身摘要不符者 **0** 個，未向部件發出任何存取者 **0** 個，**3** 種存取，**652** 項測試，**100%** 語句及分支覆蓋率，無依賴套件
+**42** 個卡帶以四種摘要識別，**36** 個 DSP 卡帶在 **2** 種佈局下讀取，與自身摘要不符者 **0** 個，未向部件發出任何存取者 **0** 個，**3** 種存取，**655** 項測試，**100%** 語句及分支覆蓋率，無依賴套件
 
 ```python
 from snesdriver import at, window_for
@@ -218,7 +218,7 @@ print(shapes(image, window))
 | 呼叫 | 返回 |
 |:--|:--|
 | `sites(rom, window)` | 每個位址到達 `window` 的長載入（操作碼 `$AF`）及長存入（操作碼 `$8F`）的檔案偏移。這是位元組搜尋：它也會在數據中找到這四個位元組 |
-| `reached(rom, window, entry=None, kind="lorom")` | 從十個原生及模擬模式向量或從 `entry` 開始走訪時，每條到達 `window` 的指令的檔案偏移；走訪會跟隨每個目標寫在指令中的呼叫、跳轉及分支。`kind` 是把位址對應到檔案偏移的佈局 |
+| `reached(rom, window, entry=None, kind="lorom")` | 從十個原生及模擬模式向量或從 `entry` 開始走訪時，每條到達 `window` 的指令的檔案偏移；走訪會跟隨每個目標寫在指令中的呼叫、跳轉及分支。`kind` 是把位址對應到檔案偏移的佈局。走訪在 400,000 條指令後停止 |
 | `shapes(rom, window, narrow=True, limit=DEFAULT_LIMIT, find=sites)` | 每種不同的形態及產生它的例程數目。`find` 返回的每個偏移都會以 `at` 開始一次走訪，除非先前的走訪已覆蓋它 |
 
 ```python
