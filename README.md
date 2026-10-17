@@ -8,7 +8,7 @@ English | [日本語](README.ja.md) | [简体中文](README.zh-Hans.md) | [繁�
 [![Release](https://img.shields.io/github/v/release/gufranco/snes-driver-python)](https://github.com/gufranco/snes-driver-python/releases)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-**42** cartridges named by four digests, **36** DSP cartridges read under **2** layouts, **0** disagreements with their own digests, **0** that said nothing to the part, **3** kinds of access, **636** tests, **100%** statement and branch coverage, no dependencies
+**42** cartridges named by four digests, **36** DSP cartridges read under **2** layouts, **0** disagreements with their own digests, **0** that said nothing to the part, **3** kinds of access, **652** tests, **100%** statement and branch coverage, no dependencies
 
 ```python
 from snesdriver import at, window_for
