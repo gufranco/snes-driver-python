@@ -1,17 +1,3 @@
-# This repository ships no packaging block, and that is deliberate.
-#
-# It consumes a sibling member as a submodule rather than as a version range, so
-# a wheel built from here would install cleanly and then raise on its first
-# import: the submodule is not in it and cannot be. The readme says the same
-# thing in prose. Keeping a `[project]` block beside that sentence would let
-# somebody `pip install git+...` and receive exactly the broken package the
-# sentence warns about.
-#
-# What the two members that consume nothing do instead is publish normally, with
-# a signed bill of materials proving the dependency tree is empty. The check that
-# holds this one to the same claim reads the imports rather than an environment,
-# because there is no environment to read.
-
 [tool.setuptools]
 packages = ["snesdriver"]
 
@@ -37,46 +23,18 @@ ignore = [
   "PLC0415",
   "PLR0917",
   "E501",
-  # N818 wants every exception to end in Error. The control flow signals here are
-  # named the way CPython names its own: StopIteration, SystemExit and
-  # GeneratorExit carry no suffix either. The exceptions that report a genuine
-  # failure do end in Error.
   "N818",
 ]
 
 [tool.ruff.lint.per-file-ignores]
-# The environment checks are the same shape and exist for the same reason: they
-# report what a machine is, so a check that throws has to become a line in the
-# report rather than end the run, and its output is the product.
 "snesdriver/environment.py" = ["BLE001", "T201"]
-# conformance/family.test.py is the shared file every member carries identically,
-# so it carries directives for rules a given member may have turned off. RUF100
-# would report those as stale here; the reference copy has every one of those
-# rules on, which is where a genuinely stale directive is caught.
 "conformance/family.test.py" = ["RUF100"]
-# A test file sits beside the module it covers and is named after it, so its
-# module name carries a dot that N999 rejects. The layout is deliberate: a
-# module and its tests are read together.
 "*.test.py" = ["PLR2004", "N999"]
-# The doctor catches everything on purpose. It exists to report what this
-# machine did when something went wrong, and a refusal it did not anticipate is
-# the finding rather than a reason to stop with a traceback. Printing is its
-# output rather than a stray debug statement, for the same reason as the tools
-# below.
 "snesdriver/doctor.py" = ["BLE001", "T201"]
-# These are command line tools. Printing is their output, not a stray debug
-# statement left behind, and routing it through a logger would put a level and
-# a timestamp in front of a report meant to be read by a person.
-# The packages this is built on are submodules rather than installed
-# distributions, so their paths go on sys.path before they can be imported.
-# Nothing else in these files runs before those imports.
 "conformance/*.py" = ["T201", "E402"]
 "snesdriver/*.test.py" = ["E402"]
 
 [tool.mypy]
-# Every flag mypy has, plus the ones strict does not turn on. This reads somebody
-# else's machine code and reports what it found, so the errors that matter are the
-# ones where a width, an offset or a None crosses a boundary it should not.
 strict = true
 python_version = "3.12"
 warn_unreachable = true
@@ -93,17 +51,9 @@ enable_error_code = [
   "unused-awaitable",
 ]
 files = ["snesdriver", "conformance"]
-# The directory a user keeps their games in is called cartridges, and so is a
-# module in conformance. A bare `import cartridges` is therefore ambiguous: the
-# checker resolves it to the directory, which is an implicit namespace package
-# with nothing in it, and every attribute reads as missing. The scripts import it
-# package-qualified instead, which is unambiguous at runtime and here.
 exclude = "^(cartridges|firmware)/"
 
 [[tool.mypy.overrides]]
-# The submodules are checked in their own repositories, against their own gate.
-# Following imports into them here would report the state of somebody else's
-# project and a finding nobody in this one can act on.
 module = ["mos65xx.*", "mapper.*"]
 follow_imports = "skip"
 ignore_missing_imports = true
@@ -117,17 +67,8 @@ omit = ["mos65xx-python/*", "snes-mapper-python/*"]
 fail_under = 100
 show_missing = true
 exclude_also = [
-  # The command line guard hands argv to a function that is itself tested, so
-  # there is nothing behind it left to exercise. Importing the module to cover
-  # the guard would run the tool rather than test it.
   'if __name__ == "__main__":',
-  # A type checking block never runs, by definition. Python 3.14 drops it before
-  # coverage can see it and earlier versions do not, so leaving it in would make
-  # the gate mean one thing on the newest runtime and another on the oldest
-  # supported one, which is worse than either.
   'if TYPE_CHECKING:',
-  # A protocol method has no body to run, whether the ellipsis sits on its own
-  # line or after the signature. The same version split applies.
   '^\s*\.\.\.$',
   ': \.\.\.$',
 ]

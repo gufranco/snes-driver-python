@@ -145,6 +145,37 @@ module of the same name.
 | Releases | semantic-release from `main`; never tag by hand |
 | Cartridges | Never committed, never vendored, never encoded, never generated |
 
+The settings in [`pyproject.toml`](pyproject.toml) carry no comments, so their
+reasons live here:
+
+- No `[project]` table: this consumes sibling members as submodules, so a wheel
+  built from here would install and then fail on its first import. The check
+  that the dependency tree is empty reads the imports instead.
+- `N818`: some exceptions are control flow signals rather than failures, named
+  the way the standard library names `StopIteration`. Real failures end in
+  `Error`.
+- `BLE001` and `T201` in `environment.py` and the doctor: a check that throws
+  has to become a line in the report rather than end the run, and printing is
+  their output.
+- `T201` in `conformance/`: these are command line tools, and printing is their
+  output.
+- `E402` in `conformance/` and the package's tests: the submodules go on
+  `sys.path` before they can be imported, and nothing else runs first.
+- `RUF100` in [conformance/family.test.py](conformance/family.test.py): the
+  shared file carries directives for rules a member may have off. The reference
+  copy catches a stale one.
+- `N999` and `PLR2004` in tests: a test file is named after its module with a
+  dot, and its literals are the expected values.
+- The `cartridges` and `firmware` exclusion in mypy: a bare `cartridges` would
+  resolve to the empty directory, as described under the things that will bite
+  you.
+- The `mos65xx.*` and `mapper.*` override in mypy: the submodules are checked in
+  their own repositories, against their own gates.
+- The `__main__` guard in coverage: it hands argv to a function that is itself
+  tested.
+- `TYPE_CHECKING` blocks and bare `...` bodies in coverage: they never run, and
+  Python 3.14 drops them before coverage sees them while 3.12 does not.
+
 ## Layout
 
 ```
