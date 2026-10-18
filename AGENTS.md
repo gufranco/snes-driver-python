@@ -161,7 +161,7 @@ reasons live here:
   output.
 - `E402` in `conformance/` and the package's tests: the submodules go on
   `sys.path` before they can be imported, and nothing else runs first.
-- `RUF100` in [conformance/family.test.py](conformance/family.test.py): the
+- `RUF100` in `conformance/family_*.py`: the
   shared file carries directives for rules a member may have off. The reference
   copy catches a stale one.
 - `N999` and `PLR2004` in tests: a test file is named after its module with a
@@ -175,6 +175,23 @@ reasons live here:
   tested.
 - `TYPE_CHECKING` blocks and bare `...` bodies in coverage: they never run, and
   Python 3.14 drops them before coverage sees them while 3.12 does not.
+- `@unittest\.skipUnless\(CLOCKED,` in the coverage exclusions: this member is
+  not a clocked part, so the family tests that drive a clock are skipped here
+  and their bodies never run.
+- `@unittest\.skipUnless\(A_PART,`,
+  `@unittest\.skipUnless\(A_PART and BUILDABLE,` and
+  `^def accounts_for_a_reset\(` in the coverage exclusions: this member is not a
+  part, so the family tests that build a `Chip` and account for its reset are
+  skipped here and their bodies never run.
+- `@unittest\.skipUnless\(QUOTED,` in the coverage exclusions: this record
+  quotes no document, so the family tests that hold a quote checker to the
+  pipeline are skipped here.
+- `@unittest\.skipUnless\(VARIANTS,` and `^def built\(` in the coverage
+  exclusions: this package names no variants, so the family test that finds each
+  one built in the readme is skipped here.
+- `@unittest\.skipUnless\(SOLD_AS_A_COMPONENT,`, `^def machine_mentions\(` and
+  `^def listing\(` in the coverage exclusions: this part only existed inside one
+  machine, so the family sweep for machine names is skipped here.
 
 ## Layout
 

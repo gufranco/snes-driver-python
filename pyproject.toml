@@ -28,7 +28,7 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "snesdriver/environment.py" = ["BLE001", "T201"]
-"conformance/family.test.py" = ["RUF100"]
+"conformance/family_*.py" = ["RUF100"]
 "*.test.py" = ["PLR2004", "N999"]
 "snesdriver/doctor.py" = ["BLE001", "T201"]
 "conformance/*.py" = ["T201", "E402"]
@@ -71,4 +71,14 @@ exclude_also = [
   'if TYPE_CHECKING:',
   '^\s*\.\.\.$',
   ': \.\.\.$',
+  '@unittest\.skipUnless\(CLOCKED,',
+  '@unittest\.skipUnless\(A_PART,',
+  '@unittest\.skipUnless\(A_PART and BUILDABLE,',
+  '^def accounts_for_a_reset\(',
+  '@unittest\.skipUnless\(QUOTED,',
+  '@unittest\.skipUnless\(VARIANTS,',
+  '^def built\(',
+  '@unittest\.skipUnless\(SOLD_AS_A_COMPONENT,',
+  '^def machine_mentions\(',
+  '^def listing\(',
 ]
