@@ -69,6 +69,113 @@ class WidthTest(unittest.TestCase):
         self.assertEqual(steps[1].width, 2)
 
 
+SAVE = (0x08,)
+RESTORE = (0x28,)
+LOAD_ACCUMULATOR = (0xA9, 0x01)
+
+
+class UnknownWidthTest(unittest.TestCase):
+    def test_a_walk_given_no_width_does_not_assume_one(self) -> None:
+        # Arrange
+        code = assembled(STORE_LONG, RETURN)
+
+        # Act
+        steps = walked(code)
+
+        # Assert
+        self.assertEqual((steps[0].narrow, steps[0].width), (None, None))
+
+    def test_a_plp_restores_the_width_the_matching_php_saved(self) -> None:
+        # Arrange
+        code = assembled(WIDE, SAVE, NARROW, RESTORE, STORE_LONG, RETURN)
+
+        # Act
+        steps = walked(code)
+
+        # Assert
+        self.assertEqual(steps[4].width, 2)
+
+    def test_a_plp_with_nothing_saved_makes_the_width_unknown_again(self) -> None:
+        # Arrange
+        code = assembled(NARROW, RESTORE, STORE_LONG, RETURN)
+
+        # Act
+        steps = walked(code)
+
+        # Assert
+        self.assertEqual(steps[2].width, None)
+
+    def test_an_accumulator_immediate_of_unknown_width_ends_the_walk(self) -> None:
+        # Arrange
+        code = assembled(LOAD_ACCUMULATOR, STORE_LONG, RETURN)
+
+        # Act
+        steps = walked(code)
+
+        # Assert
+        self.assertEqual([one.mnemonic for one in steps], ["lda"])
+
+    def test_and_one_of_known_width_does_not(self) -> None:
+        # Arrange
+        code = assembled(WIDE, (0xA9, 0x00, 0x02), STORE_LONG, RETURN)
+
+        # Act
+        steps = walked(code)
+
+        # Assert
+        self.assertEqual([one.width for one in steps], [None, 2, 2, 2])
+
+    def test_a_word_store_reads_as_two_bytes_in_the_shape(self) -> None:
+        # Arrange
+        code = assembled(WIDE, (0x09, 0x00, 0x02), STORE_LONG, RETURN)
+
+        # Act
+        found = snesdriver.at(code + bytes(64), 0, snesdriver.WINDOWS["dsp"]["lorom"])
+
+        # Assert
+        self.assertEqual((found.shape, found.written), ("write2", 2))
+
+    def test_a_store_of_unknown_width_is_written_as_such_and_counts_no_bytes(self) -> None:
+        # Arrange
+        code = assembled(STORE_LONG, RETURN)
+
+        # Act
+        found = snesdriver.at(code + bytes(64), 0, snesdriver.WINDOWS["dsp"]["lorom"])
+
+        # Assert
+        self.assertEqual(
+            (found.shape, found.written, repr(found.steps[0])), ("write?", 0, "<write None>")
+        )
+
+
+class EntryWidthTest(unittest.TestCase):
+    def vectored(self, vector: int) -> bytes:
+        image = bytearray(0x8000)
+        image[0:7] = bytes([*LOAD_ACCUMULATOR, *STORE_LONG, 0x40])
+        image[vector - 0x8000 : vector - 0x8000 + 2] = (0x8000).to_bytes(2, "little")
+        return bytes(image)
+
+    def test_a_walk_from_reset_starts_eight_bits_wide_as_emulation_mode_does(self) -> None:
+        # Arrange
+        image = self.vectored(0xFFFC)
+
+        # Act
+        found = snesdriver.reached(image, snesdriver.WINDOWS["dsp"]["lorom"])
+
+        # Assert
+        self.assertEqual(found, (2,))
+
+    def test_a_native_vector_starts_with_the_width_unknown(self) -> None:
+        # Arrange
+        image = self.vectored(0xFFEA)
+
+        # Act
+        found = snesdriver.reached(image, snesdriver.WINDOWS["dsp"]["lorom"])
+
+        # Assert
+        self.assertEqual(found, ())
+
+
 class StoppingTest(unittest.TestCase):
     def test_a_walk_stops_where_the_routine_returns(self) -> None:
         # Arrange
@@ -220,7 +327,7 @@ class ReachTest(unittest.TestCase):
         printed = repr(walked(code)[0])
 
         # Assert
-        self.assertEqual(printed, "<Step sta $3f8000 byte>")
+        self.assertEqual(printed, "<Step sta $3f8000 unknown>")
 
     def test_and_says_when_it_moves_a_word(self) -> None:
         # Arrange
@@ -240,7 +347,7 @@ class ReachTest(unittest.TestCase):
         steps = walked(code, address=0x9000)
 
         # Assert
-        self.assertEqual(repr(steps[0]), "<Step bra $9004 byte>")
+        self.assertEqual(repr(steps[0]), "<Step bra $9004 unknown>")
 
     def test_and_the_address_defaults_to_the_offset_in_a_low_bank(self) -> None:
         # Arrange
@@ -250,7 +357,7 @@ class ReachTest(unittest.TestCase):
         steps = list(snesdriver.through(code, 0x8010))
 
         # Assert
-        self.assertEqual(repr(steps[0]), "<Step bra $8014 byte>")
+        self.assertEqual(repr(steps[0]), "<Step bra $8014 unknown>")
 
 
 class ModuleContentsTest(unittest.TestCase):

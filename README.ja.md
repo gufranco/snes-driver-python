@@ -8,7 +8,7 @@ SNESカートリッジがコプロセッサを駆動するために実行する6
 [![Release](https://img.shields.io/github/v/release/gufranco/snes-driver-python)](https://github.com/gufranco/snes-driver-python/releases)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-4つのダイジェストで特定されたカートリッジ**42**本、ヘッダーが示すパーツで読み取ったカートリッジ**42**本、自身のダイジェストとの不一致**0**件、パーツに何も送らなかったもの**0**本、アクセスの種類**3**種、テスト**694**件、ステートメントとブランチのカバレッジ**100%**、依存関係なし
+4つのダイジェストで特定されたカートリッジ**42**本、ヘッダーが示すパーツで読み取ったカートリッジ**42**本、自身のダイジェストとの不一致**0**件、パーツに何も送らなかったもの**0**本、アクセスの種類**3**種、テスト**703**件、ステートメントとブランチのカバレッジ**100%**、依存関係なし
 
 ```python
 from snesdriver import at, window_for
@@ -112,13 +112,13 @@ sa1 is not a part with a known window; there are dsp, obc1, st, st018
 
 ### ルーチンをたどる
 
-`through(rom, offset, narrow=True, limit=DEFAULT_LIMIT, address=None, bank=None, depth=8)`は、`offset`から1つのルーチンを逆アセンブルし、命令ごとに`Step`をyieldします。
+`through(rom, offset, narrow=None, limit=DEFAULT_LIMIT, address=None, bank=None, depth=8)`は、`offset`から1つのルーチンを逆アセンブルし、命令ごとに`Step`をyieldします。
 
 | 引数      | 意味                                                                                                                         |
 | :-------- | :--------------------------------------------------------------------------------------------------------------------------- |
 | `rom`     | バイト列としてのイメージ                                                                                                     |
 | `offset`  | 最初の命令のファイルオフセット                                                                                               |
-| `narrow`  | 入口でのアキュムレータ幅。8ビットなら`True`、16ビットなら`False`                                                             |
+| `narrow`  | 入口でのアキュムレータ幅。8ビットなら`True`、16ビットなら`False`、分からなければ`None`（デフォルト）                         |
 | `limit`   | ルーチン自体でたどる命令の最大数。`DEFAULT_LIMIT`は80です。呼び出し先の命令は数えず、全体のたどりは`limit`の16倍で停止します |
 | `address` | `offset`のCPUアドレス。デフォルトは`$8000`に`offset`を`$8000`で割った余りを足した値です                                      |
 | `bank`    | ルーチンが実行されるバンク。デフォルトは`offset`を`$8000`で割った値です                                                      |
@@ -130,8 +130,8 @@ sa1 is not a part with a known window; there are dsp, obc1, st, st018
 | :----------- | :--------------------------------------------------------------------------------------------------------------- |
 | `offset`     | 命令のファイルオフセット                                                                                         |
 | `mnemonic`   | `sta`のような小文字                                                                                              |
-| `width`      | 1または2。アキュムレータのアクセスが移動するバイト数                                                             |
-| `narrow`     | `width`が1のときTrue                                                                                             |
+| `width`      | 1または2。アキュムレータのアクセスが移動するバイト数。アキュムレータの幅が分からない間は`None`                   |
+| `narrow`     | `width`が1のときTrue、分からないときは`None`                                                                     |
 | `depth`      | ルーチン自体では0、そこからの呼び出しの中では1、以下同様                                                         |
 | `bank`       | 絶対アクセスまたはロングアクセスが到達するバンク。それ以外は`None`                                               |
 | `address`    | 絶対アクセスまたはロングアクセスが到達する16ビットアドレス。それ以外は`None`。`pea`と`per`はどこにも到達しません |
@@ -139,6 +139,8 @@ sa1 is not a part with a known window; there are dsp, obc1, st, st018
 | `reading`    | `st`で始まるニーモニックならFalse、それ以外はTrue                                                                |
 | `immediate`  | イミディエート命令のオペランド。それ以外は`None`                                                                 |
 | `waiting`    | 後方への分岐のときTrue。ルーチンはこの方法でレジスタを待ちます                                                   |
+
+`narrow`で指定しない限り、たどりはアキュムレータの幅が分からない状態で始まります。アキュムレータのビットを指定する`sep`や`rep`がそれを設定し、`php`が保存して対応する`plp`が復元します。ルーチン内で何も保存していない`plp`は、幅を再び不明にします。幅が分からない間に出会ったアキュムレータの即値命令は長さが分からないため、たどりはそこで終わります。ベクタからのたどりは、リセットを含むエミュレーションモードのものを8ビット幅で始めます。
 
 ```python
 from snesdriver import through
@@ -153,7 +155,7 @@ for step in through(routine + bytes(2048), 0):
 ```
 
 ```
-0x0000 sep 1 - False
+0x0000 sep None - False
 0x0002 lda 1 - False
 0x0004 sta 1 $00:6000 True
 0x0008 rep 1 - False
@@ -165,7 +167,7 @@ for step in through(routine + bytes(2048), 0):
 
 ### やり取りを読む
 
-`at(rom, offset, window, narrow=True, limit=DEFAULT_LIMIT)`は`through`で1つのルーチンをたどり、`window`に到達したすべてのアクセスを保持する`Conversation`を返します。
+`at(rom, offset, window, narrow=None, limit=DEFAULT_LIMIT)`は`through`で1つのルーチンをたどり、`window`に到達したすべてのアクセスを保持する`Conversation`を返します。
 
 | 種類    | 定数    | アクセスがこの種類になる条件                       |
 | :------ | :------ | :------------------------------------------------- |
@@ -175,7 +177,7 @@ for step in through(routine + bytes(2048), 0):
 
 | `Conversation`の属性 | 意味                                                                                                           |
 | :------------------- | :------------------------------------------------------------------------------------------------------------- |
-| `shape`              | 各アクセスを種類と幅で表し、スペースで連結したもの                                                             |
+| `shape`              | 各アクセスを種類と幅で表し、幅が分からなければ`?`とし、スペースで連結したもの                                  |
 | `steps`              | アクセスごとに1件のレコード。`what`、`width`、`bank`、`address`、`banked`、24ビットアドレスの`whole`を持ちます |
 | `covered`            | ルーチン自体でたどったすべての命令のファイルオフセット                                                         |
 | `written`            | 書き込んだバイト数                                                                                             |
@@ -208,7 +210,7 @@ print(shapes(image, window))
 (<write 1>, <poll 2>, <read 2>)
 [0, 2, 4, 8, 10, 14, 18]
 ['0x0004', '0x000a', '0x000e']
-{'write1 poll2 read2': 1}
+{'write? poll2 read2': 1}
 ```
 
 このルーチンにはサイトが3つ、シェイプが1つあります。最初のサイトからのたどりが残りの2つを含むので、それらは独自のやり取りを開始しません。
@@ -219,7 +221,7 @@ print(shapes(image, window))
 | :------------------------------------------------------------------ | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `sites(rom, window)`                                                | アドレスが`window`に到達するすべてのロングロード（オペコード`$AF`）とロングストア（オペコード`$8F`）のファイルオフセット。バイト検索なので、データ内にあるその4バイトも見つけます                                                                                                                            |
 | `reached(rom, window, entry=None, kind="lorom")`                    | ネイティブモードとエミュレーションモードの10個のベクタ、または`entry`からのたどりで`window`に到達するすべての命令のファイルオフセット。行き先が命令内に明記されたすべての呼び出し、ジャンプ、分岐を追います。`kind`はアドレスをファイルオフセットに対応付けるレイアウトです。たどりは400,000命令で止まります |
-| `shapes(rom, window, narrow=True, limit=DEFAULT_LIMIT, find=sites)` | 異なるシェイプそれぞれと、それを生むルーチンの数。`find`が返す各オフセットは、それ以前のたどりが含んでいない限り、`at`でのたどりを開始します                                                                                                                                                                 |
+| `shapes(rom, window, narrow=None, limit=DEFAULT_LIMIT, find=sites)` | 異なるシェイプそれぞれと、それを生むルーチンの数。`find`が返す各オフセットは、それ以前のたどりが含んでいない限り、`at`でのたどりを開始します                                                                                                                                                                 |
 
 ```python
 from snesdriver import reached, shapes, sites, window_for
@@ -241,8 +243,8 @@ print(shapes(image, window, find=reached))
 ```
 ['0x0004', '0x0008', '0x0100']
 ['0x0004', '0x0008']
-{'write1 poll1': 1, 'write1': 1}
-{'write1 poll1': 1}
+{'write? poll?': 1, 'write?': 1}
+{'write? poll?': 1}
 ```
 
 このイメージはローカートリッジの1バンクで、リセットベクタがルーチンを指しています。`$0100`の4バイトはDSPへのロングストアを表しますが、実行されることはありません。`sites`はそれを見つけますが、`reached`は見つけません。どのベクタからのたどりもそこに到達しないからです。
@@ -275,10 +277,12 @@ SNESのコプロセッサは、本体に対してデータレジスタとステ�
 カートリッジは、自身のプロトコルが必要とする箇所でのみステータスレジスタをポーリングします。3本のカートリッジそれぞれから1つのシェイプの冒頭を、`shapes`が報告するとおりに示します。
 
 ```text
-Super Mario Kart   write1 write2 poll2 read2 read2 read2 read2 poll2 write2 ...
-Pilotwings         poll1 write1 write2 write2 write2 read2 read2 write1 ...
-Dungeon Master     write1 write1 write1 write1 write1 read1 read1 read1 read1
+Super Mario Kart   write? write2 poll2 read2 read2 read2 read2 poll2 write2 ...
+Pilotwings         write? write2 write2 write2 read2 read2 write1 write2 write2 ...
+Dungeon Master     write? write? write? write? write? read? read? read? read?
 ```
+
+`?`は、ルーチンがアキュムレータの幅を設定する前に行われたアクセスで、たどりはその幅を知りません。各たどりは検索が見つけたアクセスから始まり、その前にあった`sep`や`rep`の後になるからです。
 
 ## 読み取りの仕組み
 
@@ -313,10 +317,10 @@ python3 -m conformance.against_cartridges
 
 | カートリッジ                          | レイアウト | サイト | 異なるシェイプ |
 | :------------------------------------ | :--------- | -----: | -------------: |
-| Super Mario Kart (USA)                | hirom      |    127 |             19 |
-| Pilotwings (USA)                      | lorom      |    212 |             22 |
-| Dungeon Master (USA)                  | lorom      |    192 |             15 |
-| Metal Combat - Falcon's Revenge (USA) | lorom      |    313 |             20 |
+| Super Mario Kart (USA)                | hirom      |    127 |             17 |
+| Pilotwings (USA)                      | lorom      |    212 |             21 |
+| Dungeon Master (USA)                  | lorom      |    192 |             14 |
+| Metal Combat - Falcon's Revenge (USA) | lorom      |    313 |             15 |
 
 スイープはカートリッジタイプのバイトからパーツを決めます。その上位ニブルをコプロセッサに割り当てているのは、Book Iの1-2-18ページの表です。カスタムチップは`$FFBF`のサブナンバーで区別し、マニフェストにある4本のカスタムチップのカートリッジは、ST010とST011では1、ST018では2を設定しています。カートリッジがない場合、スイープは2で終了します。CIはプッシュのたびにこれを実行し、終了コード2をスキップとして扱い、注記を付けます。
 

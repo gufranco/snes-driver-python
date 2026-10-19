@@ -132,23 +132,36 @@ the bank the walk reports for them is still wrong.
 walk, which needs an entry state that a walk starting at one routine does not
 have, or reading shapes out of a run rather than a walk.
 
-### The accumulator's width at a routine's entry is assumed rather than read.
+### The accumulator's width at a routine's entry is not known to the walk.
 
 **The document says.** Nothing. The width is whatever the caller left.
 
-**What this project follows.** Neither. `shapes` walks every routine with an
-8-bit accumulator at entry, and the walk carries the width through every `sep`
-and `rep` after that.
+**What this project follows.** Neither, and it says so. A walk starts with the
+width unknown unless told, and learns it from a `sep` or `rep`, or from a `plp`
+matching a `php` it saw. An access made while it is unknown is recorded with
+width `None`, and its shape token carries `?`, rather than counted as one byte.
+An accumulator immediate met while the width is unknown has a length the walk
+cannot know, so the walk ends there instead of decoding the bytes after it
+wrongly. A walk from the vectors starts the emulation-mode ones, reset among
+them, 8 bits wide, as the processor does.
 
-**What that costs, measured.** F1-ROC II's ST010 start routine is entered 16
-bits wide. Read 8 bits wide, the bytes at file offset `0x0D66`, `A9 06 80`,
-decode as `lda #$06` and a branch, and the walk leaves with `write1 write1`.
-Read 16 bits wide from the same entry, `at` reports
-`write2 write2 write2 poll2 read2 read2`, and the third store is one word of
-`$8006` to `$68:0020`. snes-st-python at commit `50c8414` recorded exactly that
-store with a headless MAME write tap: the command byte and the start bit in one
-16-bit write. Its `st010shapes.json` was read 8 bits wide and records the start
-as a one-byte write.
+**Why it was changed.** Until 2026-10-19 every walk assumed 8 bits at entry.
+F1-ROC II's ST010 start routine is entered 16 bits wide: read 8 bits wide, the
+bytes at file offset `0x0D66`, `A9 06 80`, decode as `lda #$06` and a branch,
+and the walk left with `write1 write1`; read 16 bits wide from the same entry,
+`at` reports `write2 write2 write2 poll2 read2 read2`, whose third store is one
+word of `$8006` to `$68:0020`. snes-st-python at commit `50c8414` recorded that
+store with a headless MAME write tap, and snes-obc1-python at commit `76fc227`
+recorded Metal Combat writing `$7FF4` as the high byte of a 16-bit store to
+`$7FF3`, from six instructions in bank `$82` that each follow `ora #$0200` or
+`and #$FDFF`. Shapes recorded with the old assumption, among them
+snes-st-python's `st010shapes.json` and this family's DSP shape files, carry
+one-byte widths that were never read.
+
+**What is left.** A walk that starts at the access a search found begins after
+whatever set the width, so most shapes open with `?`. Metal Combat's six
+instructions are absolute accesses the search and the walk from the vectors do
+not reach at all.
 
 **What would settle or reopen it.** Running the image rather than reading it, so
 each routine is entered with the width its caller left, or tracking the width

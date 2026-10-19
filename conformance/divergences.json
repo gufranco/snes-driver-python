@@ -98,14 +98,14 @@
       ]
     },
     {
-      "id": "an-entry-width-is-assumed-not-read",
-      "parts": ["st010"],
+      "id": "an-entry-width-is-not-known",
+      "parts": ["st010", "obc1", "dsp"],
       "severity": "high",
-      "status": "open",
+      "status": "narrowed",
       "documentSays": "Nothing. The accumulator's width at a routine's entry is set by whoever called it, and nothing in the routine says what it was.",
-      "referenceDoes": "snes-st-python at commit 50c8414 records a headless MAME write tap on the ST010 cartridge: the command start is one 16-bit store of 80nnH to 680020H, the command byte and the start bit in one word write, made by the cartridge's own bytes at file offset 0x0D66.",
+      "referenceDoes": "snes-st-python at commit 50c8414 records a headless MAME write tap on the ST010 cartridge: the command start is one 16-bit store of 80nnH to 680020H, the command byte and the start bit in one word write, made by the cartridge's own bytes at file offset 0x0D66. snes-obc1-python at commit 76fc227 records, with a headless MAME 0.289 run, Metal Combat writing 7FF4 as the high byte of a 16-bit store to 7FF3, from six instructions in bank 82, each after ora #$0200 or and #$FDFF.",
       "packageFollows": "neither",
-      "reasoning": "shapes walks every routine with an 8-bit accumulator at entry. F1-ROC II's start routine is entered 16-bit: read 8-bit, the bytes at 0x0D66, A9 06 80, decode as lda #$06 followed by a branch, the walk leaves the routine there and reports write1 write1; read 16-bit from the same entry, at reports write2 write2 write2 poll2 read2 read2, whose third store is the start word the tap recorded. The walk carries a width through sep and rep but cannot know the one it starts with, so every shape recorded from a routine entered wide is wrong in its widths and may be cut short. snes-st-python's st010shapes.json was taken that way.",
+      "reasoning": "shapes walks every routine with an 8-bit accumulator at entry. F1-ROC II's start routine is entered 16-bit: read 8-bit, the bytes at 0x0D66, A9 06 80, decode as lda #$06 followed by a branch, the walk leaves the routine there and reports write1 write1; read 16-bit from the same entry, at reports write2 write2 write2 poll2 read2 read2, whose third store is the start word the tap recorded. The walk carries a width through sep and rep but cannot know the one it starts with, so every shape recorded from a routine entered wide is wrong in its widths and may be cut short. snes-st-python's st010shapes.json was taken that way. Narrowed on 2026-10-19: a walk now starts with the width unknown unless told, learns it from sep, rep and a plp matching a php it saw, records an access of unknown width as width None and shape token ?, and ends at an accumulator immediate whose length it cannot know. It no longer reports a width it did not read; it still cannot report one it was not shown.",
       "wouldSettleIt": [
         "running the image rather than reading it, so a routine is entered with the width its caller left",
         "tracking the width from the vectors through every call, which a walk starting at one routine cannot do"

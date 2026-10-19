@@ -8,7 +8,7 @@
 [![Release](https://img.shields.io/github/v/release/gufranco/snes-driver-python)](https://github.com/gufranco/snes-driver-python/releases)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-**42** 个卡带以四种摘要标识，**42** 个卡带按各自文件头所指的芯片读取，与自身摘要不符的 **0** 个，未与芯片通信的 **0** 个，**3** 种访问，**694** 个测试，**100%** 语句与分支覆盖率，无依赖
+**42** 个卡带以四种摘要标识，**42** 个卡带按各自文件头所指的芯片读取，与自身摘要不符的 **0** 个，未与芯片通信的 **0** 个，**3** 种访问，**703** 个测试，**100%** 语句与分支覆盖率，无依赖
 
 ```python
 from snesdriver import at, window_for
@@ -112,13 +112,13 @@ sa1 is not a part with a known window; there are dsp, obc1, st, st018
 
 ### 遍历例程
 
-`through(rom, offset, narrow=True, limit=DEFAULT_LIMIT, address=None, bank=None, depth=8)` 从 `offset` 开始反汇编一个例程，并为每条指令产出一个 `Step`。
+`through(rom, offset, narrow=None, limit=DEFAULT_LIMIT, address=None, bank=None, depth=8)` 从 `offset` 开始反汇编一个例程，并为每条指令产出一个 `Step`。
 
 | 参数      | 含义                                                                                                         |
 | :-------- | :----------------------------------------------------------------------------------------------------------- |
 | `rom`     | 以字节表示的镜像                                                                                             |
 | `offset`  | 第一条指令的文件偏移                                                                                         |
-| `narrow`  | 入口处的累加器宽度：`True` 表示 8 位，`False` 表示 16 位                                                     |
+| `narrow`  | 入口处的累加器宽度：`True` 表示 8 位，`False` 表示 16 位，未知时为 `None`（默认）                            |
 | `limit`   | 例程自身最多遍历的指令数。`DEFAULT_LIMIT` 为 80。被调用函数内的指令不计入，整个遍历在 `limit` 的 16 倍处停止 |
 | `address` | `offset` 的 CPU 地址。默认为 `$8000` 加上 `offset` 对 `$8000` 取模                                           |
 | `bank`    | 例程运行所在的 bank。默认为 `offset` 除以 `$8000`                                                            |
@@ -130,8 +130,8 @@ sa1 is not a part with a known window; there are dsp, obc1, st, st018
 | :---------- | :------------------------------------------------------------------------- |
 | `offset`    | 指令的文件偏移                                                             |
 | `mnemonic`  | 小写，例如 `sta`                                                           |
-| `width`     | 1 或 2，即累加器访问传送的字节数                                           |
-| `narrow`    | `width` 为 1 时为 True                                                     |
+| `width`     | 1 或 2，即累加器访问传送的字节数；累加器宽度未知时为 `None`                |
+| `narrow`    | `width` 为 1 时为 True，未知时为 `None`                                    |
 | `depth`     | 例程自身中为 0，在其调用的函数内为 1，依此类推                             |
 | `bank`      | 绝对或长访问到达的 bank，否则为 `None`                                     |
 | `address`   | 绝对或长访问到达的 16 位地址，否则为 `None`。`pea` 和 `per` 不访问任何地址 |
@@ -139,6 +139,8 @@ sa1 is not a part with a known window; there are dsp, obc1, st, st018
 | `reading`   | 助记符以 `st` 开头时为 False，否则为 True                                  |
 | `immediate` | 立即数指令的操作数，否则为 `None`                                          |
 | `waiting`   | 向后分支时为 True，例程正是以此等待寄存器                                  |
+
+除非 `narrow` 另有说明，遍历开始时累加器宽度未知。指明累加器位的 `sep` 或 `rep` 设定它，`php` 保存它，与之对应的 `plp` 恢复它；例程内没有保存过的 `plp` 会让它重新变为未知。宽度未知时遇到的累加器立即数指令长度无法确定，因此遍历在那里结束。从向量开始的遍历会把仿真模式的向量（包括复位）以 8 位宽度开始。
 
 ```python
 from snesdriver import through
@@ -153,7 +155,7 @@ for step in through(routine + bytes(2048), 0):
 ```
 
 ```
-0x0000 sep 1 - False
+0x0000 sep None - False
 0x0002 lda 1 - False
 0x0004 sta 1 $00:6000 True
 0x0008 rep 1 - False
@@ -165,7 +167,7 @@ for step in through(routine + bytes(2048), 0):
 
 ### 读取交互
 
-`at(rom, offset, window, narrow=True, limit=DEFAULT_LIMIT)` 用 `through` 遍历一个例程，并返回一个 `Conversation`，其中包含到达 `window` 的每一次访问。
+`at(rom, offset, window, narrow=None, limit=DEFAULT_LIMIT)` 用 `through` 遍历一个例程，并返回一个 `Conversation`，其中包含到达 `window` 的每一次访问。
 
 | 类型    | 常量    | 访问属于此类型的条件         |
 | :------ | :------ | :--------------------------- |
@@ -175,7 +177,7 @@ for step in through(routine + bytes(2048), 0):
 
 | `Conversation` 属性 | 含义                                                                                         |
 | :------------------ | :------------------------------------------------------------------------------------------- |
-| `shape`             | 每次访问表示为其类型后接其宽度，以空格连接                                                   |
+| `shape`             | 每次访问表示为其类型后接其宽度，宽度未知时为 `?`，以空格连接                                 |
 | `steps`             | 每次访问一条记录，包含 `what`、`width`、`bank`、`address`、`banked` 和 `whole`，即 24 位地址 |
 | `covered`           | 例程自身中遍历过的每条指令的文件偏移                                                         |
 | `written`           | 写入的字节数                                                                                 |
@@ -208,7 +210,7 @@ print(shapes(image, window))
 (<write 1>, <poll 2>, <read 2>)
 [0, 2, 4, 8, 10, 14, 18]
 ['0x0004', '0x000a', '0x000e']
-{'write1 poll2 read2': 1}
+{'write? poll2 read2': 1}
 ```
 
 该例程有三个位点和一种形态。从第一个位点开始的遍历覆盖了另外两个，因此它们不会各自开始交互。
@@ -219,7 +221,7 @@ print(shapes(image, window))
 | :------------------------------------------------------------------ | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `sites(rom, window)`                                                | 地址到达 `window` 的每条长加载（操作码 `$AF`）和长存储（操作码 `$8F`）的文件偏移。这是字节搜索：它也会在数据中找到这四个字节                                                                                |
 | `reached(rom, window, entry=None, kind="lorom")`                    | 从十个原生模式和仿真模式向量，或从 `entry` 出发遍历时，到达 `window` 的每条指令的文件偏移，遍历会跟随每个目标写在指令中的调用、跳转和分支。`kind` 是将地址映射到文件偏移的布局。遍历在 400,000 条指令后停止 |
-| `shapes(rom, window, narrow=True, limit=DEFAULT_LIMIT, find=sites)` | 每种不同的形态以及产生它的例程数量。`find` 返回的每个偏移都会用 `at` 开始一次遍历，除非之前的遍历已覆盖它                                                                                                   |
+| `shapes(rom, window, narrow=None, limit=DEFAULT_LIMIT, find=sites)` | 每种不同的形态以及产生它的例程数量。`find` 返回的每个偏移都会用 `at` 开始一次遍历，除非之前的遍历已覆盖它                                                                                                   |
 
 ```python
 from snesdriver import reached, shapes, sites, window_for
@@ -241,8 +243,8 @@ print(shapes(image, window, find=reached))
 ```
 ['0x0004', '0x0008', '0x0100']
 ['0x0004', '0x0008']
-{'write1 poll1': 1, 'write1': 1}
-{'write1 poll1': 1}
+{'write? poll?': 1, 'write?': 1}
+{'write? poll?': 1}
 ```
 
 该镜像是一个低位卡带 bank，其复位向量指向该例程。`$0100` 处的四个字节构成一条到 DSP 的长存储，但从未被执行。`sites` 找到了它们，`reached` 则没有，因为从任何向量出发的遍历都不会到达那里。
@@ -275,10 +277,12 @@ SNES 协处理器向主机呈现一个数据寄存器和一个状态寄存器。
 卡带只在其自身协议要求的位置轮询状态寄存器。以下是三个卡带各自一种形态的开头，按 `shapes` 的报告：
 
 ```text
-Super Mario Kart   write1 write2 poll2 read2 read2 read2 read2 poll2 write2 ...
-Pilotwings         poll1 write1 write2 write2 write2 read2 read2 write1 ...
-Dungeon Master     write1 write1 write1 write1 write1 read1 read1 read1 read1
+Super Mario Kart   write? write2 poll2 read2 read2 read2 read2 poll2 write2 ...
+Pilotwings         write? write2 write2 write2 read2 read2 write1 write2 write2 ...
+Dungeon Master     write? write? write? write? write? read? read? read? read?
 ```
+
+`?` 是例程设定累加器宽度之前做出的访问，遍历此时不知道该宽度：每次遍历都从搜索找到的访问开始，位于其之前的 `sep` 或 `rep` 之后。
 
 ## 读取方式
 
@@ -313,10 +317,10 @@ python3 -m conformance.against_cartridges
 
 | 卡带                                  | 布局  | 位点 | 不同形态 |
 | :------------------------------------ | :---- | ---: | -------: |
-| Super Mario Kart (USA)                | hirom |  127 |       19 |
-| Pilotwings (USA)                      | lorom |  212 |       22 |
-| Dungeon Master (USA)                  | lorom |  192 |       15 |
-| Metal Combat - Falcon's Revenge (USA) | lorom |  313 |       20 |
+| Super Mario Kart (USA)                | hirom |  127 |       17 |
+| Pilotwings (USA)                      | lorom |  212 |       21 |
+| Dungeon Master (USA)                  | lorom |  192 |       14 |
+| Metal Combat - Falcon's Revenge (USA) | lorom |  313 |       15 |
 
 扫描从卡带类型字节确定芯片：Book I 第 1-2-18 页的表把它的高四位分配给协处理器。定制芯片按 `$FFBF` 处的子编号区分，清单中的四个定制芯片卡带对 ST010 和 ST011 设为 1，对 ST018 设为 2。没有卡带时，扫描以 2 退出。CI 在每次推送时运行它，将退出码 2 视为跳过并加以标注。
 

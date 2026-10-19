@@ -171,7 +171,9 @@ class WalkingTest(unittest.TestCase):
         one = doctor.check_walking(part, layout)
 
         # Assert
-        self.assertEqual((one.ok, one.detail), (True, "4 steps read out of 9 bytes assembled here"))
+        self.assertEqual(
+            (one.ok, one.detail), (True, "5 steps read out of 11 bytes assembled here")
+        )
 
     def test_the_routine_it_assembles_stores_to_data_and_polls_status(self) -> None:
         # Arrange
@@ -181,7 +183,9 @@ class WalkingTest(unittest.TestCase):
         held = doctor.probe_routine(window)
 
         # Assert
-        self.assertEqual(held, bytes((0xA9, 0x42, 0x8D, 0x00, 0x80, 0xAD, 0x00, 0xC0, 0x60)))
+        self.assertEqual(
+            held, bytes((0xE2, 0x20, 0xA9, 0x42, 0x8D, 0x00, 0x80, 0xAD, 0x00, 0xC0, 0x60))
+        )
 
     def test_a_walker_that_refuses_is_reported_as_what_it_said(self) -> None:
         # Arrange
@@ -202,7 +206,7 @@ class WalkingTest(unittest.TestCase):
 
         # Assert
         self.assertEqual(
-            (one.ok, one.detail), (False, "0 steps read out of 9 bytes assembled here")
+            (one.ok, one.detail), (False, "0 steps read out of 11 bytes assembled here")
         )
 
     def test_and_a_part_with_no_window_under_the_layout_is_not_walked(self) -> None:

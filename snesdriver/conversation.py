@@ -15,6 +15,8 @@ READ = "read"
 
 POLL = "poll"
 
+UNKNOWN = "?"
+
 LONG_STORE = 0x8F
 LONG_LOAD = 0xAF
 LONG_BYTES = 4
@@ -26,7 +28,7 @@ class Step:
     def __init__(
         self,
         what: str,
-        width: int,
+        width: int | None,
         address: int,
         bank: int,
         banked: bool = True,
@@ -55,11 +57,11 @@ class Conversation:
 
     @property
     def written(self) -> int:
-        return sum(step.width for step in self.steps if step.what == WRITE)
+        return sum(step.width or 0 for step in self.steps if step.what == WRITE)
 
     @property
     def read(self) -> int:
-        return sum(step.width for step in self.steps if step.what == READ)
+        return sum(step.width or 0 for step in self.steps if step.what == READ)
 
     @property
     def polls(self) -> int:
@@ -67,7 +69,7 @@ class Conversation:
 
     @property
     def shape(self) -> str:
-        return " ".join(f"{step.what}{step.width}" for step in self.steps)
+        return " ".join(f"{step.what}{step.width or UNKNOWN}" for step in self.steps)
 
     @property
     def banked(self) -> bool:
@@ -85,7 +87,7 @@ def at(
     rom: bytes,
     offset: int,
     window: Reaching,
-    narrow: bool = True,
+    narrow: bool | None = None,
     limit: int = walk.DEFAULT_LIMIT,
 ) -> Conversation:
     steps = []
@@ -144,7 +146,7 @@ def reached(
 def shapes(
     rom: bytes,
     window: Reaching,
-    narrow: bool = True,
+    narrow: bool | None = None,
     limit: int = walk.DEFAULT_LIMIT,
     find: Finding = sites,
 ) -> dict[str, int]:

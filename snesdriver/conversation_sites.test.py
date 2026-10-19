@@ -95,7 +95,7 @@ class SurveyTest(unittest.TestCase):
         found = snesdriver.shapes(rom, WINDOW)
 
         # Assert
-        self.assertEqual(found, {"write1 read1": 1})
+        self.assertEqual(found, {"write? read?": 1})
 
     def test_the_same_shape_twice_is_counted_rather_than_repeated(self) -> None:
         # Arrange
@@ -106,7 +106,7 @@ class SurveyTest(unittest.TestCase):
         found = snesdriver.shapes(rom, WINDOW)
 
         # Assert
-        self.assertEqual(found, {"write1": 2})
+        self.assertEqual(found, {"write?": 2})
 
     def test_a_survey_walks_at_the_width_it_is_given(self) -> None:
         # Arrange
@@ -135,7 +135,7 @@ class BankTest(unittest.TestCase):
                 (one.what, one.width, one.bank, one.address, one.banked, one.whole)
                 for one in found.steps
             ],
-            [("write", 1, 0x68, 0x0020, True, 0x680020)],
+            [("write", None, 0x68, 0x0020, True, 0x680020)],
         )
 
     def test_a_walk_takes_anything_else_that_answers_the_same_question(self) -> None:
@@ -204,7 +204,7 @@ class ReachedTest(unittest.TestCase):
         found = snesdriver.shapes(rom, ABSOLUTE_WINDOW, find=snesdriver.reached)
 
         # Assert
-        self.assertEqual(found, {"poll1": 1})
+        self.assertEqual(found, {"poll?": 1})
 
     def test_a_survey_that_searches_for_bytes_finds_nothing_there(self) -> None:
         # Arrange
@@ -239,7 +239,7 @@ class ThroughAHelperTest(unittest.TestCase):
         found = snesdriver.at(rom, 0, ABSOLUTE_WINDOW)
 
         # Assert
-        self.assertEqual(found.shape, "poll1 write1")
+        self.assertEqual(found.shape, "poll? write?")
 
     def test_only_the_calling_routine_counts_as_covered(self) -> None:
         # Arrange
@@ -259,7 +259,7 @@ class ThroughAHelperTest(unittest.TestCase):
         found = snesdriver.shapes(rom, ABSOLUTE_WINDOW, find=snesdriver.reached)
 
         # Assert
-        self.assertEqual(found, {"write1": 1, "poll1": 1})
+        self.assertEqual(found, {"write?": 1, "poll?": 1})
 
 
 if __name__ == "__main__":

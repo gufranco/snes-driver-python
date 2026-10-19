@@ -128,6 +128,8 @@ def check_window(part: str, layout: str, load: Callable[[], Any] = load_modules)
 def probe_routine(window: Any) -> bytes:
     return bytes(
         (
+            0xE2,
+            0x20,
             0xA9,
             0x42,
             0x8D,

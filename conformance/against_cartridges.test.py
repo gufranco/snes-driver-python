@@ -120,7 +120,7 @@ class PartTest(unittest.TestCase):
         found = against_cartridges.read(image, _an_identity())
 
         # Assert
-        self.assertEqual((found.part, found.shapes), ("obc1", {"write1": 1}))
+        self.assertEqual((found.part, found.shapes), ("obc1", {"write?": 1}))
 
     def test_and_not_under_the_dsp_window_its_lower_banks_share(self) -> None:
         # Arrange
@@ -153,7 +153,7 @@ class PartTest(unittest.TestCase):
         found = against_cartridges.read(bytes(image), _an_identity())
 
         # Assert
-        self.assertEqual((found.part, found.shapes), ("st", {"write1": 2}))
+        self.assertEqual((found.part, found.shapes), ("st", {"write?": 2}))
 
     def test_the_absolutely_addressed_part_is_found_by_walking_from_the_vectors(self) -> None:
         # Arrange
@@ -165,7 +165,7 @@ class PartTest(unittest.TestCase):
         found = against_cartridges.read(bytes(image), _an_identity())
 
         # Assert
-        self.assertEqual((found.part, found.sites, found.shapes), ("st018", (2,), {"write1": 1}))
+        self.assertEqual((found.part, found.sites, found.shapes), ("st018", (2,), {"write?": 1}))
 
     def test_a_line_names_the_part_it_was_read_under(self) -> None:
         # Arrange
