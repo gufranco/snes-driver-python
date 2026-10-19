@@ -8,7 +8,7 @@
 [![Release](https://img.shields.io/github/v/release/gufranco/snes-driver-python)](https://github.com/gufranco/snes-driver-python/releases)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-**42** 个卡带以四种摘要标识，**36** 个 DSP 卡带按 **2** 种布局读取，与自身摘要不符的 **0** 个，未与芯片通信的 **0** 个，**3** 种访问，**670** 个测试，**100%** 语句与分支覆盖率，无依赖
+**42** 个卡带以四种摘要标识，**36** 个 DSP 卡带按 **2** 种布局读取，与自身摘要不符的 **0** 个，未与芯片通信的 **0** 个，**3** 种访问，**674** 个测试，**100%** 语句与分支覆盖率，无依赖
 
 ```python
 from snesdriver import at, window_for
@@ -58,24 +58,24 @@ python3 snesdriver/doctor.py
 
 ### 芯片在哪里响应
 
-| 名称                                                                | 内容                                                                                                                    |
-| :------------------------------------------------------------------ | :---------------------------------------------------------------------------------------------------------------------- |
-| `window_for(part, layout)`                                          | 该芯片在该布局下响应的 `Window`，若在该布局下没有窗口则为 `None`。对于 `WINDOWS` 中不存在的芯片名称，抛出 `UnknownPart` |
-| `WINDOWS`                                                           | 所有窗口，先按芯片再按布局作为键                                                                                        |
-| `Window(first_bank, last_bank, data, status, end, status_end=None)` | 一个窗口。`status_end` 默认为 `end`                                                                                     |
-| `window.reaches(bank, address)`                                     | 对单个地址返回 `DATA`、`STATUS` 或 `None`。先检查状态范围                                                               |
-| `busiest(layout, reaches)`                                          | 在 `layout` 下其窗口包含 `reaches` 中最多 `(bank, address)` 对的芯片，若没有任何窗口包含则为 `None`                     |
-| `DATA`、`STATUS`                                                    | 字符串 `"data"` 和 `"status"`                                                                                           |
-| `UnknownPart`                                                       | 由 `window_for` 抛出。消息列出所有芯片                                                                                  |
+| 名称                                                                                | 内容                                                                                                                    |
+| :---------------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------- |
+| `window_for(part, layout)`                                                          | 该芯片在该布局下响应的 `Window`，若在该布局下没有窗口则为 `None`。对于 `WINDOWS` 中不存在的芯片名称，抛出 `UnknownPart` |
+| `WINDOWS`                                                                           | 所有窗口，先按芯片再按布局作为键                                                                                        |
+| `Window(first_bank, last_bank, data, status, end, status_end=None, mirrored=False)` | 一个窗口。`status_end` 默认为 `end`。`mirrored` 的窗口在第 7 位置位的 bank 中同样响应                                   |
+| `window.reaches(bank, address)`                                                     | 对单个地址返回 `DATA`、`STATUS` 或 `None`。先检查状态范围                                                               |
+| `busiest(layout, reaches)`                                                          | 在 `layout` 下其窗口包含 `reaches` 中最多 `(bank, address)` 对的芯片，若没有任何窗口包含则为 `None`                     |
+| `DATA`、`STATUS`                                                                    | 字符串 `"data"` 和 `"status"`                                                                                           |
+| `UnknownPart`                                                                       | 由 `window_for` 抛出。消息列出所有芯片                                                                                  |
 
-| 芯片    | 布局           | Bank      | 数据    | 状态    | 数据结束 | 状态结束 |
-| :------ | :------------- | :-------- | :------ | :------ | :------- | :------- |
-| `dsp`   | `lorom`        | `$30-$3F` | `$8000` | `$C000` | `$FFFF`  | `$FFFF`  |
-| `dsp`   | `hirom`        | `$00-$0F` | `$6000` | `$7000` | `$7FFF`  | `$7FFF`  |
-| `st`    | `lorom`        | `$60-$67` | `$0000` | `$0001` | `$0001`  | `$0001`  |
-| `st`    | `lorom-shared` | `$68-$6F` | `$0000` | `$0020` | `$0FFF`  | `$0021`  |
-| `obc1`  | `lorom`        | `$00-$3F` | `$6000` | `$7FF0` | `$7FFF`  | `$7FFF`  |
-| `st018` | `lorom`        | `$00-$3F` | `$3800` | `$3804` | `$3803`  | `$3804`  |
+| 芯片    | 布局           | Bank                 | 数据    | 状态    | 数据结束 | 状态结束 |
+| :------ | :------------- | :------------------- | :------ | :------ | :------- | :------- |
+| `dsp`   | `lorom`        | `$30-$3F`, `$B0-$BF` | `$8000` | `$C000` | `$BFFF`  | `$FFFF`  |
+| `dsp`   | `hirom`        | `$00-$0F`, `$80-$8F` | `$6000` | `$7000` | `$6FFF`  | `$7FFF`  |
+| `st`    | `lorom`        | `$60-$67`            | `$0000` | `$0001` | `$0001`  | `$0001`  |
+| `st`    | `lorom-shared` | `$68-$6F`            | `$0000` | `$0020` | `$0FFF`  | `$0021`  |
+| `obc1`  | `lorom`        | `$00-$3F`            | `$6000` | `$7FF0` | `$7FFF`  | `$7FFF`  |
+| `st018` | `lorom`        | `$00-$3F`            | `$3800` | `$3804` | `$3803`  | `$3804`  |
 
 ```python
 import snesdriver
@@ -96,8 +96,8 @@ except snesdriver.UnknownPart as error:
 ```
 
 ```
-dsp hirom <Window $00-$0f:6000 data, 7000 status>
-dsp lorom <Window $30-$3f:8000 data, c000 status>
+dsp hirom <Window $00-$0f,$80-$8f:6000 data, 7000 status>
+dsp lorom <Window $30-$3f,$b0-$bf:8000 data, c000 status>
 obc1 lorom <Window $00-$3f:6000 data, 7ff0 status>
 st lorom <Window $60-$67:0000 data, 0001 status>
 st lorom-shared <Window $68-$6f:0000 data, 0020 status>
@@ -281,7 +281,7 @@ Dungeon Master     write1 write1 write1 write1 write1 read1 read1 read1 read1
 
 例程从第一条指令遍历到第一条离开它的指令，并查询每条指令访问到了哪里。宽度不能跳过。一条存储指令传送一个字节还是两个字节取决于累加器，而累加器的宽度由之前的 `sep` 或 `rep` 设置，而非由存储指令本身决定。忽略它们的遍历会以错误的大小报告每次访问。
 
-布局决定访问落在哪个寄存器上。DSP 在低位卡带中于 `$30-$3F:8000` 响应，在高位卡带中于 `$00-$0F:6000` 响应。选择状态寄存器的地址线在前一种情况下是第 14 位，在后一种情况下是第 12 位。
+布局决定访问落在哪个寄存器上。正如 Nintendo 的 Book II 图 3-1-4 和图 3-1-5 所印，DSP 在低位卡带中于 `$30-$3F:8000` 和 `$B0-$BF:8000` 响应，在高位卡带中于 `$00-$0F:6000` 和 `$80-$8F:6000` 响应。选择状态寄存器的地址线在前一种情况下是第 14 位，在后一种情况下是第 12 位。
 
 ## 使用你自己的卡带
 
@@ -310,13 +310,13 @@ python3 -m conformance.against_cartridges
 
 | 卡带                   | 布局  | 位点 | 不同形态 |
 | :--------------------- | :---- | ---: | -------: |
-| Super Mario Kart (USA) | hirom |  122 |       18 |
-| Pilotwings (USA)       | lorom |  122 |       17 |
-| Dungeon Master (USA)   | lorom |  130 |       13 |
+| Super Mario Kart (USA) | hirom |  127 |       19 |
+| Pilotwings (USA)       | lorom |  212 |       22 |
+| Dungeon Master (USA)   | lorom |  192 |       15 |
 
 清单中其余 6 个卡带搭载 `st`、`st018` 和 `obc1` 芯片。扫描只读取 DSP，而这 6 个卡带都不在所读取的卡带库中。没有卡带时，扫描以 2 退出。CI 在每次推送时运行它，将退出码 2 视为跳过并加以标注。
 
-[`conformance/hardware.json`](conformance/hardware.json) 记录每个窗口及其依据，[`conformance/hardware.test.py`](conformance/hardware.test.py) 让 `WINDOWS` 与其保持一致。没有窗口被标记为已验证，因为没有任何厂商文档给出卡带电路板为协处理器解码的地址线。[`conformance/divergences.json`](conformance/divergences.json) 记录某个来源比表面上更不可靠的地方，[OPEN-QUESTIONS.md](OPEN-QUESTIONS.md) 列出每个未知项以及能够确定它的测量。
+[`conformance/hardware.json`](conformance/hardware.json) 记录每个窗口及其依据，[`conformance/hardware.test.py`](conformance/hardware.test.py) 让 `WINDOWS` 与其保持一致。两个 DSP 窗口被标记为已验证，因为 Book II 印出了两者。其他窗口都没有，因为没有任何厂商文档给出卡带电路板为 ST010、ST011、ST018 或 OBC1 解码的地址线。[`conformance/divergences.json`](conformance/divergences.json) 记录某个来源比表面上更不可靠的地方，[OPEN-QUESTIONS.md](OPEN-QUESTIONS.md) 列出每个未知项以及能够确定它的测量。
 
 ## 参与开发
 
@@ -344,7 +344,7 @@ python3 -m conformance.speed
 
 ## 参考资料
 
-- 未使用任何厂商文档。Nintendo 的开发手册 Book I 记录了内存映射和文件头，但没有记录卡带电路板为协处理器解码的地址线。Book II 中的 DSP-1 应用说明能确定这些窗口。
+- Nintendo 的 _SNES Development Manual, Book II_，用于图 3-1-4 和图 3-1-5 中的两个 DSP 窗口，因文字层只有标题而从扫描页读出。存档文本为 463,516 字节，SHA-256 为 `546f8e38caf6cb19c8aa9d5a1fef090d8cfc4a0a13b54c3b56d704975ab8398a`；带文字层的扫描为 29,575,127 字节，SHA-256 为 `05197923d9b73b63845fc5c2d609e753ec634dc1e4b403ce7a57326e1259c3ed`。两者都不在本仓库中，都位于 https://archive.org/details/SNESDevManual 。Book I 记录了内存映射和文件头，但没有记录卡带电路板为协处理器解码的地址线。
 - [`mos65xx-python`](https://github.com/gufranco/mos65xx-python)，取子模块固定的提交，用于 65816 指令集。
 - [`snes-mapper-python`](https://github.com/gufranco/snes-mapper-python)，取子模块固定的提交，用于卡带布局。
 - 作者拥有的零售版卡带库，用于所读取的 36 个卡带。其中任何内容都未提交。

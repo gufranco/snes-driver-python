@@ -8,7 +8,7 @@ English | [日本語](README.ja.md) | [简体中文](README.zh-Hans.md) | [繁�
 [![Release](https://img.shields.io/github/v/release/gufranco/snes-driver-python)](https://github.com/gufranco/snes-driver-python/releases)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-**42** cartridges named by four digests, **36** DSP cartridges read under **2** layouts, **0** disagreements with their own digests, **0** that said nothing to the part, **3** kinds of access, **670** tests, **100%** statement and branch coverage, no dependencies
+**42** cartridges named by four digests, **36** DSP cartridges read under **2** layouts, **0** disagreements with their own digests, **0** that said nothing to the part, **3** kinds of access, **674** tests, **100%** statement and branch coverage, no dependencies
 
 ```python
 from snesdriver import at, window_for
@@ -58,24 +58,24 @@ Every call takes the bytes of a cartridge image and returns what its code reache
 
 ### Where a part answers
 
-| Name                                                                | Content                                                                                                                                             |
-| :------------------------------------------------------------------ | :-------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `window_for(part, layout)`                                          | The `Window` that part answers in under that layout, or `None` when it has none there. Raises `UnknownPart` for a part name `WINDOWS` does not hold |
-| `WINDOWS`                                                           | Every window, keyed by part and then by layout                                                                                                      |
-| `Window(first_bank, last_bank, data, status, end, status_end=None)` | One window. `status_end` defaults to `end`                                                                                                          |
-| `window.reaches(bank, address)`                                     | `DATA`, `STATUS` or `None` for one address. The status range is tested first                                                                        |
-| `busiest(layout, reaches)`                                          | The part whose window under `layout` holds the most of the `(bank, address)` pairs in `reaches`, or `None` when no window holds any                 |
-| `DATA`, `STATUS`                                                    | The strings `"data"` and `"status"`                                                                                                                 |
-| `UnknownPart`                                                       | Raised by `window_for`. The message lists every part there is                                                                                       |
+| Name                                                                                | Content                                                                                                                                             |
+| :---------------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `window_for(part, layout)`                                                          | The `Window` that part answers in under that layout, or `None` when it has none there. Raises `UnknownPart` for a part name `WINDOWS` does not hold |
+| `WINDOWS`                                                                           | Every window, keyed by part and then by layout                                                                                                      |
+| `Window(first_bank, last_bank, data, status, end, status_end=None, mirrored=False)` | One window. `status_end` defaults to `end`. A `mirrored` window answers in the banks with bit 7 set as well                                         |
+| `window.reaches(bank, address)`                                                     | `DATA`, `STATUS` or `None` for one address. The status range is tested first                                                                        |
+| `busiest(layout, reaches)`                                                          | The part whose window under `layout` holds the most of the `(bank, address)` pairs in `reaches`, or `None` when no window holds any                 |
+| `DATA`, `STATUS`                                                                    | The strings `"data"` and `"status"`                                                                                                                 |
+| `UnknownPart`                                                                       | Raised by `window_for`. The message lists every part there is                                                                                       |
 
-| Part    | Layout         | Banks     | Data    | Status  | Data ends | Status ends |
-| :------ | :------------- | :-------- | :------ | :------ | :-------- | :---------- |
-| `dsp`   | `lorom`        | `$30-$3F` | `$8000` | `$C000` | `$FFFF`   | `$FFFF`     |
-| `dsp`   | `hirom`        | `$00-$0F` | `$6000` | `$7000` | `$7FFF`   | `$7FFF`     |
-| `st`    | `lorom`        | `$60-$67` | `$0000` | `$0001` | `$0001`   | `$0001`     |
-| `st`    | `lorom-shared` | `$68-$6F` | `$0000` | `$0020` | `$0FFF`   | `$0021`     |
-| `obc1`  | `lorom`        | `$00-$3F` | `$6000` | `$7FF0` | `$7FFF`   | `$7FFF`     |
-| `st018` | `lorom`        | `$00-$3F` | `$3800` | `$3804` | `$3803`   | `$3804`     |
+| Part    | Layout         | Banks                | Data    | Status  | Data ends | Status ends |
+| :------ | :------------- | :------------------- | :------ | :------ | :-------- | :---------- |
+| `dsp`   | `lorom`        | `$30-$3F`, `$B0-$BF` | `$8000` | `$C000` | `$BFFF`   | `$FFFF`     |
+| `dsp`   | `hirom`        | `$00-$0F`, `$80-$8F` | `$6000` | `$7000` | `$6FFF`   | `$7FFF`     |
+| `st`    | `lorom`        | `$60-$67`            | `$0000` | `$0001` | `$0001`   | `$0001`     |
+| `st`    | `lorom-shared` | `$68-$6F`            | `$0000` | `$0020` | `$0FFF`   | `$0021`     |
+| `obc1`  | `lorom`        | `$00-$3F`            | `$6000` | `$7FF0` | `$7FFF`   | `$7FFF`     |
+| `st018` | `lorom`        | `$00-$3F`            | `$3800` | `$3804` | `$3803`   | `$3804`     |
 
 ```python
 import snesdriver
@@ -96,8 +96,8 @@ except snesdriver.UnknownPart as error:
 ```
 
 ```
-dsp hirom <Window $00-$0f:6000 data, 7000 status>
-dsp lorom <Window $30-$3f:8000 data, c000 status>
+dsp hirom <Window $00-$0f,$80-$8f:6000 data, 7000 status>
+dsp lorom <Window $30-$3f,$b0-$bf:8000 data, c000 status>
 obc1 lorom <Window $00-$3f:6000 data, 7ff0 status>
 st lorom <Window $60-$67:0000 data, 0001 status>
 st lorom-shared <Window $68-$6f:0000 data, 0020 status>
@@ -281,7 +281,7 @@ Dungeon Master     write1 write1 write1 write1 write1 read1 read1 read1 read1
 
 A routine is walked from its first instruction to the first one that leaves, and each instruction is asked what it reached. Width cannot be skipped. A store moves one byte or two depending on the accumulator, and the accumulator's width is set by an earlier `sep` or `rep`, not by the store. A walk that ignored them would report every access at the wrong size.
 
-The layout decides which register an access lands on. The DSP answers at `$30-$3F:8000` in a low cartridge and at `$00-$0F:6000` in a high one. The address line that picks the status register is bit 14 in the first case and bit 12 in the second.
+The layout decides which register an access lands on. The DSP answers at `$30-$3F:8000` and `$B0-$BF:8000` in a low cartridge and at `$00-$0F:6000` and `$80-$8F:6000` in a high one, as Figures 3-1-4 and 3-1-5 of Nintendo's Book II print it. The address line that picks the status register is bit 14 in the first case and bit 12 in the second.
 
 ## Bringing your own cartridges
 
@@ -310,13 +310,13 @@ The sweep reads every cartridge it finds and prints each one's layout, its site 
 
 | Cartridge              | Layout | Sites | Distinct shapes |
 | :--------------------- | :----- | ----: | --------------: |
-| Super Mario Kart (USA) | hirom  |   122 |              18 |
-| Pilotwings (USA)       | lorom  |   122 |              17 |
-| Dungeon Master (USA)   | lorom  |   130 |              13 |
+| Super Mario Kart (USA) | hirom  |   127 |              19 |
+| Pilotwings (USA)       | lorom  |   212 |              22 |
+| Dungeon Master (USA)   | lorom  |   192 |              15 |
 
 The other 6 cartridges in the manifest carry the `st`, `st018` and `obc1` parts. The sweep reads the DSP only, and none of the 6 was in the library it read. With no cartridge present the sweep exits 2. CI runs it on every push, treats exit 2 as a skip and annotates it.
 
-[`conformance/hardware.json`](conformance/hardware.json) records every window with the evidence behind it, and [`conformance/hardware.test.py`](conformance/hardware.test.py) holds `WINDOWS` to it. No window is marked verified, because no manufacturer document gives the address lines a cartridge board decodes for a coprocessor. [`conformance/divergences.json`](conformance/divergences.json) records where a source is weaker than it looks, and [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md) lists each unknown with the measurement that would settle it.
+[`conformance/hardware.json`](conformance/hardware.json) records every window with the evidence behind it, and [`conformance/hardware.test.py`](conformance/hardware.test.py) holds `WINDOWS` to it. The two DSP windows are marked verified, because Book II prints both. No other window is, because no manufacturer document gives the address lines a cartridge board decodes for the ST010, ST011, ST018 or OBC1. [`conformance/divergences.json`](conformance/divergences.json) records where a source is weaker than it looks, and [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md) lists each unknown with the measurement that would settle it.
 
 ## Working on it
 
@@ -344,7 +344,7 @@ Each module has a test file beside it, named `<module>.test.py`, and each runs o
 
 ## References
 
-- No manufacturer document is used. Nintendo's development manual, Book I, documents the memory map and the header and not the address lines a cartridge board decodes for a coprocessor. The DSP-1 application note in Book II would settle the windows.
+- Nintendo's _SNES Development Manual, Book II_, for the two DSP windows in Figures 3-1-4 and 3-1-5, read off the scanned pages because the text layer carries only the captions. The archived text is 463,516 bytes with SHA-256 `546f8e38caf6cb19c8aa9d5a1fef090d8cfc4a0a13b54c3b56d704975ab8398a`, and the scan with its text layer is 29,575,127 bytes with SHA-256 `05197923d9b73b63845fc5c2d609e753ec634dc1e4b403ce7a57326e1259c3ed`. Neither is in this repository; both are at https://archive.org/details/SNESDevManual. Book I documents the memory map and the header and not the address lines a cartridge board decodes for a coprocessor.
 - [`mos65xx-python`](https://github.com/gufranco/mos65xx-python), at the commit the submodule pins, for the 65816 instruction set.
 - [`snes-mapper-python`](https://github.com/gufranco/snes-mapper-python), at the commit the submodule pins, for the cartridge layouts.
 - A retail cartridge library the author owns, for the 36 cartridges read. Nothing from it is committed.

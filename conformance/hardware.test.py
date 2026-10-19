@@ -17,9 +17,14 @@ def declared() -> dict[str, Any]:
     return held
 
 
+def declared_banks(row: dict[str, Any]) -> list[int]:
+    ranges = [row["banks"], *([row["mirrorBanks"]] if "mirrorBanks" in row else [])]
+    return [int(one, 16) for pair in ranges for one in pair]
+
+
 def declared_register(row: dict[str, Any], bank: int, address: int) -> str | None:
-    first, last = (int(one, 16) for one in row["banks"])
-    if not first <= bank <= last:
+    edges = declared_banks(row)
+    if not any(edges[at] <= bank <= edges[at + 1] for at in range(0, len(edges), 2)):
         return None
     if int(row["status"], 16) <= address <= int(row["statusEnd"], 16):
         return "status"
@@ -30,7 +35,7 @@ def declared_register(row: dict[str, Any], bank: int, address: int) -> str | Non
 
 def probes(row: dict[str, Any]) -> list[tuple[int, int]]:
     edges = [int(row[name], 16) for name in ("data", "status", "end", "statusEnd")]
-    banks = [int(one, 16) for one in row["banks"]]
+    banks = declared_banks(row)
     addresses = {one + step for one in edges for step in (-1, 0, 1)}
     returned = {one + step for one in banks for step in (-1, 0, 1)}
     return [
@@ -56,15 +61,25 @@ class DocumentTest(unittest.TestCase):
     def setUp(self) -> None:
         self.declared = declared()
 
-    def test_the_authority_puts_the_cartridge_first(self) -> None:
+    def test_the_authority_puts_the_manual_first_and_the_cartridge_after_it(self) -> None:
+        # Arrange
         order = self.declared["authority"]["order"]
 
-        self.assertIn("the cartridge", order[0])
+        # Act
+        found = ("Book II" in order[0], "the cartridge" in order[1])
 
-    def test_it_says_which_document_would_settle_this_and_that_it_is_absent(self) -> None:
+        # Assert
+        self.assertEqual(found, (True, True))
+
+    def test_it_says_which_windows_no_document_covers(self) -> None:
+        # Arrange
         missing = self.declared["authority"]["whatIsMissing"]
 
-        self.assertIn("not on this machine", missing)
+        # Act
+        named = [part for part in ("ST010", "ST011", "ST018", "OBC1") if part in missing]
+
+        # Assert
+        self.assertEqual(named, ["ST010", "ST011", "ST018", "OBC1"])
 
     def test_what_no_evidence_covers_is_recorded_rather_than_filled_in(self) -> None:
         stated = self.declared["notStated"]
@@ -80,10 +95,51 @@ class DocumentTest(unittest.TestCase):
 
         self.assertEqual(missing, [])
 
-    def test_no_window_claims_to_be_documented(self) -> None:
-        claimed = [row["part"] for row in self.declared["windows"] if row["verified"]]
+    def test_only_the_windows_book_ii_prints_claim_to_be_documented(self) -> None:
+        # Arrange
+        rows = self.declared["windows"]
 
-        self.assertEqual(claimed, [])
+        # Act
+        claimed = [
+            (row["part"], row["layout"], row.get("document")) for row in rows if row["verified"]
+        ]
+
+        # Assert
+        self.assertEqual(
+            claimed,
+            [
+                ("dsp", "lorom", "developmentManualBookIIScan"),
+                ("dsp", "hirom", "developmentManualBookIIScan"),
+            ],
+        )
+
+    def test_and_each_holds_the_figure_s_ranges(self) -> None:
+        # Arrange
+        rows = [row for row in self.declared["windows"] if row["verified"]]
+
+        # Act
+        found = [
+            {
+                cell["register"].split()[0].lower(): (
+                    int(cell["from"][:-1], 16),
+                    int(cell["to"][:-1], 16),
+                )
+                for cell in row["rows"]
+            }
+            for row in rows
+        ]
+
+        # Assert
+        self.assertEqual(
+            found,
+            [
+                {
+                    "status": (int(row["status"], 16), int(row["statusEnd"], 16)),
+                    "data": (int(row["data"], 16), int(row["end"], 16) + 1),
+                }
+                for row in rows
+            ],
+        )
 
     def test_every_window_names_its_evidence_and_what_would_settle_it(self) -> None:
         missing = [
@@ -145,8 +201,8 @@ class TableTest(unittest.TestCase):
 
         # Assert
         self.assertEqual(
-            (len(found), found[0], found[-1], (0x30, 0xBFFF) in found, (0x40, 0xC000) in found),
-            (6 * 8, (0x2F, 0x7FFF), (0x40, 0xFFFF), True, True),
+            (len(found), found[0], found[-1], (0x30, 0xBFFF) in found, (0xAF, 0xC000) in found),
+            (12 * 9, (0x2F, 0x7FFF), (0xC0, 0xFFFF), True, True),
         )
 
     def test_the_select_bit_is_the_one_that_separates_data_from_status(self) -> None:

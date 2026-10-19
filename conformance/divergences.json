@@ -2,20 +2,20 @@
   "comment": "Every place a source is weaker than it looks, and every place this package deliberately claims nothing. The facts themselves live in hardware.json; this file is about their standing.",
   "sources": {
     "cartridges": "The driver routines inside the 42 cartridges cartridges.manifest.json names, 36 of them DSP cartridges, each identified by digest before a byte is read.",
-    "document": "None. Nintendo's Book I documents the memory map and not what a cartridge board decodes for a coprocessor.",
+    "document": "Nintendo's Book II, for the DSP's two windows in Figures 3-1-4 and 3-1-5. Book I documents the memory map and not what a cartridge board decodes for a coprocessor, and no document covers the ST010, ST011, ST018 or OBC1.",
     "implementations": "Emulators, which were written by people reading the same cartridge code this package reads. Not a separate source."
   },
   "divergences": [
     {
       "id": "no-document-for-any-window",
-      "parts": ["dsp", "st"],
+      "parts": ["st", "obc1", "st018"],
       "severity": "high",
-      "status": "open",
-      "documentSays": "Nothing. No manufacturer document on this machine gives the address lines a cartridge board decodes for a coprocessor.",
+      "status": "narrowed",
+      "documentSays": "For the DSP, Book II's Figures 3-1-4 and 3-1-5 print both windows, with the mirror banks. For every other part, nothing: no manufacturer document known gives the address lines a cartridge board decodes for it.",
       "referenceDoes": "Every driver read agrees with the window this package uses for its part and layout.",
       "packageFollows": "reference",
-      "reasoning": "Agreement across dozens of independently written drivers is strong evidence and is not a document. One driver could be wrong; thirty six could not be wrong the same way. What it still cannot say is where a window stops, because a driver shows where a part answers and never where it does not.",
-      "wouldSettleIt": "The DSP-1 application note from Nintendo's Book II, or a continuity reading across a real cartridge board."
+      "reasoning": "Narrowed on 2026-10-19 by reading Book II. The DSP's windows are now documented, marked verified, and widened to the mirror banks the figures print, which the drivers alone never showed. For the other parts, agreement across independently written drivers is strong evidence and is not a document, and it still cannot say where a window stops, because a driver shows where a part answers and never where it does not.",
+      "wouldSettleIt": "A Seta or Nintendo document for the ST010, ST011, ST018 and OBC1, or a continuity reading across a real cartridge board."
     },
     {
       "id": "an-emulator-is-not-a-second-witness-here",

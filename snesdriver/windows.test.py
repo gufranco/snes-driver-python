@@ -103,7 +103,17 @@ class CatalogueTest(unittest.TestCase):
         printed = repr(dsp)
 
         # Assert
-        self.assertEqual(printed, "<Window $30-$3f:8000 data, c000 status>")
+        self.assertEqual(printed, "<Window $30-$3f,$b0-$bf:8000 data, c000 status>")
+
+    def test_a_window_that_does_not_mirror_prints_one_range(self) -> None:
+        # Arrange
+        obc1 = window("obc1", "lorom")
+
+        # Act
+        printed = repr(obc1)
+
+        # Assert
+        self.assertEqual(printed, "<Window $00-$3f:6000 data, 7ff0 status>")
 
     def test_a_window_built_by_hand_ends_its_status_range_where_its_data_ends(self) -> None:
         # Arrange
@@ -166,6 +176,30 @@ class ReachTest(unittest.TestCase):
 
         # Assert
         self.assertIsNone(found)
+
+    def test_the_dsp_answers_in_the_upper_banks_as_well(self) -> None:
+        # Arrange
+        windows = (window("dsp", "lorom"), window("dsp", "hirom"))
+
+        # Act
+        found = [
+            (one.reaches(bank, one.data), one.reaches(bank, one.status))
+            for one in windows
+            for bank in (one.first_bank | 0x80, one.last_bank | 0x80)
+        ]
+
+        # Assert
+        self.assertEqual(found, [(DATA, STATUS)] * 4)
+
+    def test_and_nowhere_between_the_two_ranges(self) -> None:
+        # Arrange
+        dsp = window("dsp", "lorom")
+
+        # Act
+        found = [dsp.reaches(bank, 0x8000) for bank in (0x40, 0xAF, 0xC0)]
+
+        # Assert
+        self.assertEqual(found, [None, None, None])
 
     def test_the_high_layout_answers_lower_in_the_bank(self) -> None:
         # Arrange

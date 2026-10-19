@@ -1,20 +1,42 @@
 {
-  "note": "What this package asserts about where a coprocessor answers, and where each assertion comes from. No manufacturer document on this machine states any of it, so every entry names the evidence it does have and says plainly that it is not a document.",
+  "note": "What this package asserts about where a coprocessor answers, and where each assertion comes from. Nintendo's Book II prints the two DSP windows; nothing a manufacturer printed covers the others, so every one of those names the evidence it does have and says plainly that it is not a document.",
   "authority": {
     "order": [
+      "Nintendo's development manual, Book II, for the two DSP windows its Figures 3-1-4 and 3-1-5 print",
       "the cartridge, because a driver was written by somebody who had the part on a desk and had to make it work",
       "agreement across cartridges, because one driver could be wrong and thirty six agreeing could not be wrong the same way",
       "nothing else"
     ],
     "why": "Most of these parts have no surviving datasheet, and the emulators that talk to them were written by people who read the same cartridge code this package reads. Taking a window from an emulator would be taking somebody's reading of the evidence rather than the evidence.",
-    "whatIsMissing": "Nintendo's development manual, Book I, documents the memory map and the header but not the address lines a cartridge board decodes for a coprocessor. Searched on 2026-08-21. The DSP-1 application note in Book II would be the document that settles this, and it is not on this machine.",
+    "whatIsMissing": "A document for any window but the DSP's. Book I documents the memory map and the header and not the address lines a cartridge board decodes for a coprocessor; Book II prints the DSP-1's two windows and no other part's. Nothing printed by Seta or by Nintendo for the ST010, ST011, ST018 or OBC1 is known.",
     "comparedAgainst": {
       "runner": "conformance/against_cartridges.py",
       "what": "The driver routine of every cartridge in the manifest, disassembled out of the cartridge's own code."
     }
   },
-  "documents": {},
-  "documentsNote": "Empty on purpose. No document describes this part, and nothing here is reached through a sibling either: every window below was read out of the driver routine in cartridges that carry it, which is the artifact rather than a document about it. An empty block says there is nothing to cite, where a missing one would be indistinguishable from nobody having filled it in.",
+  "documents": {
+    "developmentManualBookII": {
+      "publisher": "Nintendo",
+      "title": "Super Nintendo Entertainment System Development Manual, Book II",
+      "readOn": "2026-10-19",
+      "readVia": "archive.org/download/SNESDevManual/book2_djvu.txt",
+      "file": "book2_djvu.txt",
+      "sha256": "546f8e38caf6cb19c8aa9d5a1fef090d8cfc4a0a13b54c3b56d704975ab8398a",
+      "bytes": 463516,
+      "note": "Section 3, the DSP1. Its text layer carries the two figures' captions and none of their contents."
+    },
+    "developmentManualBookIIScan": {
+      "publisher": "Nintendo",
+      "title": "Super Nintendo Entertainment System Development Manual, Book II, the scanned pages with their text layer",
+      "readOn": "2026-10-19",
+      "readVia": "archive.org/download/SNESDevManual/book2_text.pdf, file pages 284 and 285 rendered as images",
+      "file": "book2_text.pdf",
+      "sha256": "05197923d9b73b63845fc5c2d609e753ec634dc1e4b403ce7a57326e1259c3ed",
+      "bytes": 29575127,
+      "note": "File page 284 is printed page 3-1-4 and carries Figure 3-1-4, Mode 20/DSP Memory Map; file page 285 is printed page 3-1-5 and carries Figure 3-1-5, Mode 21/DSP Memory Map. Both were read off the page at 130 and again at 300 dots per inch, the page turned upright and the DSP AREA box cropped, and both readings agree."
+    }
+  },
+  "documentsNote": "Book II is declared because it prints the DSP's two windows, read off the scanned page since the text layer holds only the captions. Every other window below was read out of the driver routine in cartridges that carry it, which is the artifact rather than a document about it.",
   "windows": [
     {
       "part": "dsp",
@@ -22,13 +44,32 @@
       "banks": ["0x30", "0x3F"],
       "data": "0x8000",
       "status": "0xC000",
-      "end": "0xFFFF",
+      "end": "0xBFFF",
       "selectBit": 14,
-      "verified": false,
-      "evidence": "Read out of the driver routine of every LoROM cartridge in the manifest that carries this part.",
-      "howToSettleIt": "The DSP-1 application note, or a continuity reading across a real cartridge board.",
+      "verified": true,
+      "evidence": "Printed in Figure 3-1-4 of Book II, read off the page image, and read out of the driver routine of every LoROM cartridge in the manifest that carries this part.",
+      "howToSettleIt": "Settled by Figure 3-1-4. A continuity reading across a real board would reopen it only by disagreeing.",
       "statusEnd": "0xFFFF",
-      "selectedBy": "One address line, named by selectBit."
+      "selectedBy": "One address line, named by selectBit.",
+      "mirrorBanks": ["0xB0", "0xBF"],
+      "document": "developmentManualBookIIScan",
+      "section": "Figure 3-1-4, Mode 20/DSP Memory Map, printed page 3-1-4",
+      "filePage": 284,
+      "rows": [
+        {
+          "banks": "(BF) 3F (B0) 30",
+          "register": "STATUS Read Only",
+          "from": "C000H",
+          "to": "FFFFH"
+        },
+        {
+          "banks": "(BF) 3F (B0) 30",
+          "register": "DATA Read/Write",
+          "from": "8000H",
+          "to": "C000H"
+        }
+      ],
+      "readFrom": "The page image only: the text layer of that page carries the caption and nothing inside the figure. The DSP AREA box gives the banks, with the mirror banks in parentheses, and the two ranges; the figure's first note names 8000H and C000H as the DSP1's port."
     },
     {
       "part": "dsp",
@@ -36,13 +77,32 @@
       "banks": ["0x00", "0x0F"],
       "data": "0x6000",
       "status": "0x7000",
-      "end": "0x7FFF",
+      "end": "0x6FFF",
       "selectBit": 12,
-      "verified": false,
-      "evidence": "Read out of the driver routine of every HiROM cartridge in the manifest that carries this part.",
-      "howToSettleIt": "The DSP-1 application note, or a continuity reading across a real cartridge board.",
+      "verified": true,
+      "evidence": "Printed in Figure 3-1-5 of Book II, read off the page image, and read out of the driver routine of every HiROM cartridge in the manifest that carries this part.",
+      "howToSettleIt": "Settled by Figure 3-1-5. A continuity reading across a real board would reopen it only by disagreeing.",
       "statusEnd": "0x7FFF",
-      "selectedBy": "One address line, named by selectBit."
+      "selectedBy": "One address line, named by selectBit.",
+      "mirrorBanks": ["0x80", "0x8F"],
+      "document": "developmentManualBookIIScan",
+      "section": "Figure 3-1-5, Mode 21/DSP Memory Map, printed page 3-1-5",
+      "filePage": 285,
+      "rows": [
+        {
+          "banks": "(8F) 0F (80) 00",
+          "register": "STATUS Read Only",
+          "from": "7000H",
+          "to": "7FFFH"
+        },
+        {
+          "banks": "(8F) 0F (80) 00",
+          "register": "DATA Read/Write",
+          "from": "6000H",
+          "to": "7000H"
+        }
+      ],
+      "readFrom": "The page image only: the text layer of that page carries the caption and nothing inside the figure. The DSP AREA box gives the banks, with the mirror banks in parentheses, and the two ranges; the figure's first note names 6000H and 7000H as the DSP1's port."
     },
     {
       "part": "st",
@@ -108,8 +168,8 @@
     "howToSettleIt": "A cartridge board schematic, or a continuity reading."
   },
   "notStated": [
-    "Which address lines any cartridge board actually connects. Everything here is inferred from what the drivers do rather than read off a schematic.",
-    "Whether a window extends past the addresses the drivers in the manifest reach. A driver shows where a part answers, never where it stops answering.",
+    "Which address lines any cartridge board actually connects for a part other than the DSP. Everything here about the ST010, ST011, ST018 and OBC1 is inferred from what the drivers do rather than read off a schematic or a manufacturer's figure.",
+    "Whether a window other than the DSP's extends past the addresses the drivers in the manifest reach. A driver shows where a part answers, never where it stops answering; Book II's figures give the DSP's whole span.",
     "Anything about timing. How long the console spends on one of these accesses belongs to snes-mapper-python, and how long the part then runs belongs to snes-dsp-python.",
     "Any part with no cartridge in the manifest. A window is only asserted where a driver was read."
   ]

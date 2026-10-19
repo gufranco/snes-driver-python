@@ -8,7 +8,7 @@
 [![Release](https://img.shields.io/github/v/release/gufranco/snes-driver-python)](https://github.com/gufranco/snes-driver-python/releases)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-**42** 個卡帶以四種摘要識別，**36** 個 DSP 卡帶在 **2** 種佈局下讀取，與自身摘要不符者 **0** 個，未向部件發出任何存取者 **0** 個，**3** 種存取，**670** 項測試，**100%** 語句及分支覆蓋率，無依賴套件
+**42** 個卡帶以四種摘要識別，**36** 個 DSP 卡帶在 **2** 種佈局下讀取，與自身摘要不符者 **0** 個，未向部件發出任何存取者 **0** 個，**3** 種存取，**674** 項測試，**100%** 語句及分支覆蓋率，無依賴套件
 
 ```python
 from snesdriver import at, window_for
@@ -58,24 +58,24 @@ python3 snesdriver/doctor.py
 
 ### 部件在哪裏回應
 
-| 名稱                                                                | 內容                                                                                                                        |
-| :------------------------------------------------------------------ | :-------------------------------------------------------------------------------------------------------------------------- |
-| `window_for(part, layout)`                                          | 該部件在該佈局下回應的 `Window`；若該部件在該佈局下沒有窗口，則為 `None`。若部件名稱不在 `WINDOWS` 中，則拋出 `UnknownPart` |
-| `WINDOWS`                                                           | 所有窗口，先以部件、再以佈局為鍵                                                                                            |
-| `Window(first_bank, last_bank, data, status, end, status_end=None)` | 一個窗口。`status_end` 預設為 `end`                                                                                         |
-| `window.reaches(bank, address)`                                     | 對單一位址返回 `DATA`、`STATUS` 或 `None`。先檢查狀態範圍                                                                   |
-| `busiest(layout, reaches)`                                          | 在 `layout` 下，其窗口包含 `reaches` 中最多 `(bank, address)` 對的部件；若沒有窗口包含任何一對，則為 `None`                 |
-| `DATA`, `STATUS`                                                    | 字串 `"data"` 及 `"status"`                                                                                                 |
-| `UnknownPart`                                                       | 由 `window_for` 拋出。訊息列出所有現有部件                                                                                  |
+| 名稱                                                                                | 內容                                                                                                                        |
+| :---------------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------- |
+| `window_for(part, layout)`                                                          | 該部件在該佈局下回應的 `Window`；若該部件在該佈局下沒有窗口，則為 `None`。若部件名稱不在 `WINDOWS` 中，則拋出 `UnknownPart` |
+| `WINDOWS`                                                                           | 所有窗口，先以部件、再以佈局為鍵                                                                                            |
+| `Window(first_bank, last_bank, data, status, end, status_end=None, mirrored=False)` | 一個窗口。`status_end` 預設為 `end`。`mirrored` 的窗口在第 7 位元設定的 bank 中同樣回應                                     |
+| `window.reaches(bank, address)`                                                     | 對單一位址返回 `DATA`、`STATUS` 或 `None`。先檢查狀態範圍                                                                   |
+| `busiest(layout, reaches)`                                                          | 在 `layout` 下，其窗口包含 `reaches` 中最多 `(bank, address)` 對的部件；若沒有窗口包含任何一對，則為 `None`                 |
+| `DATA`, `STATUS`                                                                    | 字串 `"data"` 及 `"status"`                                                                                                 |
+| `UnknownPart`                                                                       | 由 `window_for` 拋出。訊息列出所有現有部件                                                                                  |
 
-| 部件    | 佈局           | 記憶庫    | 數據    | 狀態    | 數據結束 | 狀態結束 |
-| :------ | :------------- | :-------- | :------ | :------ | :------- | :------- |
-| `dsp`   | `lorom`        | `$30-$3F` | `$8000` | `$C000` | `$FFFF`  | `$FFFF`  |
-| `dsp`   | `hirom`        | `$00-$0F` | `$6000` | `$7000` | `$7FFF`  | `$7FFF`  |
-| `st`    | `lorom`        | `$60-$67` | `$0000` | `$0001` | `$0001`  | `$0001`  |
-| `st`    | `lorom-shared` | `$68-$6F` | `$0000` | `$0020` | `$0FFF`  | `$0021`  |
-| `obc1`  | `lorom`        | `$00-$3F` | `$6000` | `$7FF0` | `$7FFF`  | `$7FFF`  |
-| `st018` | `lorom`        | `$00-$3F` | `$3800` | `$3804` | `$3803`  | `$3804`  |
+| 部件    | 佈局           | 記憶庫               | 數據    | 狀態    | 數據結束 | 狀態結束 |
+| :------ | :------------- | :------------------- | :------ | :------ | :------- | :------- |
+| `dsp`   | `lorom`        | `$30-$3F`, `$B0-$BF` | `$8000` | `$C000` | `$BFFF`  | `$FFFF`  |
+| `dsp`   | `hirom`        | `$00-$0F`, `$80-$8F` | `$6000` | `$7000` | `$6FFF`  | `$7FFF`  |
+| `st`    | `lorom`        | `$60-$67`            | `$0000` | `$0001` | `$0001`  | `$0001`  |
+| `st`    | `lorom-shared` | `$68-$6F`            | `$0000` | `$0020` | `$0FFF`  | `$0021`  |
+| `obc1`  | `lorom`        | `$00-$3F`            | `$6000` | `$7FF0` | `$7FFF`  | `$7FFF`  |
+| `st018` | `lorom`        | `$00-$3F`            | `$3800` | `$3804` | `$3803`  | `$3804`  |
 
 ```python
 import snesdriver
@@ -96,8 +96,8 @@ except snesdriver.UnknownPart as error:
 ```
 
 ```
-dsp hirom <Window $00-$0f:6000 data, 7000 status>
-dsp lorom <Window $30-$3f:8000 data, c000 status>
+dsp hirom <Window $00-$0f,$80-$8f:6000 data, 7000 status>
+dsp lorom <Window $30-$3f,$b0-$bf:8000 data, c000 status>
 obc1 lorom <Window $00-$3f:6000 data, 7ff0 status>
 st lorom <Window $60-$67:0000 data, 0001 status>
 st lorom-shared <Window $68-$6f:0000 data, 0020 status>
@@ -281,7 +281,7 @@ Dungeon Master     write1 write1 write1 write1 write1 read1 read1 read1 read1
 
 例程從第一條指令走訪到第一條離開例程的指令，並查明每條指令存取到哪裏。寬度不能略過。一次存入搬動一個還是兩個位元組取決於累加器，而累加器的寬度由較早的 `sep` 或 `rep` 設定，並非由存入指令設定。忽略它們的走訪會以錯誤的大小報告每次存取。
 
-佈局決定存取落在哪個暫存器上。DSP 在低位卡帶中於 `$30-$3F:8000` 回應，在高位卡帶中於 `$00-$0F:6000` 回應。選擇狀態暫存器的位址線，在前者是第 14 位元，在後者是第 12 位元。
+佈局決定存取落在哪個暫存器上。正如 Nintendo 的 Book II 圖 3-1-4 和圖 3-1-5 所印，DSP 在低位卡帶中於 `$30-$3F:8000` 和 `$B0-$BF:8000` 回應，在高位卡帶中於 `$00-$0F:6000` 和 `$80-$8F:6000` 回應。選擇狀態暫存器的位址線，在前者是第 14 位元，在後者是第 12 位元。
 
 ## 使用你自己的卡帶
 
@@ -310,13 +310,13 @@ python3 -m conformance.against_cartridges
 
 | 卡帶                   | 佈局  | 位置 | 不同形態 |
 | :--------------------- | :---- | ---: | -------: |
-| Super Mario Kart (USA) | hirom |  122 |       18 |
-| Pilotwings (USA)       | lorom |  122 |       17 |
-| Dungeon Master (USA)   | lorom |  130 |       13 |
+| Super Mario Kart (USA) | hirom |  127 |       19 |
+| Pilotwings (USA)       | lorom |  212 |       22 |
+| Dungeon Master (USA)   | lorom |  192 |       15 |
 
 清單中其餘 6 個卡帶搭載 `st`、`st018` 及 `obc1` 部件。掃描只讀取 DSP，而這 6 個卡帶都不在它所讀取的卡帶庫中。沒有任何卡帶時，掃描以 2 結束。CI 在每次推送時執行它，把結束代碼 2 視為略過並加上註記。
 
-[`conformance/hardware.json`](conformance/hardware.json) 記錄每個窗口及其背後的證據，[`conformance/hardware.test.py`](conformance/hardware.test.py) 以此約束 `WINDOWS`。沒有窗口被標記為已驗證，因為沒有任何製造商文件說明卡帶電路板為協處理器解碼的位址線。[`conformance/divergences.json`](conformance/divergences.json) 記錄來源比表面看來更弱的地方，[OPEN-QUESTIONS.md](OPEN-QUESTIONS.md) 列出每個未知之處及能夠確定它的測量方法。
+[`conformance/hardware.json`](conformance/hardware.json) 記錄每個窗口及其背後的證據，[`conformance/hardware.test.py`](conformance/hardware.test.py) 以此約束 `WINDOWS`。兩個 DSP 窗口被標記為已驗證，因為 Book II 印出了兩者。其他窗口都沒有，因為沒有任何製造商文件說明卡帶電路板為 ST010、ST011、ST018 或 OBC1 解碼的位址線。[`conformance/divergences.json`](conformance/divergences.json) 記錄來源比表面看來更弱的地方，[OPEN-QUESTIONS.md](OPEN-QUESTIONS.md) 列出每個未知之處及能夠確定它的測量方法。
 
 ## 參與開發
 
@@ -344,7 +344,7 @@ python3 -m conformance.speed
 
 ## 參考資料
 
-- 沒有使用任何製造商文件。Nintendo 的開發手冊 Book I 記載了記憶體映射和標頭，但沒有記載卡帶電路板為協處理器解碼的位址線。Book II 中的 DSP-1 應用說明可以確定這些窗口。
+- Nintendo 的 _SNES Development Manual, Book II_，用於圖 3-1-4 和圖 3-1-5 中的兩個 DSP 窗口，因文字層只有標題而從掃描頁讀出。存檔文字為 463,516 位元組，SHA-256 為 `546f8e38caf6cb19c8aa9d5a1fef090d8cfc4a0a13b54c3b56d704975ab8398a`；附文字層的掃描為 29,575,127 位元組，SHA-256 為 `05197923d9b73b63845fc5c2d609e753ec634dc1e4b403ce7a57326e1259c3ed`。兩者都不在本儲存庫中，都位於 https://archive.org/details/SNESDevManual 。Book I 記載了記憶體映射和標頭，但沒有記載卡帶電路板為協處理器解碼的位址線。
 - [`mos65xx-python`](https://github.com/gufranco/mos65xx-python)，採用子模組所固定的提交，用於 65816 指令集。
 - [`snes-mapper-python`](https://github.com/gufranco/snes-mapper-python)，採用子模組所固定的提交，用於卡帶佈局。
 - 作者擁有的零售版卡帶庫，用於所讀取的 36 個卡帶。其中任何內容都沒有提交。

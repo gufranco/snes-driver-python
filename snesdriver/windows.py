@@ -11,9 +11,11 @@ DATA = "data"
 
 STATUS = "status"
 
+MIRROR = 0x80
+
 
 class Window:
-    __slots__ = ("data", "end", "first_bank", "last_bank", "status", "status_end")
+    __slots__ = ("data", "end", "first_bank", "last_bank", "mirrored", "status", "status_end")
 
     def __init__(
         self,
@@ -23,6 +25,7 @@ class Window:
         status: int,
         end: int,
         status_end: int | None = None,
+        mirrored: bool = False,
     ) -> None:
         self.first_bank = first_bank
         self.last_bank = last_bank
@@ -30,9 +33,11 @@ class Window:
         self.status = status
         self.end = end
         self.status_end = end if status_end is None else status_end
+        self.mirrored = mirrored
 
     def reaches(self, bank: int, address: int) -> str | None:
-        if not self.first_bank <= bank <= self.last_bank:
+        held = bank & (MIRROR - 1) if self.mirrored else bank
+        if not self.first_bank <= held <= self.last_bank:
             return None
         if self.status <= address <= self.status_end:
             return STATUS
@@ -42,16 +47,16 @@ class Window:
 
     @override
     def __repr__(self) -> str:
-        return (
-            f"<Window ${self.first_bank:02x}-${self.last_bank:02x}:"
-            f"{self.data:04x} data, {self.status:04x} status>"
-        )
+        banks = f"${self.first_bank:02x}-${self.last_bank:02x}"
+        if self.mirrored:
+            banks += f",${self.first_bank | MIRROR:02x}-${self.last_bank | MIRROR:02x}"
+        return f"<Window {banks}:{self.data:04x} data, {self.status:04x} status>"
 
 
 WINDOWS = {
     "dsp": {
-        "lorom": Window(0x30, 0x3F, 0x8000, 0xC000, 0xFFFF),
-        "hirom": Window(0x00, 0x0F, 0x6000, 0x7000, 0x7FFF),
+        "lorom": Window(0x30, 0x3F, 0x8000, 0xC000, 0xBFFF, 0xFFFF, mirrored=True),
+        "hirom": Window(0x00, 0x0F, 0x6000, 0x7000, 0x6FFF, 0x7FFF, mirrored=True),
     },
     "st": {
         "lorom": Window(0x60, 0x67, 0x0000, 0x0001, 0x0001),

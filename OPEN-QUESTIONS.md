@@ -3,9 +3,10 @@
 What this project does not know for certain, and what it would take to find out.
 
 The largest entry is the first one, and it is the shape of the whole repository:
-no manufacturer document on this machine gives the address lines a cartridge
-board decodes for a coprocessor. Everything here about where a part answers is
-inferred from what shipped drivers do.
+Nintendo's Book II prints the DSP's two windows and no manufacturer document
+gives the address lines a cartridge board decodes for any other coprocessor.
+Everything here about where the ST010, ST011, ST018 and OBC1 answer is inferred
+from what shipped drivers do.
 
 The settled surface is what a cartridge sends, taken from the cartridge's own
 code in the order the console runs it, across the 42 cartridges on hand. That is
@@ -31,30 +32,38 @@ written down here so nobody does.
 
 ## What would settle almost all of them
 
-The DSP-1 application note from Nintendo's Book II, or a continuity reading
-across a real cartridge board. Anything, in short, that did not come from reading
-a driver.
+A continuity reading across a real cartridge board, or a document from Seta or
+Nintendo for the parts Book II does not cover. Anything, in short, that did not
+come from reading a driver. Book II has been read: it settles the DSP's windows
+and nothing else here.
 
 ## Where no document exists at all
 
-### Which address lines a cartridge board decodes for a coprocessor.
+### Which address lines a cartridge board decodes for a coprocessor other than the DSP.
 
-**The document says.** Nothing. Nintendo's development manual, Book I, documents
-the memory map and the header and not this. It was searched on 2026-08-21.
+**The document says.** For the DSP, Book II's Figures 3-1-4 and 3-1-5 at pages
+3-1-4 and 3-1-5: data at `8000H` and status at `C000H` to `FFFFH` in banks `30`
+to `3F` and `B0` to `BF` under Mode 20, and data at `6000H` and status at
+`7000H` to `7FFFH` in banks `00` to `0F` and `80` to `8F` under Mode 21. Those
+two windows are marked verified and the package answers in the mirror banks the
+figures print. For the ST010, ST011, ST018 and OBC1, nothing: Book I documents
+the memory map and the header, and Book II has no chapter on any of them.
 
-**What this project follows.** What the drivers do. Every driver read agrees with
-the window this package uses for its part and layout.
+**What this project follows.** For the four undocumented parts, what the drivers
+do. Every driver read agrees with the window this package uses for its part and
+layout.
 
 **Why.** There is nothing above it. A driver was written by somebody who had the
 part on a desk and had to make it work, which is the strongest evidence available
 here, and it is still not a schematic.
 
-**What would settle or reopen it.** The DSP-1 application note from Book II, a
-board photograph, or a continuity reading.
+**What would settle or reopen it.** A Seta or Nintendo document for those
+parts, a board photograph, or a continuity reading.
 
-### Where a window stops.
+### Where a window other than the DSP's stops.
 
-**The document says.** Nothing.
+**The document says.** Nothing for the four undocumented parts. Book II's
+figures give the DSP's whole span, every bank and both ranges.
 
 **What the drivers do.** Show where a part answers. They never show where it
 stops answering, because a routine that never touched an address proves nothing

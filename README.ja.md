@@ -8,7 +8,7 @@ SNESカートリッジがコプロセッサを駆動するために実行する6
 [![Release](https://img.shields.io/github/v/release/gufranco/snes-driver-python)](https://github.com/gufranco/snes-driver-python/releases)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-4つのダイジェストで特定されたカートリッジ**42**本、**2**種類のレイアウトで読み取ったDSPカートリッジ**36**本、自身のダイジェストとの不一致**0**件、パーツに何も送らなかったもの**0**本、アクセスの種類**3**種、テスト**670**件、ステートメントとブランチのカバレッジ**100%**、依存関係なし
+4つのダイジェストで特定されたカートリッジ**42**本、**2**種類のレイアウトで読み取ったDSPカートリッジ**36**本、自身のダイジェストとの不一致**0**件、パーツに何も送らなかったもの**0**本、アクセスの種類**3**種、テスト**674**件、ステートメントとブランチのカバレッジ**100%**、依存関係なし
 
 ```python
 from snesdriver import at, window_for
@@ -58,24 +58,24 @@ python3 snesdriver/doctor.py
 
 ### パーツが応答する場所
 
-| 名前                                                                | 内容                                                                                                                                   |
-| :------------------------------------------------------------------ | :------------------------------------------------------------------------------------------------------------------------------------- |
-| `window_for(part, layout)`                                          | そのレイアウトでそのパーツが応答する`Window`。そこにウィンドウがない場合は`None`。`WINDOWS`にないパーツ名には`UnknownPart`を送出します |
-| `WINDOWS`                                                           | すべてのウィンドウ。パーツ、次にレイアウトをキーとします                                                                               |
-| `Window(first_bank, last_bank, data, status, end, status_end=None)` | 1つのウィンドウ。`status_end`のデフォルトは`end`です                                                                                   |
-| `window.reaches(bank, address)`                                     | 1つのアドレスについて`DATA`、`STATUS`、または`None`。ステータスの範囲が先に判定されます                                                |
-| `busiest(layout, reaches)`                                          | `layout`でのウィンドウが`reaches`内の`(bank, address)`ペアを最も多く含むパーツ。どのウィンドウも1つも含まない場合は`None`              |
-| `DATA`、`STATUS`                                                    | 文字列`"data"`と`"status"`                                                                                                             |
-| `UnknownPart`                                                       | `window_for`が送出します。メッセージにはすべてのパーツが列挙されます                                                                   |
+| 名前                                                                                | 内容                                                                                                                                   |
+| :---------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------- |
+| `window_for(part, layout)`                                                          | そのレイアウトでそのパーツが応答する`Window`。そこにウィンドウがない場合は`None`。`WINDOWS`にないパーツ名には`UnknownPart`を送出します |
+| `WINDOWS`                                                                           | すべてのウィンドウ。パーツ、次にレイアウトをキーとします                                                                               |
+| `Window(first_bank, last_bank, data, status, end, status_end=None, mirrored=False)` | 1つのウィンドウ。`status_end`のデフォルトは`end`です。`mirrored`のウィンドウはビット7を立てたバンクでも応答します                      |
+| `window.reaches(bank, address)`                                                     | 1つのアドレスについて`DATA`、`STATUS`、または`None`。ステータスの範囲が先に判定されます                                                |
+| `busiest(layout, reaches)`                                                          | `layout`でのウィンドウが`reaches`内の`(bank, address)`ペアを最も多く含むパーツ。どのウィンドウも1つも含まない場合は`None`              |
+| `DATA`、`STATUS`                                                                    | 文字列`"data"`と`"status"`                                                                                                             |
+| `UnknownPart`                                                                       | `window_for`が送出します。メッセージにはすべてのパーツが列挙されます                                                                   |
 
-| パーツ  | レイアウト     | バンク    | データ  | ステータス | データの終端 | ステータスの終端 |
-| :------ | :------------- | :-------- | :------ | :--------- | :----------- | :--------------- |
-| `dsp`   | `lorom`        | `$30-$3F` | `$8000` | `$C000`    | `$FFFF`      | `$FFFF`          |
-| `dsp`   | `hirom`        | `$00-$0F` | `$6000` | `$7000`    | `$7FFF`      | `$7FFF`          |
-| `st`    | `lorom`        | `$60-$67` | `$0000` | `$0001`    | `$0001`      | `$0001`          |
-| `st`    | `lorom-shared` | `$68-$6F` | `$0000` | `$0020`    | `$0FFF`      | `$0021`          |
-| `obc1`  | `lorom`        | `$00-$3F` | `$6000` | `$7FF0`    | `$7FFF`      | `$7FFF`          |
-| `st018` | `lorom`        | `$00-$3F` | `$3800` | `$3804`    | `$3803`      | `$3804`          |
+| パーツ  | レイアウト     | バンク               | データ  | ステータス | データの終端 | ステータスの終端 |
+| :------ | :------------- | :------------------- | :------ | :--------- | :----------- | :--------------- |
+| `dsp`   | `lorom`        | `$30-$3F`, `$B0-$BF` | `$8000` | `$C000`    | `$BFFF`      | `$FFFF`          |
+| `dsp`   | `hirom`        | `$00-$0F`, `$80-$8F` | `$6000` | `$7000`    | `$6FFF`      | `$7FFF`          |
+| `st`    | `lorom`        | `$60-$67`            | `$0000` | `$0001`    | `$0001`      | `$0001`          |
+| `st`    | `lorom-shared` | `$68-$6F`            | `$0000` | `$0020`    | `$0FFF`      | `$0021`          |
+| `obc1`  | `lorom`        | `$00-$3F`            | `$6000` | `$7FF0`    | `$7FFF`      | `$7FFF`          |
+| `st018` | `lorom`        | `$00-$3F`            | `$3800` | `$3804`    | `$3803`      | `$3804`          |
 
 ```python
 import snesdriver
@@ -96,8 +96,8 @@ except snesdriver.UnknownPart as error:
 ```
 
 ```
-dsp hirom <Window $00-$0f:6000 data, 7000 status>
-dsp lorom <Window $30-$3f:8000 data, c000 status>
+dsp hirom <Window $00-$0f,$80-$8f:6000 data, 7000 status>
+dsp lorom <Window $30-$3f,$b0-$bf:8000 data, c000 status>
 obc1 lorom <Window $00-$3f:6000 data, 7ff0 status>
 st lorom <Window $60-$67:0000 data, 0001 status>
 st lorom-shared <Window $68-$6f:0000 data, 0020 status>
@@ -281,7 +281,7 @@ Dungeon Master     write1 write1 write1 write1 write1 read1 read1 read1 read1
 
 ルーチンは最初の命令から、ルーチンを抜ける最初の命令までたどられ、各命令がどこに到達したかを調べます。幅は省略できません。ストアが1バイトを移動するか2バイトを移動するかはアキュムレータで決まり、アキュムレータの幅はストアではなく、それ以前の`sep`または`rep`で設定されます。これらを無視するたどりは、すべてのアクセスを誤ったサイズで報告することになります。
 
-アクセスがどのレジスタに届くかはレイアウトで決まります。DSPはローカートリッジでは`$30-$3F:8000`で、ハイカートリッジでは`$00-$0F:6000`で応答します。ステータスレジスタを選択するアドレス線は、前者ではビット14、後者ではビット12です。
+アクセスがどのレジスタに届くかはレイアウトで決まります。NintendoのBook IIの図3-1-4と図3-1-5が記載するとおり、DSPはローカートリッジでは`$30-$3F:8000`と`$B0-$BF:8000`で、ハイカートリッジでは`$00-$0F:6000`と`$80-$8F:6000`で応答します。ステータスレジスタを選択するアドレス線は、前者ではビット14、後者ではビット12です。
 
 ## 自分のカートリッジを使う
 
@@ -310,13 +310,13 @@ python3 -m conformance.against_cartridges
 
 | カートリッジ           | レイアウト | サイト | 異なるシェイプ |
 | :--------------------- | :--------- | -----: | -------------: |
-| Super Mario Kart (USA) | hirom      |    122 |             18 |
-| Pilotwings (USA)       | lorom      |    122 |             17 |
-| Dungeon Master (USA)   | lorom      |    130 |             13 |
+| Super Mario Kart (USA) | hirom      |    127 |             19 |
+| Pilotwings (USA)       | lorom      |    212 |             22 |
+| Dungeon Master (USA)   | lorom      |    192 |             15 |
 
 マニフェストにある残りの6本のカートリッジは、`st`、`st018`、`obc1`のパーツを搭載しています。スイープはDSPのみを読み取り、その6本はいずれも読み取ったライブラリにありませんでした。カートリッジがない場合、スイープは2で終了します。CIはプッシュのたびにこれを実行し、終了コード2をスキップとして扱い、注記を付けます。
 
-[`conformance/hardware.json`](conformance/hardware.json)はすべてのウィンドウをその根拠となる証拠とともに記録し、[`conformance/hardware.test.py`](conformance/hardware.test.py)は`WINDOWS`がそれに一致することを確認します。検証済みとされたウィンドウはありません。カートリッジ基板がコプロセッサのためにデコードするアドレス線を示すメーカー文書がないからです。[`conformance/divergences.json`](conformance/divergences.json)は情報源が見かけより弱い箇所を記録し、[OPEN-QUESTIONS.md](OPEN-QUESTIONS.md)は未解決の事項それぞれを、それを確定できる測定とともに列挙しています。
+[`conformance/hardware.json`](conformance/hardware.json)はすべてのウィンドウをその根拠となる証拠とともに記録し、[`conformance/hardware.test.py`](conformance/hardware.test.py)は`WINDOWS`がそれに一致することを確認します。2つのDSPウィンドウは検証済みとされています。Book IIが両方を記載しているからです。それ以外のウィンドウは検証済みではありません。カートリッジ基板がST010、ST011、ST018、OBC1のためにデコードするアドレス線を示すメーカー文書がないからです。[`conformance/divergences.json`](conformance/divergences.json)は情報源が見かけより弱い箇所を記録し、[OPEN-QUESTIONS.md](OPEN-QUESTIONS.md)は未解決の事項それぞれを、それを確定できる測定とともに列挙しています。
 
 ## 開発に参加する
 
@@ -344,7 +344,7 @@ python3 -m conformance.speed
 
 ## 参考文献
 
-- メーカー文書は使用していません。Nintendoの開発マニュアルBook Iはメモリマップとヘッダを記載していますが、カートリッジ基板がコプロセッサのためにデコードするアドレス線は記載していません。Book IIのDSP-1アプリケーションノートがあれば、ウィンドウを確定できます。
+- Nintendoの_SNES Development Manual, Book II_。図3-1-4と図3-1-5の2つのDSPウィンドウに使い、テキストレイヤーには見出ししかないためスキャンページから読み取りました。アーカイブされたテキストは463,516バイトでSHA-256は`546f8e38caf6cb19c8aa9d5a1fef090d8cfc4a0a13b54c3b56d704975ab8398a`、テキストレイヤー付きのスキャンは29,575,127バイトでSHA-256は`05197923d9b73b63845fc5c2d609e753ec634dc1e4b403ce7a57326e1259c3ed`です。どちらもこのリポジトリには含まれておらず、https://archive.org/details/SNESDevManual にあります。Book Iはメモリマップとヘッダを記載していますが、カートリッジ基板がコプロセッサのためにデコードするアドレス線は記載していません。
 - [`mos65xx-python`](https://github.com/gufranco/mos65xx-python)。サブモジュールが固定するコミットのもので、65816の命令セットに使います。
 - [`snes-mapper-python`](https://github.com/gufranco/snes-mapper-python)。サブモジュールが固定するコミットのもので、カートリッジのレイアウトに使います。
 - 作者が所有する市販カートリッジのライブラリ。読み取った36本のカートリッジに使います。そこからは何もコミットしていません。

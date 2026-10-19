@@ -41,7 +41,8 @@ There is no clock. Nothing here is a model of a part.
 ## The authority ladder
 
 1. **Manufacturer documentation.** For this project that is the 65816 instruction
-   set and the cartridge address decoding. Anything printed decides.
+   set, the cartridge address decoding, and the DSP's two windows, which Book II
+   prints in Figures 3-1-4 and 3-1-5. Anything printed decides.
 2. **The cartridge itself.** What a game sends is in the game. Read it.
 3. **A recording from an independent implementation**, for behaviour nobody
    documented.
@@ -65,8 +66,8 @@ stepped over does not start a conversation of its own.
 
 **Not settled: 7 things**, each in [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md) with
 what would close it. Three of them are the same shape: no manufacturer document
-gives any of these windows, so everything about where a part answers rests on
-what shipped drivers do. Do not close one by argument, and do not close one with
+gives any window but the DSP's, so everything about where the other parts answer
+rests on what shipped drivers do. Do not close one by argument, and do not close one with
 an emulator.
 
 ## The one rule that decides most questions
