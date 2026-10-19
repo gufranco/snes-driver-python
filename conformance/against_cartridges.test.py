@@ -155,7 +155,7 @@ class PartTest(unittest.TestCase):
         # Assert
         self.assertEqual((found.part, found.shapes), ("st", {"write?": 2}))
 
-    def test_the_absolutely_addressed_part_is_found_by_walking_from_the_vectors(self) -> None:
+    def test_an_absolute_part_is_found_and_sized_by_walking_from_the_vectors(self) -> None:
         # Arrange
         image = bytearray(a_cartridge(drives=False, chipset=0xF5, sub=0x02))
         image[0x0000:0x0006] = bytes([0xE2, 0x20, 0x8D, 0x00, 0x38, 0x60])
@@ -165,7 +165,7 @@ class PartTest(unittest.TestCase):
         found = against_cartridges.read(bytes(image), _an_identity())
 
         # Assert
-        self.assertEqual((found.part, found.sites, found.shapes), ("st018", (2,), {"write?": 1}))
+        self.assertEqual((found.part, found.sites, found.shapes), ("st018", (2,), {"write1": 1}))
 
     def test_a_line_names_the_part_it_was_read_under(self) -> None:
         # Arrange

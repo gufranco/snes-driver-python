@@ -25,8 +25,11 @@ cartridge's own code, and none of it executes anything.
 - `sites(rom, window)` is every instruction in the image that reaches the part.
 - `at(rom, offset, window)` walks one routine and hands back the whole exchange:
   each access, where it landed, how wide it was, and the sites it accounted for.
-- `shapes(rom, window)` is every distinct exchange in the image with how often
-  each occurs.
+- `shapes(rom, window, kind=layout)` is every distinct exchange in the image with
+  how often each occurs, each routine walked at every width the sweep from the
+  vectors arrived at it with.
+- `widths(rom, kind)` is that sweep's answer: every instruction it decoded, with
+  the accumulator and index widths it arrived there with.
 - `through(rom, offset)` is the walk itself, instruction by instruction, for a
   caller who wants the steps rather than the exchange.
 
@@ -57,9 +60,14 @@ There is no clock. Nothing here is a model of a part.
 hand, each confirmed against all four of its digests before a byte of it is
 disassembled.
 
-**Settled: the width of every access.** The walk carries the accumulator's width
-through the `sep` and `rep` that set it, which is the part that cannot be skipped
-and the part a naive reader gets wrong on every store.
+**Settled: the width of every access the code determines.** The walk carries the
+accumulator's and the index registers' widths through the `sep`, `rep`, `php`
+and `plp` that set them, and the sweep from the vectors carries both through
+every call: a callee is entered at each width its callers leave, and a caller
+resumes at each width the callee returns with. That is the part that cannot be
+skipped and the part a naive reader gets wrong on every store. Where the code
+does not say, the access is `?`, never a guess; a width a run of the image used
+is marked `*`.
 
 **Settled: that a routine is counted once.** A site an earlier walk already
 stepped over does not start a conversation of its own.
@@ -216,6 +224,7 @@ comments either, so their reasons live here:
 ```
 snesdriver/
   walk.py         one instruction at a time, and what each reached
+  sweep.py        the walk from the vectors, and the widths it carries
   conversation.py the accesses a routine makes, as a shape
   windows.py      where each part answers, per cartridge layout
 conformance/

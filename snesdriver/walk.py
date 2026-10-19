@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, override
 
 if TYPE_CHECKING:  # pragma: no cover
-    from collections.abc import Iterator
+    from collections.abc import Iterator, Mapping
 
 import sys
 from pathlib import Path
@@ -17,6 +17,8 @@ from mos65xx import disassemble
 ACCUMULATOR = 0x20
 
 INDEX = 0x10
+
+BANK = 0x8000
 
 LEAVING = ("rts", "rtl", "rti", "jmp", "jml", "bra", "brl", "stp")
 
@@ -45,19 +47,32 @@ REACHING = (LONG, ABSOLUTE)
 
 SIZED_BY_ACCUMULATOR = "immediateA"
 
+SIZED_BY_INDEX = "immediateX"
+
+SETTING = ("sep", "rep")
+
 Width = bool | None
 
-Saved = tuple[Width, ...]
+Flags = tuple[Width, Width]
+
+Saved = tuple[Flags, ...]
+
+UNKNOWN: Flags = (None, None)
+
+EMULATION: Flags = (True, True)
 
 
 class Step:
-    __slots__ = ("depth", "in_bank", "mnemonic", "narrow", "offset", "one", "width")
+    __slots__ = ("depth", "in_bank", "mnemonic", "narrow", "offset", "one", "ran", "width")
 
-    def __init__(self, one: Any, narrow: Width, in_bank: int = 0, depth: int = 0) -> None:
+    def __init__(
+        self, one: Any, narrow: Width, in_bank: int = 0, depth: int = 0, ran: bool = False
+    ) -> None:
         self.one = one
         self.narrow = narrow
         self.in_bank = in_bank
         self.depth = depth
+        self.ran = ran
         self.offset = one.offset
         self.mnemonic = one.mnemonic
         self.width: int | None = None if narrow is None else (1 if narrow else 2)
@@ -110,23 +125,47 @@ class Step:
         return f"<Step {self.one.text} {size}>"
 
 
-def flags(one: Any, narrow: Width, saved: Saved) -> tuple[Width, Saved]:
-    if one.mnemonic in ("sep", "rep") and one.operand is not None and one.operand & ACCUMULATOR:
-        return one.mnemonic == "sep", saved
+def _set(one: Any, state: Flags) -> Flags:
+    to = one.mnemonic == "sep"
+    narrow, index = state
+    return (
+        to if one.operand & ACCUMULATOR else narrow,
+        to if one.operand & INDEX else index,
+    )
+
+
+def flags(one: Any, state: Flags, saved: Saved) -> tuple[Flags, Saved]:
+    if one.mnemonic in SETTING and one.operand is not None:
+        return _set(one, state), saved
     if one.mnemonic == "php":
-        return narrow, (*saved, narrow)
+        return state, (*saved, state)
     if one.mnemonic == "plp":
-        return (saved[-1], saved[:-1]) if saved else (None, saved)
-    return narrow, saved
+        return (saved[-1], saved[:-1]) if saved else (UNKNOWN, saved)
+    return state, saved
 
 
-def unplaceable(one: Any, narrow: Width) -> bool:
-    return narrow is None and one.mode == SIZED_BY_ACCUMULATOR
+def sets_width(one: Any) -> bool:
+    if one.mnemonic == "plp":
+        return True
+    return one.mnemonic in SETTING and one.operand is not None and bool(one.operand & ACCUMULATOR)
 
 
-def decoded(rom: bytes, offset: int, address: int, narrow: Width, index: bool = True) -> Any:
-    read = disassemble(rom, offset, address, count=1, m=narrow is not False, x=index)
+def unplaceable(one: Any, state: Flags) -> bool:
+    return (state[0] is None and one.mode == SIZED_BY_ACCUMULATOR) or (
+        state[1] is None and one.mode == SIZED_BY_INDEX
+    )
+
+
+def decoded(rom: bytes, offset: int, address: int, state: Flags) -> Any:
+    read = disassemble(
+        rom, offset, address, count=1, m=state[0] is not False, x=state[1] is not False
+    )
     return read[0] if read else None
+
+
+def resumed(known: Mapping[int, frozenset[Flags]] | None, offset: int) -> Flags:
+    held = known.get(offset, frozenset()) if known is not None else frozenset()
+    return next(iter(held)) if len(held) == 1 else UNKNOWN
 
 
 CALLS = ("jsr", "jsl")
@@ -135,92 +174,17 @@ JUMPS = ("jmp", "jml", "bra", "brl")
 
 DIRECT = ("absolutePC", LONG)
 
-VECTORS = (0xFFE4, 0xFFE6, 0xFFE8, 0xFFEA, 0xFFEE, 0xFFF4, 0xFFF8, 0xFFFA, 0xFFFC, 0xFFFE)
 
-EMULATION_VECTORS = 0xFFF0
-
-EVERYWHERE_LIMIT = 400000
-
-
-def everywhere(
-    rom: bytes,
-    entry: int | None = None,
-    limit: int = EVERYWHERE_LIMIT,
-    kind: str = DEFAULT_LAYOUT,
-) -> Iterator[Step]:
-    banks = len(rom) // 0x8000
-    pending: list[tuple[int, int, Width, bool, Saved]] = [
-        (0x00, one, _entry_width(vector), True, ())
-        for vector, one in _entries(rom, entry, banks, kind)
-    ]
-    seen: set[tuple[int, int]] = set()
-    spent = 0
-
-    while pending and spent < limit:
-        bank, address, narrow, index, saved = pending.pop()
-        while spent < limit:
-            spent += 1
-            if (bank, address) in seen:
-                break
-            seen.add((bank, address))
-            offset = _offset(bank, address, banks, kind)
-            if offset is None:
-                break
-            one = decoded(rom, offset, address, narrow, index)
-            if one is None:
-                break
-            yield Step(one, narrow, bank)
-            if unplaceable(one, narrow):
-                break
-
-            narrow, saved = flags(one, narrow, saved)
-            if one.mnemonic in ("sep", "rep") and one.operand is not None and one.operand & INDEX:
-                index = one.mnemonic == "sep"
-
-            target = _target(one, bank)
-            if target is not None and _offset(*target, banks, kind) is not None:
-                if one.mnemonic in JUMPS:
-                    bank, address = target
-                    continue
-                pending.append((*target, narrow, index, saved))
-
-            if one.mnemonic in LEAVING:
-                break
-            address += one.size
-            if address > 0xFFFF:
-                break
-
-
-def _entry_width(vector: int | None) -> Width:
-    return True if vector is not None and vector >= EMULATION_VECTORS else None
-
-
-def _entries(
-    rom: bytes, entry: int | None, banks: int, kind: str = DEFAULT_LAYOUT
-) -> tuple[tuple[int | None, int], ...]:
-    if entry is not None:
-        return ((None, entry),)
-    found: list[tuple[int | None, int]] = []
-    for vector in VECTORS:
-        at = _offset(0x00, vector, banks, kind)
-        if at is None:
-            continue
-        address = int.from_bytes(rom[at : at + 2], "little")
-        if _offset(0x00, address, banks, kind) is not None and (vector, address) not in found:
-            found.append((vector, address))
-    return tuple(found)
-
-
-def _offset(bank: int, address: int, banks: int, kind: str = DEFAULT_LAYOUT) -> int | None:
+def offset_of(bank: int, address: int, banks: int, kind: str = DEFAULT_LAYOUT) -> int | None:
     found = layout.resolve(kind, (bank << 16) | address, banks=banks)
-    if not found.is_rom or found.offset is None or found.offset >= banks * 0x8000:
+    if not found.is_rom or found.offset is None or found.offset >= banks * BANK:
         return None
     at = found.offset
     assert isinstance(at, int)
     return at
 
 
-def _target(one: Any, bank: int) -> tuple[int, int] | None:
+def target_of(one: Any, bank: int) -> tuple[int, int] | None:
     if one.operand is None:
         return None
     if one.mode in BRANCHES:
@@ -251,6 +215,60 @@ class Frame:
         self.bank = bank
 
 
+class Walker:
+    __slots__ = ("at", "banks", "in_bank", "known", "offset", "rom", "saved", "stack", "state")
+
+    def __init__(
+        self,
+        rom: bytes,
+        offset: int,
+        at: int,
+        in_bank: int,
+        state: Flags,
+        known: Mapping[int, frozenset[Flags]] | None,
+    ) -> None:
+        self.rom = rom
+        self.offset = offset
+        self.at = at
+        self.in_bank = in_bank
+        self.state = state
+        self.known = known
+        self.banks = max(len(rom) // BANK, 1)
+        self.stack: list[Frame] = []
+        self.saved: Saved = ()
+
+    def descend(self, one: Any, depth: int) -> bool:
+        if one.mnemonic not in CALLS:
+            return False
+        called = (
+            _called(one, self.in_bank, self.banks, self.rom, self.state)
+            if len(self.stack) < depth
+            else None
+        )
+        if called is None:
+            self.state = resumed(self.known, self.offset + one.size)
+            return False
+        self.stack.append(Frame(self.offset + one.size, self.at + one.size, self.in_bank))
+        self.in_bank, self.at = called
+        self.offset = offset_of(self.in_bank, self.at, self.banks) or 0
+        return True
+
+    def leave(self, one: Any) -> bool:
+        if one.mnemonic in RETURNING and self.stack:
+            back = self.stack.pop()
+            self.offset, self.at, self.in_bank = back.offset, back.address, back.bank
+            return False
+        if one.mnemonic in LEAVING:
+            landing = _inside_a_helper(one, self.in_bank, self.banks) if self.stack else None
+            if landing is None:
+                return True
+            self.offset, self.in_bank, self.at = landing
+            return False
+        self.offset += one.size
+        self.at += one.size
+        return False
+
+
 def through(
     rom: bytes,
     offset: int,
@@ -259,53 +277,40 @@ def through(
     address: int | None = None,
     bank: int | None = None,
     depth: int = DEFAULT_DEPTH,
+    index: Width = None,
+    known: Mapping[int, frozenset[Flags]] | None = None,
+    ran: bool = False,
 ) -> Iterator[Step]:
-    at = address if address is not None else 0x8000 + offset % 0x8000
-    in_bank = bank if bank is not None else offset // 0x8000
-    banks = max(len(rom) // 0x8000, 1)
-    stack: list[Frame] = []
-    saved: Saved = ()
+    at = address if address is not None else BANK + offset % BANK
+    in_bank = bank if bank is not None else offset // BANK
+    walker = Walker(rom, offset, at, in_bank, (narrow, index), known)
     spent = 0
     total = 0
     while spent < limit and total < limit * DESCENT_ROOM:
         total += 1
-        one = decoded(rom, offset, at, narrow)
+        one = decoded(rom, walker.offset, walker.at, walker.state)
         if one is None:
             return
-        spent += 1 if not stack else 0
-        yield Step(one, narrow, in_bank, len(stack))
-        if unplaceable(one, narrow):
+        spent += 1 if not walker.stack else 0
+        yield Step(one, walker.state[0], walker.in_bank, len(walker.stack), ran)
+        if unplaceable(one, walker.state):
             return
-        narrow, saved = flags(one, narrow, saved)
-
-        called = _called(one, in_bank, banks, rom, narrow) if len(stack) < depth else None
-        if called is not None:
-            stack.append(Frame(offset + one.size, at + one.size, in_bank))
-            in_bank, at = called
-            offset = _offset(in_bank, at, banks) or 0
+        ran = ran and not sets_width(one)
+        walker.state, walker.saved = flags(one, walker.state, walker.saved)
+        if walker.descend(one, depth):
             continue
-
-        if one.mnemonic in RETURNING and stack:
-            back = stack.pop()
-            offset, at, in_bank = back.offset, back.address, back.bank
-            continue
-        if one.mnemonic in LEAVING:
-            landing = _inside_a_helper(one, in_bank, banks) if stack else None
-            if landing is None:
-                return
-            offset, in_bank, at = landing
-            continue
-        offset += one.size
-        at += one.size
+        ran = ran and one.mnemonic not in CALLS
+        if walker.leave(one):
+            return
 
 
 def _inside_a_helper(one: Any, bank: int, banks: int) -> tuple[int, int, int] | None:
     if one.mnemonic not in JUMPS:
         return None
-    target = _target(one, bank)
+    target = target_of(one, bank)
     if target is None:
         return None
-    offset = _offset(*target, banks)
+    offset = offset_of(*target, banks)
     if offset is None:
         return None
     return offset, *target
@@ -316,24 +321,24 @@ PROBE_LIMIT = 200
 NOT_CODE = ("brk", "cop", "stp", "wdm")
 
 
-def _returns(rom: bytes, target: tuple[int, int], narrow: Width, banks: int) -> bool:
+def _returns(rom: bytes, target: tuple[int, int], state: Flags, banks: int) -> bool:
     bank, at = target
     seen: set[int] = set()
     for _ in range(PROBE_LIMIT):
-        offset = _offset(bank, at, banks)
+        offset = offset_of(bank, at, banks)
         if offset is None or offset in seen:
             return False
         seen.add(offset)
-        one = decoded(rom, offset, at, narrow)
-        if one is None or unplaceable(one, narrow):
+        one = decoded(rom, offset, at, state)
+        if one is None or unplaceable(one, state):
             return False
         if one.mnemonic in NOT_CODE:
             return False
         if one.mnemonic in RETURNING:
             return True
         if one.mnemonic in LEAVING:
-            found = _target(one, bank)
-            if found is None or _offset(*found, banks) is None:
+            found = target_of(one, bank)
+            if found is None or offset_of(*found, banks) is None:
                 return False
             bank, at = found
             continue
@@ -343,12 +348,10 @@ def _returns(rom: bytes, target: tuple[int, int], narrow: Width, banks: int) -> 
     return False
 
 
-def _called(one: Any, bank: int, banks: int, rom: bytes, narrow: Width) -> tuple[int, int] | None:
-    if one.mnemonic not in CALLS:
+def _called(one: Any, bank: int, banks: int, rom: bytes, state: Flags) -> tuple[int, int] | None:
+    target = target_of(one, bank)
+    if target is None or offset_of(*target, banks) is None:
         return None
-    target = _target(one, bank)
-    if target is None or _offset(*target, banks) is None:
-        return None
-    if not _returns(rom, target, narrow, banks):
+    if not _returns(rom, target, state, banks):
         return None
     return target

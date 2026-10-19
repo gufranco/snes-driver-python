@@ -86,7 +86,7 @@ def read(image: bytes, identity: Any, part: str | None = None) -> Reading:
     reached: list[int] = []
     for window in windows_under(named, found.layout):
         reached.extend(find(image, window))
-        tally.update(conversation.shapes(image, window, find=find))
+        tally.update(conversation.shapes(image, window, find=find, kind=found.layout))
     return Reading(identity, found.layout, tuple(sorted(set(reached))), dict(tally), named)
 
 

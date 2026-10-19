@@ -6,6 +6,7 @@ if TYPE_CHECKING:  # pragma: no cover
     from collections.abc import Sequence
 
 import collections
+import json
 import random
 import sys
 from pathlib import Path
@@ -37,9 +38,13 @@ LOW_WORK_RAM = 0x1FFF
 
 WORK_RAM_BANKS = (0x7E, 0x7F)
 
-USAGE = "usage: python3 -m conformance.executed <image> [budget]"
+USAGE = "usage: python3 -m conformance.executed <image> [budget] [--widths]"
+
+WIDTHS = "--widths"
 
 Touched = collections.Counter[tuple[int, int, int, str]]
+
+Flags = tuple[bool, bool]
 
 
 class Console:
@@ -52,7 +57,11 @@ class Console:
         self.save = bytearray(scrambled.randbytes(SAVE_RAM_BYTES))
         self.blanking = 0
         self.running = (0, 0)
+        self.flags: Flags = (True, True)
         self.touched: Touched = collections.Counter()
+        self.widths: collections.defaultdict[tuple[int, int], set[Flags]] = collections.defaultdict(
+            set
+        )
 
     def work_index(self, address: int) -> int:
         bank = address >> 16
@@ -63,6 +72,7 @@ class Console:
     def note(self, address: int, direction: str) -> None:
         if self.window.reaches(address >> 16, address & 0xFFFF):
             self.touched[(*self.running, address, direction)] += 1
+            self.widths[self.running].add(self.flags)
 
     def read8(self, address: int) -> int:
         self.note(address, "read")
@@ -88,13 +98,13 @@ class Console:
             self.save[address % SAVE_RAM_BYTES] = value
 
 
-def executed(
+def run(
     rom: bytes,
     window: Any,
     kind: str = layout.LOROM,
     budget: int = DEFAULT_BUDGET,
     seed: int = 0,
-) -> tuple[int, Touched]:
+) -> tuple[int, Console]:
     console = Console(rom, kind, window, seed)
     cpu: Any = Cpu("65816", console, seed=seed)
     cpu.reset()
@@ -105,9 +115,46 @@ def executed(
         if cpu.waiting or (steps and steps % NMI_EVERY == 0):
             cpu.nmi()
         console.running = (cpu.pb, cpu.pc)
+        console.flags = (bool(cpu.m8), bool(cpu.x8))
         cpu.step()
         steps += 1
+    return steps, console
+
+
+def executed(
+    rom: bytes,
+    window: Any,
+    kind: str = layout.LOROM,
+    budget: int = DEFAULT_BUDGET,
+    seed: int = 0,
+) -> tuple[int, Touched]:
+    steps, console = run(rom, window, kind, budget, seed)
     return steps, console.touched
+
+
+def ran(
+    rom: bytes,
+    window: Any,
+    kind: str = layout.LOROM,
+    budget: int = DEFAULT_BUDGET,
+    seed: int = 0,
+) -> dict[int, frozenset[Flags]]:
+    _steps, console = run(rom, window, kind, budget, seed)
+    found: collections.defaultdict[int, set[Flags]] = collections.defaultdict(set)
+    for (bank, pc), held in console.widths.items():
+        offset = offset_of(kind, bank, pc)
+        if offset is not None:
+            found[offset] |= held
+    return {offset: frozenset(held) for offset, held in found.items()}
+
+
+def printed(widths: dict[int, frozenset[Flags]]) -> str:
+    return json.dumps(
+        {
+            f"{offset:#08x}": sorted([*state] for state in held)
+            for offset, held in sorted(widths.items())
+        }
+    )
 
 
 def offset_of(kind: str, bank: int, address: int) -> int | None:
@@ -132,18 +179,32 @@ def report(kind: str, steps: int, touched: Touched) -> list[str]:
     return lines
 
 
+def joined(
+    image: bytes, windows: Sequence[Any], kind: str, budget: int
+) -> dict[int, frozenset[Flags]]:
+    found: dict[int, frozenset[Flags]] = {}
+    for window in windows:
+        for offset, held in ran(image, window, kind, budget).items():
+            found[offset] = found.get(offset, frozenset()) | held
+    return found
+
+
 def main(argv: Sequence[str]) -> int:
-    if not argv:
+    told = [one for one in argv if one != WIDTHS]
+    if not told:
         print(USAGE)
         return 2
-    image = Path(argv[0]).read_bytes()
-    budget = int(argv[1]) if len(argv) > 1 else DEFAULT_BUDGET
+    image = Path(told[0]).read_bytes()
+    budget = int(told[1]) if len(told) > 1 else DEFAULT_BUDGET
     found = header.read(image)
     part = against_cartridges.part_of(image)
     windows = [] if part is None else against_cartridges.windows_under(part, found.layout)
     if not windows:
-        print(f"  {argv[0]} carries no part this package has a window for")
+        print(f"  {told[0]} carries no part this package has a window for")
         return 1
+    if WIDTHS in argv:
+        print(printed(joined(image, windows, found.layout, budget)))
+        return 0
     for window in windows:
         steps, touched = executed(image, window, found.layout, budget)
         print(f"  {part} {window!r}")

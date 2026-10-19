@@ -109,6 +109,73 @@ class ExecutedTest(unittest.TestCase):
         self.assertEqual((steps, len(touched)), (5, 0))
 
 
+WIDENED = bytes([0x18, 0xFB, 0xC2, 0x20, 0x8D, 0xF0, 0x7F, 0xDB])
+
+FROM_WORK_RAM = bytes.fromhex("a98d8500a9f08501a97f8502a9db85034c0000")
+
+
+class WidthTest(unittest.TestCase):
+    def test_each_instruction_that_reached_the_part_keeps_the_widths_it_ran_at(self) -> None:
+        # Arrange
+        image = an_image(WIDENED)
+
+        # Act
+        found = executed.ran(image, OBC1)
+
+        # Assert
+        self.assertEqual(found, {0x0004: frozenset({(False, True)})})
+
+    def test_an_emulation_mode_run_reaches_the_part_eight_bits_wide(self) -> None:
+        # Arrange
+        image = an_image()
+
+        # Act
+        found = executed.ran(image, OBC1)
+
+        # Assert
+        self.assertEqual(
+            found,
+            {
+                0x0004: frozenset({(True, True)}),
+                0x0100: frozenset({(True, True)}),
+                0x0200: frozenset({(True, True)}),
+            },
+        )
+
+    def test_an_instruction_running_outside_the_image_is_left_out(self) -> None:
+        # Arrange
+        image = an_image(FROM_WORK_RAM)
+
+        # Act
+        found = executed.ran(image, OBC1)
+
+        # Assert
+        self.assertEqual(found, {})
+
+    def test_the_widths_print_as_one_object_keyed_by_offset(self) -> None:
+        # Arrange
+        path = written(an_image(WIDENED))
+        said = io.StringIO()
+
+        # Act
+        with contextlib.redirect_stdout(said):
+            code = executed.main([str(path), "100", executed.WIDTHS])
+
+        # Assert
+        self.assertEqual((code, said.getvalue().strip()), (0, '{"0x000004": [[false, true]]}'))
+
+    def test_asking_for_the_widths_of_no_image_prints_the_usage(self) -> None:
+        # Arrange
+        said = io.StringIO()
+
+        # Act
+        with contextlib.redirect_stdout(said):
+            code = executed.main([executed.WIDTHS])
+
+        # Assert
+        self.assertEqual((code, said.getvalue().strip()), (2, executed.USAGE))
+
+
 class ReportTest(unittest.TestCase):
     def test_every_instruction_that_reached_the_part_is_named_with_its_offset(self) -> None:
         # Arrange

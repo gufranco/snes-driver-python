@@ -8,7 +8,7 @@ English | [日本語](README.ja.md) | [简体中文](README.zh-Hans.md) | [繁�
 [![Release](https://img.shields.io/github/v/release/gufranco/snes-driver-python)](https://github.com/gufranco/snes-driver-python/releases)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-**42** cartridges named by four digests, **42** cartridges read under the part each header names, **0** disagreements with their own digests, **0** that said nothing to the part, **3** kinds of access, **703** tests, **100%** statement and branch coverage, no dependencies
+**42** cartridges named by four digests, **42** cartridges read under the part each header names, **0** disagreements with their own digests, **0** that said nothing to the part, **3** kinds of access, **746** tests, **100%** statement and branch coverage, no dependencies
 
 ```python
 from snesdriver import at, window_for
@@ -112,7 +112,7 @@ sa1 is not a part with a known window; there are dsp, obc1, st, st018
 
 ### Walking a routine
 
-`through(rom, offset, narrow=None, limit=DEFAULT_LIMIT, address=None, bank=None, depth=8)` disassembles one routine from `offset` and yields a `Step` per instruction.
+`through(rom, offset, narrow=None, limit=DEFAULT_LIMIT, address=None, bank=None, depth=8, index=None, known=None, ran=False)` disassembles one routine from `offset` and yields a `Step` per instruction.
 
 | Argument  | Meaning                                                                                                                                                            |
 | :-------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -123,8 +123,11 @@ sa1 is not a part with a known window; there are dsp, obc1, st, st018
 | `address` | The CPU address of `offset`. Defaults to `$8000` plus `offset` modulo `$8000`                                                                                      |
 | `bank`    | The bank the routine runs in. Defaults to `offset` divided by `$8000`                                                                                              |
 | `depth`   | How many calls deep the walk follows `jsr` and `jsl`                                                                                                               |
+| `index`   | The index registers' width at entry, in the same terms as `narrow`                                                                                                 |
+| `known`   | The widths `widths` found at each file offset. After a call the walk steps over, it takes the widths found at the next instruction when there is exactly one pair  |
+| `ran`     | True when `narrow` is the width a run of the image used rather than one the code set. Every step carries it until the code sets the accumulator's width            |
 
-The walk ends at the first `rts`, `rtl`, `rti`, `jmp`, `jml`, `bra`, `brl` or `stp` in the routine itself. A `sep` or `rep` that names the accumulator bit changes the width of every access after it. A call is followed only when its target walks to a `rts` or `rtl` within 200 instructions; any other call is stepped over.
+The walk ends at the first `rts`, `rtl`, `rti`, `jmp`, `jml`, `bra`, `brl` or `stp` in the routine itself. A `sep` or `rep` that names the accumulator bit changes the width of every access after it. A call is followed only when its target walks to a `rts` or `rtl` within 200 instructions; any other call is stepped over, and both widths after it are unknown unless `known` holds exactly one pair for the instruction after the call.
 
 | `Step` attribute | Meaning                                                                                                                   |
 | :--------------- | :------------------------------------------------------------------------------------------------------------------------ |
@@ -139,8 +142,9 @@ The walk ends at the first `rts`, `rtl`, `rti`, `jmp`, `jml`, `bra`, `brl` or `s
 | `reading`        | False for a mnemonic starting with `st`, otherwise True                                                                   |
 | `immediate`      | The operand of an immediate instruction, otherwise `None`                                                                 |
 | `waiting`        | True for a branch backwards, which is how a routine waits on a register                                                   |
+| `ran`            | True while `width` is the one a run of the image used, until the code sets the accumulator's width                        |
 
-The walk starts with the accumulator's width unknown unless `narrow` says otherwise. A `sep` or `rep` that names the accumulator bit sets it, a `php` saves it and the matching `plp` restores it, and a `plp` with nothing saved in the routine makes it unknown again. An accumulator immediate met while the width is unknown has a length the walk cannot know, so the walk ends there. A walk from the vectors starts the emulation-mode ones, reset among them, 8 bits wide.
+The walk starts with the accumulator's width unknown unless `narrow` says otherwise. A `sep` or `rep` that names the accumulator bit sets it, a `php` saves it and the matching `plp` restores it, and a `plp` with nothing saved in the routine makes it unknown again. The index registers' width is carried the same way through the `sep` and `rep` that name the index bit. An immediate met while the width that sizes it is unknown has a length the walk cannot know, so the walk ends there.
 
 ```python
 from snesdriver import through
@@ -167,7 +171,7 @@ The two stores are the same four bytes. The first moves one byte because the `se
 
 ### Reading the exchange
 
-`at(rom, offset, window, narrow=None, limit=DEFAULT_LIMIT)` walks one routine with `through` and returns a `Conversation` holding every access that reached `window`.
+`at(rom, offset, window, narrow=None, limit=DEFAULT_LIMIT, index=None, known=None, ran=False)` walks one routine with `through` and returns a `Conversation` holding every access that reached `window`.
 
 | Kind    | Constant | An access is this kind when                  |
 | :------ | :------- | :------------------------------------------- |
@@ -175,15 +179,15 @@ The two stores are the same four bytes. The first moves one byte because the `se
 | `read`  | `READ`   | It loads from the data register              |
 | `poll`  | `POLL`   | It loads from the status register            |
 
-| `Conversation` attribute | Meaning                                                                                                  |
-| :----------------------- | :------------------------------------------------------------------------------------------------------- |
-| `shape`                  | Each access as its kind followed by its width, `?` when the width is not known, joined by spaces         |
-| `steps`                  | One record per access, with `what`, `width`, `bank`, `address`, `banked` and `whole`, the 24-bit address |
-| `covered`                | File offsets of every instruction walked in the routine itself                                           |
-| `written`                | Bytes written                                                                                            |
-| `read`                   | Bytes read from the data register                                                                        |
-| `polls`                  | True when the routine polls at least once                                                                |
-| `banked`                 | True when every access spelled its own bank                                                              |
+| `Conversation` attribute | Meaning                                                                                                     |
+| :----------------------- | :---------------------------------------------------------------------------------------------------------- |
+| `shape`                  | Each access as its kind and its width, `?` when it is not known, `*` after one a run used, joined by spaces |
+| `steps`                  | One record per access, with `what`, `width`, `bank`, `address`, `banked` and `whole`, the 24-bit address    |
+| `covered`                | File offsets of every instruction walked in the routine itself                                              |
+| `written`                | Bytes written                                                                                               |
+| `read`                   | Bytes read from the data register                                                                           |
+| `polls`                  | True when the routine polls at least once                                                                   |
+| `banked`                 | True when every access spelled its own bank                                                                 |
 
 A `Conversation` is false when nothing reached the window.
 
@@ -217,14 +221,15 @@ The routine has three sites and one shape. The walk from the first site covers t
 
 ### Finding every routine
 
-| Call                                                                | Returns                                                                                                                                                                                                                                                                                                                  |
-| :------------------------------------------------------------------ | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `sites(rom, window)`                                                | File offsets of every long load, opcode `$AF`, and long store, opcode `$8F`, whose address reaches `window`. A byte search: it also finds those four bytes inside data                                                                                                                                                   |
-| `reached(rom, window, entry=None, kind="lorom")`                    | File offsets of every instruction that reaches `window` on a walk from the ten native and emulation vectors, or from `entry`, following every call, jump and branch whose destination is spelled in the instruction. `kind` is the layout that maps addresses to file offsets. The walk stops after 400,000 instructions |
-| `shapes(rom, window, narrow=None, limit=DEFAULT_LIMIT, find=sites)` | Every distinct shape and how many routines produce it. Each offset `find` returns starts a walk with `at` unless an earlier walk covered it                                                                                                                                                                              |
+| Call                                                                                     | Returns                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| :--------------------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sites(rom, window)`                                                                     | File offsets of every long load, opcode `$AF`, and long store, opcode `$8F`, whose address reaches `window`. A byte search: it also finds those four bytes inside data                                                                                                                                                                                                                                                      |
+| `reached(rom, window, entry=None, kind="lorom")`                                         | File offsets of every instruction that reaches `window` on a walk from the ten native and emulation vectors, or from `entry`, following every call, jump and branch whose destination is spelled in the instruction. `kind` is the layout that maps addresses to file offsets. The walk stops after 400,000 instructions                                                                                                    |
+| `widths(rom, kind="lorom", entry=None, limit=400000)`                                    | Every file offset that walk from the vectors decoded, mapped to the `(narrow, index)` pairs it arrived there with, `None` for a width it did not know                                                                                                                                                                                                                                                                       |
+| `shapes(rom, window, narrow=None, limit=DEFAULT_LIMIT, find=sites, kind=None, ran=None)` | Every distinct shape and how many routines produce it. Each offset `find` returns starts a walk with `at` unless an earlier walk covered it. Given `kind`, each walk starts at every width `widths` found for its offset, and a routine entered at two widths has a shape for each. Where none was found, a width in `ran`, a mapping from file offset to the pairs a run used there, settles it and the shape marks it `*` |
 
 ```python
-from snesdriver import reached, shapes, sites, window_for
+from snesdriver import reached, shapes, sites, widths, window_for
 
 routine = bytes([0xE2, 0x20, 0xA9, 0x01, 0x8F, 0x00, 0x80, 0x30, 0xAF, 0x00, 0xC0, 0x30, 0x60])
 image = bytearray(0x8000)
@@ -238,6 +243,9 @@ print([f"{one:#06x}" for one in sites(image, window)])
 print([f"{one:#06x}" for one in reached(image, window)])
 print(shapes(image, window))
 print(shapes(image, window, find=reached))
+print(widths(image, "lorom")[0x0004])
+print(shapes(image, window, kind="lorom"))
+print(shapes(image, window, kind="lorom", ran={0x0100: frozenset({(False, True)})}))
 ```
 
 ```
@@ -245,9 +253,14 @@ print(shapes(image, window, find=reached))
 ['0x0004', '0x0008']
 {'write? poll?': 1, 'write?': 1}
 {'write? poll?': 1}
+frozenset({(True, True)})
+{'write1 poll1': 1, 'write?': 1}
+{'write1 poll1': 1, 'write2*': 1}
 ```
 
-The image is one low cartridge bank whose reset vector points at the routine. The four bytes at `$0100` spell a long store to the DSP and are never executed. `sites` finds them, and `reached` does not, because no walk from a vector arrives there.
+The image is one low cartridge bank whose reset vector points at the routine. The four bytes at `$0100` spell a long store to the DSP and are never executed. `sites` finds them, and `reached` does not, because no walk from a vector arrives there. Told the layout, `shapes` knows the routine runs 8 bits wide, because reset leaves the processor in emulation mode and nothing widens it before the store. It still cannot know the width at `$0100`, which only a run can settle.
+
+The walk from the vectors carries both widths through every call. A callee is entered at the width each caller left, once per distinct width, and the caller resumes at each width the callee returns with. A call through a table, a call out of the image, and a call whose callee the walk never sees return leave both widths unknown, because the code does not say what they are.
 
 ### Module contents
 
@@ -256,33 +269,34 @@ The image is one low cartridge bank whose reset vector points at the routine. Th
 | `snesdriver.DEFAULT_LIMIT`                     | 80, the default `limit` of `through`, `at` and `shapes` |
 | `snesdriver.VERSION`, `snesdriver.__version__` | The installed version                                   |
 | `snesdriver.walk.Step`                         | The class `through` yields                              |
+| `snesdriver.sweep`                             | The walk from the vectors behind `reached` and `widths` |
 | `snesdriver.conversation.Step`                 | The class of each entry in `Conversation.steps`         |
 
 ### Commands
 
-| Command                                            | Arguments                                                                 | Exit codes                                                                                                                   |
-| :------------------------------------------------- | :------------------------------------------------------------------------ | :--------------------------------------------------------------------------------------------------------------------------- |
-| `python3 snesdriver/doctor.py`                     | None                                                                      | 0 every check passed, 1 one did not                                                                                          |
-| `python3 -m conformance.against_cartridges`        | An optional directory to read instead of the default                      | 0 every cartridge spoke to the part its header names, 1 one said nothing, 2 no cartridge was found                           |
-| `python3 -m conformance.speed`                     | None                                                                      | 0 the walk beat the floor of 20,000 routines walked per second, 1 it did not                                                 |
-| `python3 -m conformance.executed <image> [budget]` | A cartridge image, and how many instructions to run, 2,000,000 by default | 0 it ran and printed every instruction that reached the part, 1 the header names no part with a window, 2 no image was named |
-| `python3 -m conformance.links`                     | None                                                                      | 1 when an address in this file answers HTTP 404 or 410, otherwise 0                                                          |
+| Command                                                       | Arguments                                                                                                         | Exit codes                                                                                                                   |
+| :------------------------------------------------------------ | :---------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------- |
+| `python3 snesdriver/doctor.py`                                | None                                                                                                              | 0 every check passed, 1 one did not                                                                                          |
+| `python3 -m conformance.against_cartridges`                   | An optional directory to read instead of the default                                                              | 0 every cartridge spoke to the part its header names, 1 one said nothing, 2 no cartridge was found                           |
+| `python3 -m conformance.speed`                                | None                                                                                                              | 0 the walk beat the floor of 20,000 routines walked per second, 1 it did not                                                 |
+| `python3 -m conformance.executed <image> [budget] [--widths]` | A cartridge image, how many instructions to run, 2,000,000 by default, and `--widths` to print the widths instead | 0 it ran and printed every instruction that reached the part, 1 the header names no part with a window, 2 no image was named |
+| `python3 -m conformance.links`                                | None                                                                                                              | 1 when an address in this file answers HTTP 404 or 410, otherwise 0                                                          |
 
-`conformance.executed` runs the image on the 65816 rather than reading it, against a console that answers every register with 0 except the blanking bits of `$4210` and `$4212`, which alternate, and raises NMI every 20,000 instructions and whenever the program waits for one. What it reports is a floor: instructions that really reach the part on that run, which settles a route the reading cannot follow and says nothing about routes the run never took.
+`conformance.executed` runs the image on the 65816 rather than reading it, against a console that answers every register with 0 except the blanking bits of `$4210` and `$4212`, which alternate, and raises NMI every 20,000 instructions and whenever the program waits for one. What it reports is a floor: instructions that really reach the part on that run, which settles a route the reading cannot follow and says nothing about routes the run never took. With `--widths` it prints one JSON object instead, mapping the file offset of each instruction that reached the part to the `[narrow, index]` pairs the processor held there, which is the `ran` that `shapes` takes.
 
 ## Why this cannot be guessed
 
 A SNES coprocessor shows the console a data register and a status register. How many bytes a command takes and how many it returns is not something the part can be asked. Most of these parts have no surviving datasheet. The routine the cartridge runs to drive the part is the one place the protocol is written down, and this package reads that routine.
 
-The cartridges poll the status register only at the points their own protocol requires. The start of one shape from each of three cartridges, as `shapes` reports it:
+The cartridges poll the status register only at the points their own protocol requires. The start of one shape from each of three cartridges, as `shapes` reports it when told the layout:
 
 ```text
 Super Mario Kart   write? write2 poll2 read2 read2 read2 read2 poll2 write2 ...
 Pilotwings         write? write2 write2 write2 read2 read2 write1 write2 write2 ...
-Dungeon Master     write? write? write? write? write? read? read? read? read?
+Dungeon Master     write1 write1 write1 write1 write1 read1 read1 read1 read1
 ```
 
-A `?` is an access made before the routine set the accumulator's width, which the walk then does not know: each walk starts at the access a search found, after whatever `sep` or `rep` came before it.
+A `?` is an access whose width the code does not determine as far as this package can read it. Each walk starts at the access a search found, after whatever `sep` or `rep` came before it, at the widths the walk from the vectors arrived there with. Most driver routines are entered through something that walk cannot follow, such as a jump table, so most still open with `?`. Dungeon Master's routine above is one the walk reaches, 8 bits wide.
 
 ## How it reads
 
@@ -317,10 +331,10 @@ The sweep reads every cartridge it finds and prints each one's layout, its site 
 
 | Cartridge                             | Layout | Sites | Distinct shapes |
 | :------------------------------------ | :----- | ----: | --------------: |
-| Super Mario Kart (USA)                | hirom  |   127 |              17 |
+| Super Mario Kart (USA)                | hirom  |   127 |              19 |
 | Pilotwings (USA)                      | lorom  |   212 |              21 |
 | Dungeon Master (USA)                  | lorom  |   192 |              14 |
-| Metal Combat - Falcon's Revenge (USA) | lorom  |   313 |              15 |
+| Metal Combat - Falcon's Revenge (USA) | lorom  |   313 |              14 |
 
 The sweep takes the part from the cartridge type byte, whose upper nibble Book I's table at page 1-2-18 assigns to a coprocessor, and tells the custom chips apart by the sub-number at `$FFBF`, which the four custom-chip cartridges in the manifest set to 1 for the ST010 and ST011 and 2 for the ST018. With no cartridge present the sweep exits 2. CI runs it on every push, treats exit 2 as a skip and annotates it.
 

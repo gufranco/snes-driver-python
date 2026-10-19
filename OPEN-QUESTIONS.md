@@ -132,18 +132,28 @@ the bank the walk reports for them is still wrong.
 walk, which needs an entry state that a walk starting at one routine does not
 have, or reading shapes out of a run rather than a walk.
 
-### The accumulator's width at a routine's entry is not known to the walk.
+### A routine's entry widths are known only where the sweep arrives with them.
 
 **The document says.** Nothing. The width is whatever the caller left.
 
 **What this project follows.** Neither, and it says so. A walk starts with the
-width unknown unless told, and learns it from a `sep` or `rep`, or from a `plp`
-matching a `php` it saw. An access made while it is unknown is recorded with
-width `None`, and its shape token carries `?`, rather than counted as one byte.
-An accumulator immediate met while the width is unknown has a length the walk
-cannot know, so the walk ends there instead of decoding the bytes after it
-wrongly. A walk from the vectors starts the emulation-mode ones, reset among
-them, 8 bits wide, as the processor does.
+accumulator's and the index registers' widths unknown unless told, and learns
+each from a `sep` or `rep`, or from a `plp` matching a `php` it saw. An access
+made while the accumulator's width is unknown is recorded with width `None`, and
+its shape token carries `?`, rather than counted as one byte. An immediate met
+while the width that sizes it is unknown has a length the walk cannot know, so
+the walk ends there instead of decoding the bytes after it wrongly.
+
+Told the layout, `shapes` starts each walk at the widths the sweep from the
+vectors arrived at that instruction with. The sweep enters the emulation-mode
+vectors, reset among them, 8 bits wide, as the processor does, and the native
+ones with both widths unknown. It enters every callee once per distinct pair of
+widths its callers leave, resumes each caller at every pair the callee returns
+with, and leaves both unknown after a call through a table, a call out of the
+image, and a call into a callee it never sees return. A routine entered at two
+widths gives a shape for each. Where the sweep never arrives with a width, a
+width a run of the image used, passed as `ran`, settles it and the shape token
+carries `*`.
 
 **Why it was changed.** Until 2026-10-19 every walk assumed 8 bits at entry.
 F1-ROC II's ST010 start routine is entered 16 bits wide: read 8 bits wide, the
@@ -158,14 +168,30 @@ recorded Metal Combat writing `$7FF4` as the high byte of a 16-bit store to
 snes-st-python's `st010shapes.json` and this family's DSP shape files, carry
 one-byte widths that were never read.
 
-**What is left.** A walk that starts at the access a search found begins after
-whatever set the width, so most shapes open with `?`. Metal Combat's six
-instructions are absolute accesses the search and the walk from the vectors do
-not reach at all.
+**What that settles, measured.** Across the 42 cartridges on hand, read on
+2026-10-19, the sweep arrives with a known accumulator width at 221 of the 7,398
+sites the search or the sweep finds, and at none of them with two. Of the 5,160
+exchanges `shapes` reads, 57 carry no `?`; 5,103 still do. Hayazashi Nidan
+Morita Shougi 2's 19 ST018 sites are all reached, and none of its shapes carries
+`?`. An F1-ROC II routine at file offset `0x3E1D` is reached 16 bits wide and
+reads `write2 write2`, the second store the word `$8007` to `$68:0020`: the
+command-and-start form the MAME tap recorded from the routine at `0x0D66`, which
+the sweep does not reach. Run for 2,000,000 instructions each, `conformance.executed`
+settles none of the open sites on 40 of the cartridges; the runs of Super Mario
+Kart (USA) and (Europe) were stopped after 150 seconds, at 102,647 and 874,860
+instructions, and settled none either.
 
-**What would settle or reopen it.** Running the image rather than reading it, so
-each routine is entered with the width its caller left, or tracking the width
-from the vectors through every call.
+**What is left.** Most driver routines are entered through something the sweep
+cannot follow, so most shapes still open with `?`, and a run against a console
+that answers every register with 0 settles none of them. Metal Combat's word
+stores to `$7FF3` stay out of reach. The bytes of `sta $7FF3` sit at file
+offsets `0x10135` and `0x10143`, in bank `$82`; the sweep decodes no
+instruction in that bank, and a 2,000,000-instruction run of Metal Combat (USA)
+executes none there.
+
+**What would settle or reopen it.** A run that gets further, which needs a
+console that answers the part well enough for a driver to pass its first poll,
+or a jump table whose bounds this could read.
 
 ### A call this cannot prove returns is stepped over rather than followed.
 
@@ -185,7 +211,10 @@ four. With the descent made conditional the same cartridge reads ten.
 **What is left.** A helper that reaches the part and that this cannot prove
 returns, because it exits through a computed jump or is longer than the probe
 allows, is stepped over as before. Its accesses are then read as a routine of
-their own rather than as part of the caller's exchange.
+their own rather than as part of the caller's exchange. Until 2026-10-19 the
+walk assumed a stepped-over call left both widths as it found them; now they are
+unknown after it unless the sweep from the vectors arrived at the next
+instruction with exactly one pair.
 
 **What would settle or reopen it.** Reading shapes out of a run rather than a
 walk. `conformance.executed` runs the image and follows every call the program
@@ -203,8 +232,10 @@ relatives name a place to read the destination from rather than the destination,
 so the sweep stops there.
 
 **How much that costs, measured.** Metal Combat seeded from reset alone reaches
-1,675 instructions, and from all ten vectors 2,080. Through banks `$00` to `$3F`
-alone neither run reaches the OBC1 once; through the mirror banks `$80` to `$BF`
+1,556 distinct instructions, and from all ten vectors 1,961. Before the sweep
+carried both widths through every call, and so before it stopped at an
+immediate whose width it does not know, the same runs reached 1,675 and 2,080.
+Through banks `$00` to `$3F` alone neither run reaches the OBC1 once; through the mirror banks `$80` to `$BF`
 the cartridge also uses, the walk from the vectors reaches it from 19
 instructions, while a search of the same image for the bytes that spell a long
 access finds 313 sites. That cartridge dispatches most of its driver through
@@ -235,8 +266,10 @@ So the boundary is visible rather than implied:
   amount of poking the part from outside recovers.
 - **The width of every access.** A store to a coprocessor moves one byte or two
   depending on the accumulator, and the accumulator's width is not in the
-  instruction. The walk carries it through the `sep` and `rep` that set it, and a
-  walk that did not would report an exchange the console never had.
+  instruction. The walk carries it through the `sep` and `rep` that set it, the
+  sweep from the vectors carries it through every call, and where neither shows
+  it the access says `?` rather than guess. A walk that guessed would report an
+  exchange the console never had.
 - **That a routine is counted once.** A routine that writes and then reads is one
   exchange rather than two, so a site an earlier walk already stepped over does
   not start a conversation of its own.

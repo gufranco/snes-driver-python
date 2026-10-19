@@ -1,5 +1,6 @@
 from . import conversation as conversation
 from . import errors as errors
+from . import sweep as sweep
 from . import walk as walk
 from . import windows as windows
 from .conversation import (
@@ -13,6 +14,7 @@ from .conversation import (
     sites,
 )
 from .errors import UnknownPart
+from .sweep import contexts as widths
 from .version import VERSION
 from .walk import DEFAULT_LIMIT, through
 from .windows import (
@@ -44,5 +46,6 @@ __all__ = [
     "shapes",
     "sites",
     "through",
+    "widths",
     "window_for",
 ]
