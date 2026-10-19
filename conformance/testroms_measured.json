@@ -1,0 +1,10 @@
+{
+  "dsp1-tech-demo": {
+    "budget": 500000,
+    "dataBanks": ["bf"],
+    "instructions": 48,
+    "longSites": 0,
+    "ran": 500000,
+    "reachedByWalk": 0
+  }
+}

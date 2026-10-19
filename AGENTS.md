@@ -102,6 +102,36 @@ a low cartridge and another in a high one, and the address line that picks betwe
 its two registers differs too. A new entry needs the bank range, the two ranges,
 and a layout. It is a hardware fact, so it needs a source.
 
+## Test cartridges
+
+[`conformance/testroms.json`](conformance/testroms.json) lists the one test
+cartridge that exercises what this package reads, keyed by the SHA-256 of the
+file and never committed. It lives in `snes-roms/5 Tools & Service Test Carts/`
+in the local library. None of the other files there carries a part this package
+has a window for: the SA-1 programs have no window here, and the rest carry no
+coprocessor at all.
+
+- **DSP1 Tech Demo (USA)**, `read`. Its header is blank, so the sweep cannot name
+  its part, and it reaches the DSP-1 only through absolute accesses made with
+  the data bank set to `$BF`, which the walk does not track.
+
+```bash
+python3 -m conformance.testroms "../snes-roms/5 Tools & Service Test Carts"
+python3 -m conformance.testroms FOLDER --record   # only after the measurement changed
+```
+
+The runner runs each listed image on the stub console of `conformance.executed`
+for 500,000 instructions under the part and layout the record names, and
+compares what it finds with
+[`conformance/testroms_measured.json`](conformance/testroms_measured.json): the
+instructions that reach the part, the data banks they reach it through, the
+long-access sites the search finds and the instructions the walk from the
+vectors reaches. On 2026-10-19 the tech demo reached the DSP-1 from 48
+instructions, every one through bank `$BF`, and both readings found none. With
+no folder, or a folder holding none of the images, it exits 2, and CI annotates
+that as a skip. `conformance/testroms.test.py` replays the recorded measurement
+on a machine that holds no image. Nothing here waits on another member.
+
 ## Every gate, in the order to run them
 
 ```bash
@@ -258,6 +288,8 @@ conformance/
   corroborate.py         the instruction behind each traced access, decoded from the image
   corpus.py              the traced widths, as shapes takes them
   traced.json            what the runs recorded: sites and widths, never a byte of a game
+  testroms.py            the test cartridges this reads, run on the stub console
+  testroms.json          which test cartridges exercise this package, and how
 mos65xx-python/          the disassembler, as a submodule
 snes-mapper-python/      the header and address decoding, as a submodule
 cartridges/              a user's own copies; nothing here is ever committed

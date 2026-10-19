@@ -1,0 +1,17 @@
+{
+  "cartridges": [
+    {
+      "id": "dsp1-tech-demo",
+      "title": "DSP1 Tech Demo (USA) (Tech Demo)",
+      "sha256": "7fa4c45862e889e50d7f16debb127d5b1b75789ca4cef5ae4fe9c51c4b1de6ac",
+      "source": "snes-roms/5 Tools & Service Test Carts/ in the local library, the 131,072-byte file with this digest",
+      "part": "dsp",
+      "layout": "lorom",
+      "exercises": "A DSP-1 driver this package reads. The image carries no header, so the sweep cannot name its part, and it reaches the DSP-1 only through absolute stores and loads made with the data bank set to BF, which the walk does not track: the search for long accesses finds no site and the walk from the vectors reaches none. conformance/testroms.py runs it on the stub console of conformance.executed under the DSP-1's low window and records how many instructions reach the part, through which data banks, and what the two readings find",
+      "outcome": "read",
+      "heldBy": [
+        "conformance/testroms.test.py::RecordedTest.test_the_dsp1_tech_demo_reaches_the_part_only_through_a_data_bank"
+      ]
+    }
+  ]
+}

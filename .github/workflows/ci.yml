@@ -163,3 +163,19 @@ jobs:
           fi
           exit "${status}"
         shell: bash
+
+      - name: Read the test cartridges present
+        run: |
+          status=0
+          python -m conformance.testroms || status="$?"
+          if [ "${status}" -eq 2 ]; then
+            note="No test cartridge is present on a hosted runner,"
+            note="${note} so the test-cartridge reading was skipped rather than passed."
+            note="${note} It runs each listed image on the stub console"
+            note="${note} and compares what reaches the part with the recorded measurement."
+            note="${note} Run it locally with the folder that holds them."
+            echo "::notice title=Test cartridges::${note}"
+            exit 0
+          fi
+          exit "${status}"
+        shell: bash
