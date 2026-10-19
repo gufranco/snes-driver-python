@@ -8,7 +8,7 @@
 [![Release](https://img.shields.io/github/v/release/gufranco/snes-driver-python)](https://github.com/gufranco/snes-driver-python/releases)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-**42** 個卡帶以四種摘要識別，**42** 個卡帶按各自標頭所指的部件讀取，與自身摘要不符者 **0** 個，未向部件發出任何存取者 **0** 個，**3** 種存取，**746** 項測試，**100%** 語句及分支覆蓋率，無依賴套件
+**42** 個卡帶以四種摘要識別，**42** 個卡帶按各自標頭所指的部件讀取，與自身摘要不符者 **0** 個，未向部件發出任何存取者 **0** 個，**3** 種存取，**815** 項測試，**100%** 語句及分支覆蓋率，無依賴套件
 
 ```python
 from snesdriver import at, window_for
@@ -171,7 +171,7 @@ for step in through(routine + bytes(2048), 0):
 
 ### 讀取交換
 
-`at(rom, offset, window, narrow=None, limit=DEFAULT_LIMIT, index=None, known=None, ran=False)` 用 `through` 走訪一個例程，並返回一個 `Conversation`，其中包含每一次到達 `window` 的存取。
+`at(rom, offset, window, narrow=None, limit=DEFAULT_LIMIT, index=None, known=None, ran=False, traced=None)` 用 `through` 走訪一個例程，並返回一個 `Conversation`，其中包含每一次到達 `window` 的存取。`traced` 把一條指令的檔案偏移對應到一次追蹤執行看到它搬運的位元組數。走訪不知道寬度的存取在該處取這個寬度，其標記帶 `~`。
 
 | 種類    | 常數    | 存取屬於此種類的條件       |
 | :------ | :------ | :------------------------- |
@@ -179,15 +179,15 @@ for step in through(routine + bytes(2048), 0):
 | `read`  | `READ`  | 從數據暫存器載入           |
 | `poll`  | `POLL`  | 從狀態暫存器載入           |
 
-| `Conversation` 屬性 | 含義                                                                                           |
-| :------------------ | :--------------------------------------------------------------------------------------------- |
-| `shape`             | 每次存取以其種類及寬度表示，未知時為 `?`，執行所用的寬度後加 `*`，以空格連接                   |
-| `steps`             | 每次存取一條記錄，包含 `what`、`width`、`bank`、`address`、`banked` 及 `whole`，即 24 位元位址 |
-| `covered`           | 例程本身中所有已走訪指令的檔案偏移                                                             |
-| `written`           | 寫入的位元組數                                                                                 |
-| `read`              | 從數據暫存器讀取的位元組數                                                                     |
-| `polls`             | 例程至少輪詢一次時為 True                                                                      |
-| `banked`            | 每次存取都寫明自身記憶庫時為 True                                                              |
+| `Conversation` 屬性 | 含義                                                                                                 |
+| :------------------ | :--------------------------------------------------------------------------------------------------- |
+| `shape`             | 每次存取以其種類及寬度表示，未知時為 `?`，執行所用的寬度後加 `*`，追蹤看到的寬度後加 `~`，以空格連接 |
+| `steps`             | 每次存取一條記錄，包含 `what`、`width`、`bank`、`address`、`banked` 及 `whole`，即 24 位元位址       |
+| `covered`           | 例程本身中所有已走訪指令的檔案偏移                                                                   |
+| `written`           | 寫入的位元組數                                                                                       |
+| `read`              | 從數據暫存器讀取的位元組數                                                                           |
+| `polls`             | 例程至少輪詢一次時為 True                                                                            |
+| `banked`            | 每次存取都寫明自身記憶庫時為 True                                                                    |
 
 當沒有任何存取到達窗口時，`Conversation` 為假。
 
@@ -221,12 +221,12 @@ print(shapes(image, window))
 
 ### 找出所有例程
 
-| 呼叫                                                                                     | 返回                                                                                                                                                                                                                                                                                                         |
-| :--------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `sites(rom, window)`                                                                     | 每個位址到達 `window` 的長載入（操作碼 `$AF`）及長存入（操作碼 `$8F`）的檔案偏移。這是位元組搜尋：它也會在數據中找到這四個位元組                                                                                                                                                                             |
-| `reached(rom, window, entry=None, kind="lorom")`                                         | 從十個原生及模擬模式向量或從 `entry` 開始走訪時，每條到達 `window` 的指令的檔案偏移；走訪會跟隨每個目標寫在指令中的呼叫、跳轉及分支。`kind` 是把位址對應到檔案偏移的佈局。走訪在 400,000 條指令後停止                                                                                                        |
-| `widths(rom, kind="lorom", entry=None, limit=400000)`                                    | 由向量開始的走訪所反組譯的每個檔案偏移，以及到達該處時的 `(narrow, index)` 組，未知的寬度為 `None`                                                                                                                                                                                                           |
-| `shapes(rom, window, narrow=None, limit=DEFAULT_LIMIT, find=sites, kind=None, ran=None)` | 每種不同的形態及產生它的例程數目。`find` 返回的每個偏移都會以 `at` 開始一次走訪，除非先前的走訪已覆蓋它。給定 `kind` 時，每次走訪都以 `widths` 為其偏移找到的每個寬度開始，以兩種寬度進入的例程各有一種形態。如果甚麼也沒找到，`ran` 中的寬度（由檔案偏移到執行在該處所用組的對應）會確定它，形態以 `*` 標示 |
+| 呼叫                                                                                                  | 返回                                                                                                                                                                                                                                                                                                                                                                                                      |
+| :---------------------------------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sites(rom, window)`                                                                                  | 每個位址到達 `window` 的長載入（操作碼 `$AF`）及長存入（操作碼 `$8F`）的檔案偏移。這是位元組搜尋：它也會在數據中找到這四個位元組                                                                                                                                                                                                                                                                          |
+| `reached(rom, window, entry=None, kind="lorom")`                                                      | 從十個原生及模擬模式向量或從 `entry` 開始走訪時，每條到達 `window` 的指令的檔案偏移；走訪會跟隨每個目標寫在指令中的呼叫、跳轉及分支。`kind` 是把位址對應到檔案偏移的佈局。走訪在 400,000 條指令後停止                                                                                                                                                                                                     |
+| `widths(rom, kind="lorom", entry=None, limit=400000)`                                                 | 由向量開始的走訪所反組譯的每個檔案偏移，以及到達該處時的 `(narrow, index)` 組，未知的寬度為 `None`                                                                                                                                                                                                                                                                                                        |
+| `shapes(rom, window, narrow=None, limit=DEFAULT_LIMIT, find=sites, kind=None, ran=None, traced=None)` | 每種不同的形態及產生它的例程數目。`find` 返回的每個偏移都會以 `at` 開始一次走訪，除非先前的走訪已覆蓋它。給定 `kind` 時，每次走訪都以 `widths` 為其偏移找到的每個寬度開始，以兩種寬度進入的例程各有一種形態。如果甚麼也沒找到，`ran` 中的寬度（由檔案偏移到執行在該處所用組的對應）會確定它，形態以 `*` 標示。`traced` 會交給每次 `at`，因此仍不知道寬度的存取取追蹤在該指令處看到的寬度，形態以 `~` 標示 |
 
 ```python
 from snesdriver import reached, shapes, sites, widths, window_for
@@ -246,6 +246,7 @@ print(shapes(image, window, find=reached))
 print(widths(image, "lorom")[0x0004])
 print(shapes(image, window, kind="lorom"))
 print(shapes(image, window, kind="lorom", ran={0x0100: frozenset({(False, True)})}))
+print(shapes(image, window, kind="lorom", traced={0x0100: 2}))
 ```
 
 ```
@@ -256,9 +257,10 @@ print(shapes(image, window, kind="lorom", ran={0x0100: frozenset({(False, True)}
 frozenset({(True, True)})
 {'write1 poll1': 1, 'write?': 1}
 {'write1 poll1': 1, 'write2*': 1}
+{'write1 poll1': 1, 'write2~': 1}
 ```
 
-該映像檔是一個低位卡帶記憶庫，其重設向量指向該例程。`$0100` 處的四個位元組構成一條對 DSP 的長存入，但從未被執行。`sites` 找到它們，`reached` 則找不到，因為沒有任何從向量開始的走訪會到達那裏。給定佈局後，`shapes` 知道該例程以 8 位元寬度執行，因為重設令處理器處於模擬模式，存入之前亦沒有任何指令把它加寬。它仍然無法知道 `$0100` 處的寬度，只有執行才能確定。
+該映像檔是一個低位卡帶記憶庫，其重設向量指向該例程。`$0100` 處的四個位元組構成一條對 DSP 的長存入，但從未被執行。`sites` 找到它們，`reached` 則找不到，因為沒有任何從向量開始的走訪會到達那裏。給定佈局後，`shapes` 知道該例程以 8 位元寬度執行，因為重設令處理器處於模擬模式，存入之前亦沒有任何指令把它加寬。它仍然無法知道 `$0100` 處的寬度，只有執行才能確定。在樁主機上的執行以 `*` 確定它，看到該處存入搬運兩個位元組的追蹤以 `~` 確定它。前者是走訪開始時處理器持有的寬度；後者是匯流排在那一條指令上做的事，對其後的存取甚麼也說明不了。
 
 由向量開始的走訪會經過每個呼叫傳遞兩個寬度。被呼叫者按每個呼叫者留下的寬度各進入一次，呼叫者則按被呼叫者返回時的每個寬度恢復。經由表的呼叫、呼叫到映像檔之外，以及走訪從未看到其返回的被呼叫者，都會令兩個寬度保持未知，因為程式碼沒有說明它們是多少。
 
@@ -280,9 +282,12 @@ frozenset({(True, True)})
 | `python3 -m conformance.against_cartridges`                   | 可選的目錄，用以代替預設目錄讀取                                          | 0 所有卡帶都與其標頭所指的部件通訊，1 有一個卡帶沒有任何存取，2 找不到任何卡帶 |
 | `python3 -m conformance.speed`                                | 無                                                                        | 0 走訪速度超過每秒 20,000 個例程的下限，1 未超過                               |
 | `python3 -m conformance.executed <image> [budget] [--widths]` | 卡帶映像檔，要執行的指令數，預設 2,000,000，以及改為列出寬度的 `--widths` | 0 已執行並列出每條到達部件的指令，1 標頭所指的部件沒有窗口，2 沒有指定映像檔   |
+| `python3 -m conformance.traced`                               | 可選，改為讀取的目錄                                                      | 0 能追蹤的卡帶都已追蹤，1 有執行失敗，2 沒有模擬器、沒有卡帶或沒有可追蹤的內容 |
 | `python3 -m conformance.links`                                | 無                                                                        | 本檔案中有位址回應 HTTP 404 或 410 時為 1，否則為 0                            |
 
 `conformance.executed` 在 65816 上執行映像檔而不是讀取它。與它配合的主機對每個暫存器都傳回 0，只有 `$4210` 和 `$4212` 的消隱位元交替變化，並且每 20,000 條指令以及程式每次等待時都觸發 NMI。它報告的是下限：那次執行中真正到達部件的指令，能確定讀取無法追蹤的路徑，但對執行沒有走過的路徑甚麼也說明不了。加上 `--widths` 時，它改為列出一個 JSON 物件，把每條到達部件的指令的檔案偏移對應到處理器在該處持有的 `[narrow, index]` 組，這就是 `shapes` 接受的 `ran`。
+
+`conformance.traced` 在無介面的 MAME 中以 `SDL_VIDEODRIVER=dummy mame snes -window -video none -sound none -nothrottle` 執行它找到的每個卡帶兩次：第一次不碰手掣執行 3,600 幀，第二次執行 7,200 幀，每 30 幀按住一個按鍵 3 幀，依次為 Start、A、Start、B、Down、A、Up、Start、A、Right。[`conformance/traced.lua`](conformance/traced.lua) 在每個記憶庫及其鏡像記憶庫中監聽部件窗口的每個位址，並把每次存取連同程式計數器、狀態暫存器、資料記憶庫和直接頁一併記錄。同一條指令在 1.5 微秒內對相鄰位址的兩次存取，就是一次兩個位元組的存取。其後每次存取都與卡帶自身的位元組核對：在記錄的程式計數器處結束的指令按記錄的 M 和 X 旗標反組譯，其運算元必須寫出該位址，而在這些旗標下其運算碼搬運的寬度必須等於匯流排搬運的寬度。通過的成為 [`conformance/traced.json`](conformance/traced.json) 中的一個位置，即該指令的檔案偏移及其搬運過的每種寬度。未通過的作為不一致保留，帶有不一致的位置從不使用。帶韌體的部件需要把韌體放在 `SNES_FIRMWARE_DIR` 所指的目錄中，按摘要找到並附加到映像檔之後，MAME 就是這樣讀取的；`MAME_ROMPATH` 指出 MAME 在哪裏找到主機自身的 ROM。沒有 `mame` 或卡帶時以 2 結束。這個語料屬於模擬器這一級：每次執行走哪條路徑由 MAME 的 65816 和 MAME 對部件的模型決定，沒有任何執行走過的路徑仍是 `?`。
 
 ## 為何無法靠猜測得知
 
@@ -297,6 +302,8 @@ Dungeon Master     write1 write1 write1 write1 write1 read1 read1 read1 read1
 ```
 
 `?` 是在本套件能讀到的範圍內，程式碼沒有決定其寬度的存取。每次走訪都由搜尋找到的存取開始，位於其之前的 `sep` 或 `rep` 之後，使用由向量開始的走訪到達該處時的寬度。大多數驅動例程經由該走訪無法跟隨的途徑（例如跳轉表）進入，所以大多數仍以 `?` 開頭。上面 Dungeon Master 的例程是該走訪以 8 位元寬度到達的一個。
+
+在 MAME 中執行時，卡帶會確定其餘的一部分。[`conformance/traced.json`](conformance/traced.json) 保存了在追蹤執行中到達部件的 3,104 條指令，走訪沒有寬度的地方，掃描就從那裏取寬度，以 `~` 標示。在 42 個卡帶中，5,160 次交換裏仍帶 `?` 的剩下 4,874 次，不用追蹤時為 5,103 次；7,853 次存取裏剩下 6,549 次，不用追蹤時為 6,945 次。有六個 DSP 卡帶在兩次執行中都沒有到達部件，因此追蹤對它們甚麼也說明不了。
 
 ## 讀取方式
 
@@ -327,14 +334,14 @@ Dungeon Master     write1 write1 write1 write1 write1 read1 read1 read1 read1
 python3 -m conformance.against_cartridges
 ```
 
-掃描會讀取找到的每個卡帶，並列出每個卡帶的佈局、位置數目、形態數目及最常見的四種形態。在作者的卡帶庫上，它讀取了全部 42 個卡帶，每個都按其標頭所指的部件讀取，其中 0 個沒有存取。其中四個，最後一個搭載 OBC1：
+掃描會讀取找到的每個卡帶，並列出每個卡帶的佈局、位置數目、形態數目及最常見的四種形態，然後每種部件一行，統計其交換數、仍帶 `?` 的數目及帶 `~` 的數目。在作者的卡帶庫上，它讀取了全部 42 個卡帶，每個都按其標頭所指的部件讀取，其中 0 個沒有存取。其中四個，最後一個搭載 OBC1：
 
 | 卡帶                                  | 佈局  | 位置 | 不同形態 |
 | :------------------------------------ | :---- | ---: | -------: |
-| Super Mario Kart (USA)                | hirom |  127 |       19 |
-| Pilotwings (USA)                      | lorom |  212 |       21 |
-| Dungeon Master (USA)                  | lorom |  192 |       14 |
-| Metal Combat - Falcon's Revenge (USA) | lorom |  313 |       14 |
+| Super Mario Kart (USA)                | hirom |  127 |       25 |
+| Pilotwings (USA)                      | lorom |  212 |       25 |
+| Dungeon Master (USA)                  | lorom |  192 |       16 |
+| Metal Combat - Falcon's Revenge (USA) | lorom |  313 |       18 |
 
 掃描從卡帶類型位元組決定部件：Book I 第 1-2-18 頁的表把它的高四位元分配給協處理器。定製晶片以 `$FFBF` 的子編號區分，清單中的四個定製晶片卡帶對 ST010 和 ST011 設為 1，對 ST018 設為 2。沒有任何卡帶時，掃描以 2 結束。CI 在每次推送時執行它，把結束代碼 2 視為略過並加上註記。
 
@@ -369,6 +376,7 @@ python3 -m conformance.speed
 - Nintendo 的 _SNES Development Manual, Book II_，用於圖 3-1-4 和圖 3-1-5 中的兩個 DSP 窗口，因文字層只有標題而從掃描頁讀出。存檔文字為 463,516 位元組，SHA-256 為 `546f8e38caf6cb19c8aa9d5a1fef090d8cfc4a0a13b54c3b56d704975ab8398a`；附文字層的掃描為 29,575,127 位元組，SHA-256 為 `05197923d9b73b63845fc5c2d609e753ec634dc1e4b403ce7a57326e1259c3ed`。兩者都不在本儲存庫中，都位於 https://archive.org/details/SNESDevManual 。Book I 記載了記憶體映射和標頭，但沒有記載卡帶電路板為協處理器解碼的位址線。
 - [`mos65xx-python`](https://github.com/gufranco/mos65xx-python)，採用子模組所固定的提交，用於 65816 指令集。
 - [`snes-mapper-python`](https://github.com/gufranco/snes-mapper-python)，採用子模組所固定的提交，用於卡帶佈局。
+- MAME 0.289，無介面執行，用於 `conformance/traced.json` 中的寬度。它是模擬器，所以它顯示的內容屬於模擬器這一級，凡用到之處都以 `~` 標示。
 - 作者擁有的零售版卡帶庫，用於所讀取的 42 個卡帶。其中任何內容都沒有提交。
 
 ## 引用本專案

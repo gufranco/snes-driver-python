@@ -67,7 +67,10 @@ every call: a callee is entered at each width its callers leave, and a caller
 resumes at each width the callee returns with. That is the part that cannot be
 skipped and the part a naive reader gets wrong on every store. Where the code
 does not say, the access is `?`, never a guess; a width a run of the image used
-is marked `*`.
+is marked `*`, and a width a headless MAME run saw the bus move at that
+instruction is marked `~`. A `~` stands on the emulator rung: it is kept only
+where the cartridge's own bytes, decoded under the flags the run recorded,
+agree with what the bus did, and it never settles an open question.
 
 **Settled: that a routine is counted once.** A site an earlier walk already
 stepped over does not start a conversation of its own.
@@ -130,6 +133,22 @@ python3 -m conformance.against_cartridges
 
 Exit 2 means the machine had nothing to read. That is not a failure and must
 never be reported as one.
+
+The traced corpus is rewritten only by a run of the emulator, never by hand:
+
+```bash
+SNES_FIRMWARE_DIR=<firmware> MAME_ROMPATH=<roms> python3 -m conformance.traced <cartridges>
+```
+
+It exits 2 without `mame` or a cartridge, and 1 when a run failed or timed out.
+Each run starts MAME inside its own temporary folder and names a folder there
+for configuration, NVRAM, snapshots and saved states, so nothing it writes
+lands in this repository or the directory it was started from.
+Each run is held to a backstop of 3,600 seconds. The slowest run measured was
+SD Gundam GX's 7,200-frame run, 830 seconds with seven runs sharing the
+machine; the first sweep, held to 900 seconds, lost it. The backstop sits above
+four times the slowest run. The whole sweep took 47 minutes of wall time
+on 14 cores with seven runs at once.
 
 The submodules need no `PYTHONPATH`. The disassembler and the memory map are put
 on the path by the modules that need them, so a checkout works as it stands and
@@ -218,6 +237,9 @@ comments either, so their reasons live here:
   to change.
 - `cartridges.manifest.json`: a record of what was measured. Only the recorder
   rewrites it, never a hand and never a formatter.
+- `conformance/traced.json`: the same, for what a run of each cartridge did. Only
+  `conformance.traced` writes it, one site to a line so a change reads as the
+  sites it moved.
 
 ## Layout
 
@@ -231,6 +253,11 @@ conformance/
   cartridges.py          finding and confirming a user's own library
   against_cartridges.py  reading every cartridge present
   executed.py            running an image, to check what the reading cannot follow
+  traced.py              a headless MAME run of each cartridge, and the corpus it writes
+  traced.lua             the bus taps that run installs
+  corroborate.py         the instruction behind each traced access, decoded from the image
+  corpus.py              the traced widths, as shapes takes them
+  traced.json            what the runs recorded: sites and widths, never a byte of a game
 mos65xx-python/          the disassembler, as a submodule
 snes-mapper-python/      the header and address decoding, as a submodule
 cartridges/              a user's own copies; nothing here is ever committed

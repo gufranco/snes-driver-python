@@ -17,7 +17,7 @@ sys.path.append(str(ROOT / "snes-mapper-python"))
 
 from mapper import header
 
-from conformance import cartridges
+from conformance import cartridges, corpus
 from snesdriver import conversation, windows
 
 SHOWN = 4
@@ -76,17 +76,23 @@ def finder(part: str) -> Any:
     return conversation.reached if part in REACHED_ONLY_BY_ABSOLUTE_ACCESS else conversation.sites
 
 
-def read(image: bytes, identity: Any, part: str | None = None) -> Reading:
+def read(
+    image: bytes,
+    identity: Any,
+    part: str | None = None,
+    traced: Mapping[int, int] | None = None,
+) -> Reading:
     found = header.read(image)
     named = part if part is not None else part_of(image)
     if named is None:
         return Reading(identity, found.layout, (), {})
     find = finder(named)
+    seen = traced if traced is not None else corpus.widths(identity.sha256)
     tally: collections.Counter[str] = collections.Counter()
     reached: list[int] = []
     for window in windows_under(named, found.layout):
         reached.extend(find(image, window))
-        tally.update(conversation.shapes(image, window, find=find, kind=found.layout))
+        tally.update(conversation.shapes(image, window, find=find, kind=found.layout, traced=seen))
     return Reading(identity, found.layout, tuple(sorted(set(reached))), dict(tally), named)
 
 
@@ -113,6 +119,23 @@ def report(readings: Sequence[Reading]) -> list[str]:
     return lines
 
 
+def by_part(readings: Iterable[Reading]) -> list[str]:
+    tally: collections.Counter[tuple[str, str]] = collections.Counter()
+    for reading in readings:
+        part = reading.part or "no known part"
+        tally[(part, "all")] += 0
+        for shape, count in reading.shapes.items():
+            tally[(part, "all")] += count
+            tally[(part, "unknown")] += count if conversation.UNKNOWN in shape else 0
+            tally[(part, "traced")] += count if conversation.TRACED in shape else 0
+    return [
+        f"  {part}: {tally[(part, 'all')]} exchanges,"
+        f" {tally[(part, 'unknown')]} with an unknown width,"
+        f" {tally[(part, 'traced')]} with a traced one"
+        for part in sorted({part for part, _kind in tally})
+    ]
+
+
 def silent(readings: Iterable[Reading]) -> list[Reading]:
     return [reading for reading in readings if not reading.speaks]
 
@@ -126,7 +149,7 @@ def main(argv: Sequence[str], catalogue: Mapping[str, Any] | None = None) -> int
         print(f"  {WHY_NOT}")
         return 2
 
-    for line in report(readings):
+    for line in [*report(readings), *by_part(readings)]:
         print(line)
 
     quiet = silent(readings)

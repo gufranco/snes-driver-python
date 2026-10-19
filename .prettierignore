@@ -19,3 +19,4 @@ specs/
 mos65xx-python/
 snes-mapper-python/
 cartridges.manifest.json
+conformance/traced.json

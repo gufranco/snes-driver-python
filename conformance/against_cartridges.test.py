@@ -178,6 +178,48 @@ class PartTest(unittest.TestCase):
         self.assertIn("obc1 lorom", line)
 
 
+class TracedTest(unittest.TestCase):
+    def test_a_width_a_trace_saw_settles_the_access_it_saw(self) -> None:
+        # Arrange
+        image = an_obc1_cartridge()
+
+        # Act
+        found = against_cartridges.read(image, _an_identity(), traced={0x1002: 2})
+
+        # Assert
+        self.assertEqual(found.shapes, {"write2~": 1})
+
+    def test_a_cartridge_the_corpus_never_traced_keeps_its_unknowns(self) -> None:
+        # Arrange
+        image = an_obc1_cartridge()
+
+        # Act
+        found = against_cartridges.read(image, _an_identity())
+
+        # Assert
+        self.assertEqual(found.shapes, {"write?": 1})
+
+    def test_each_part_counts_its_exchanges_its_unknowns_and_its_traced_widths(self) -> None:
+        # Arrange
+        readings = [
+            against_cartridges.read(an_obc1_cartridge(), _an_identity(), traced={0x1002: 2}),
+            against_cartridges.read(an_obc1_cartridge(), _an_identity()),
+            against_cartridges.read(a_cartridge(chipset=0x13), _an_identity()),
+        ]
+
+        # Act
+        lines = against_cartridges.by_part(readings)
+
+        # Assert
+        self.assertEqual(
+            lines,
+            [
+                "  no known part: 0 exchanges, 0 with an unknown width, 0 with a traced one",
+                "  obc1: 2 exchanges, 1 with an unknown width, 1 with a traced one",
+            ],
+        )
+
+
 class CommandTest(unittest.TestCase):
     def test_it_leaves_by_raising_with_the_code_the_run_returned(self) -> None:
         held = sys.argv

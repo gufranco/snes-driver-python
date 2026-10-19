@@ -181,17 +181,39 @@ settles none of the open sites on 40 of the cartridges; the runs of Super Mario
 Kart (USA) and (Europe) were stopped after 150 seconds, at 102,647 and 874,860
 instructions, and settled none either.
 
-**What is left.** Most driver routines are entered through something the sweep
-cannot follow, so most shapes still open with `?`, and a run against a console
-that answers every register with 0 settles none of them. Metal Combat's word
-stores to `$7FF3` stay out of reach. The bytes of `sta $7FF3` sit at file
-offsets `0x10135` and `0x10143`, in bank `$82`; the sweep decodes no
-instruction in that bank, and a 2,000,000-instruction run of Metal Combat (USA)
-executes none there.
+**What a trace settles, measured.** `conformance.traced` ran each of the 42
+cartridges in MAME 0.289, headless, for 3,600 frames untouched and 7,200 frames
+with buttons pressed, and recorded every access the 65816 made to the part's
+window. Each access was checked against the cartridge's own bytes: the
+instruction ending at the recorded program counter, decoded under the recorded
+M and X flags, has to spell the address and move the width the bus moved.
+3,104 instructions passed and are kept in
+[`conformance/traced.json`](conformance/traced.json); 2,727 groups of accesses
+did not and are kept as disagreements, most of them reads of the ST010's RAM
+attributed to an instruction that does not address it, and Dungeon Master's
+accesses from code running outside the image. A width taken from there is
+marked `~` and is the emulator rung: MAME's 65816 and MAME's model of each part
+decide which route a run takes. With it, 4,874 of the 5,160 exchanges still
+hold a `?` rather than 5,103, and 6,549 of 7,853 accesses rather than 6,945. By
+part: DSP 4,194 of 4,380, ST010 and ST011 97 of 162, OBC1 583 of 609, ST018 0
+of 9. The trace agrees with both earlier taps: F1-ROC II's store at `0x0D69` and
+Metal Combat's stores at `0x10135` and `0x10143` each moved two bytes on every
+execution recorded.
 
-**What would settle or reopen it.** A run that gets further, which needs a
-console that answers the part well enough for a driver to pass its first poll,
-or a jump table whose bounds this could read.
+**What is left.** Most driver routines are entered through something the sweep
+cannot follow, and a run reaches only the routines its frames and its input
+drive. Six DSP cartridges, Hanguk Pro Yagu, Lock On, Super 3D Baseball, both
+Super Air Diver releases and Super Bases Loaded 2, never reached the part in
+either run, the three DSP-4 cartridges reached it from 2 instructions each, and
+SD Gundam GX, the one DSP-3 cartridge, from 6. Metal Combat's word stores to `$7FF3` are absolute accesses in
+bank `$82`, which the search for long accesses does not start a walk from, so
+the trace confirms their width without changing a shape.
+
+**What would settle or reopen it.** Runs that reach gameplay in every
+cartridge, which needs input written for each game rather than one schedule for
+all, or a jump table whose bounds this could read. A width this package has to
+call settled rather than traced needs the hardware: a logic analyser on a real
+cartridge's bus.
 
 ### A call this cannot prove returns is stepped over rather than followed.
 

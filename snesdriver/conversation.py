@@ -21,13 +21,15 @@ UNKNOWN = "?"
 
 RAN = "*"
 
+TRACED = "~"
+
 LONG_STORE = 0x8F
 LONG_LOAD = 0xAF
 LONG_BYTES = 4
 
 
 class Step:
-    __slots__ = ("address", "bank", "banked", "ran", "what", "width")
+    __slots__ = ("address", "bank", "banked", "ran", "traced", "what", "width")
 
     def __init__(
         self,
@@ -37,6 +39,7 @@ class Step:
         bank: int,
         banked: bool = True,
         ran: bool = False,
+        traced: bool = False,
     ) -> None:
         self.what = what
         self.width = width
@@ -44,10 +47,12 @@ class Step:
         self.bank = bank
         self.banked = banked
         self.ran = ran
+        self.traced = traced
 
     @property
     def token(self) -> str:
-        return f"{self.what}{self.width or UNKNOWN}{RAN if self.ran else ''}"
+        marks = (RAN if self.ran else "") + (TRACED if self.traced else "")
+        return f"{self.what}{self.width or UNKNOWN}{marks}"
 
     @property
     def whole(self) -> int:
@@ -93,6 +98,12 @@ class Conversation:
         return f"<Conversation {self.shape or 'nothing'}>"
 
 
+def seen_by_trace(step: walk.Step, traced: Mapping[int, int] | None) -> int | None:
+    if traced is None or step.width is not None:
+        return None
+    return traced.get(step.offset)
+
+
 def at(
     rom: bytes,
     offset: int,
@@ -102,6 +113,7 @@ def at(
     index: bool | None = None,
     known: Mapping[int, frozenset[Flags]] | None = None,
     ran: bool = False,
+    traced: Mapping[int, int] | None = None,
 ) -> Conversation:
     steps = []
     covered = []
@@ -119,7 +131,9 @@ def at(
             continue
         reading_status = step.reading and register == windows.STATUS
         what = POLL if reading_status else (READ if step.reading else WRITE)
-        steps.append(Step(what, step.width, address, bank, step.banked, step.ran))
+        seen = seen_by_trace(step, traced)
+        width = step.width if seen is None else seen
+        steps.append(Step(what, width, address, bank, step.banked, step.ran, seen is not None))
     return Conversation(steps, covered)
 
 
@@ -187,6 +201,7 @@ def shapes(
     find: Finding = sites,
     kind: str | None = None,
     ran: Mapping[int, frozenset[Flags]] | None = None,
+    traced: Mapping[int, int] | None = None,
 ) -> dict[str, int]:
     known = sweep.contexts(rom, kind) if kind is not None else {}
     counted: collections.Counter[str] = collections.Counter()
@@ -196,7 +211,7 @@ def shapes(
             continue
         heard: set[str] = set()
         for (wide, index), told in starts(offset, narrow, known, ran or {}):
-            found = at(rom, offset, window, wide, limit, index, known, told)
+            found = at(rom, offset, window, wide, limit, index, known, told, traced)
             seen |= found.covered
             heard |= {found.shape} if found else set()
         counted.update(heard)
