@@ -1,7 +1,7 @@
 {
   "comment": "Every place a source is weaker than it looks, and every place this package deliberately claims nothing. The facts themselves live in hardware.json; this file is about their standing.",
   "sources": {
-    "cartridges": "The driver routines inside 36 cartridges, identified by digest in cartridges.manifest.json before a byte is read.",
+    "cartridges": "The driver routines inside the 42 cartridges cartridges.manifest.json names, 36 of them DSP cartridges, each identified by digest before a byte is read.",
     "document": "None. Nintendo's Book I documents the memory map and not what a cartridge board decodes for a coprocessor.",
     "implementations": "Emulators, which were written by people reading the same cartridge code this package reads. Not a separate source."
   },

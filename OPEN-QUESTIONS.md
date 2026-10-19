@@ -18,10 +18,11 @@ and severity, so a program can read what a person reads here.
 
 ## Why agreement across drivers cannot close these
 
-Forty two independently written drivers agreeing is strong. One could be wrong;
-forty two could not be wrong the same way. What that agreement still cannot say
-is where a window **stops**, because a driver shows where a part answers and
-never where it does not.
+The drivers in 42 cartridges agreeing is strong, though a game released in
+several regions carries one driver in each, so the independent witnesses are
+fewer than 42. One could be wrong; all of them could not be wrong the same way.
+What that agreement still cannot say is where a window **stops**, because a
+driver shows where a part answers and never where it does not.
 
 And the emulators that use the same windows are not a second witness. They were
 written by people reading the same cartridge code this package reads, so counting
