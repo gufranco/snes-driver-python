@@ -221,6 +221,7 @@ snesdriver/
 conformance/
   cartridges.py          finding and confirming a user's own library
   against_cartridges.py  reading every cartridge present
+  executed.py            running an image, to check what the reading cannot follow
 mos65xx-python/          the disassembler, as a submodule
 snes-mapper-python/      the header and address decoding, as a submodule
 cartridges/              a user's own copies; nothing here is ever committed

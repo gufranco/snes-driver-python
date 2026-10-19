@@ -121,9 +121,16 @@ It now answers, using the bank the routine executes in, and `Step.banked` and
 shape that mixed the two silently would claim more than it knows, which is why
 the weaker claim is labelled rather than hidden.
 
+**What running the image shows.** `conformance.executed` tracks the register
+because it runs the code. Hayazashi Nidan Morita Shougi 2, run for 2,000,000
+instructions from reset, reaches the ST018 from three instructions, and half of
+the addresses they reach carry data bank `$2B` while the routine runs in bank
+`$00`. Both banks sit inside the window, so the register answered is the same;
+the bank the walk reports for them is still wrong.
+
 **What would settle or reopen it.** Tracking the data bank register through a
 walk, which needs an entry state that a walk starting at one routine does not
-have.; A part whose driver sets the register somewhere this package can see.
+have, or reading shapes out of a run rather than a walk.
 
 ### The accumulator's width at a routine's entry is assumed rather than read.
 
@@ -167,8 +174,10 @@ returns, because it exits through a computed jump or is longer than the probe
 allows, is stepped over as before. Its accesses are then read as a routine of
 their own rather than as part of the caller's exchange.
 
-**What would settle or reopen it.** Running the image rather than reading it,
-which belongs to another member.
+**What would settle or reopen it.** Reading shapes out of a run rather than a
+walk. `conformance.executed` runs the image and follows every call the program
+makes, so it reports which instructions reach the part; it does not yet turn a
+run into shapes.
 
 ### A sweep cannot follow a computed jump.
 
@@ -191,9 +200,16 @@ still an instruction the console reaches. What it cannot do is prove the absence
 of another routine, so a part it finds nothing for is unread rather than
 uncontacted, and that difference is why this is written down.
 
-**What would settle or reopen it.** Running the image rather than reading it,
-which is a different package's job, or a jump table whose bounds this could
-read. Neither is planned.
+**What running the image shows.** `conformance.executed` follows every jump
+because it runs the code. Metal Combat (USA), run for 2,000,000 instructions from
+reset, reaches the OBC1's window and its mirror in banks `$80` to `$BF` from 147
+distinct instructions. None of them is among the 129 sites the byte search
+finds, and none is reached by the walk from the vectors: all are absolute
+accesses, made from routines running in bank `$80`. The run answers every
+register but the blanking bits with 0, so what it found is a floor.
+
+**What would settle or reopen it.** Shapes read out of a run, or a jump table
+whose bounds this could read.
 
 ## What is not in question
 

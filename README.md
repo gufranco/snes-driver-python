@@ -8,7 +8,7 @@ English | [日本語](README.ja.md) | [简体中文](README.zh-Hans.md) | [繁�
 [![Release](https://img.shields.io/github/v/release/gufranco/snes-driver-python)](https://github.com/gufranco/snes-driver-python/releases)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-**42** cartridges named by four digests, **42** cartridges read under the part each header names, **0** disagreements with their own digests, **0** that said nothing to the part, **3** kinds of access, **683** tests, **100%** statement and branch coverage, no dependencies
+**42** cartridges named by four digests, **42** cartridges read under the part each header names, **0** disagreements with their own digests, **0** that said nothing to the part, **3** kinds of access, **693** tests, **100%** statement and branch coverage, no dependencies
 
 ```python
 from snesdriver import at, window_for
@@ -258,12 +258,15 @@ The image is one low cartridge bank whose reset vector points at the routine. Th
 
 ### Commands
 
-| Command                                     | Arguments                                            | Exit codes                                                                                         |
-| :------------------------------------------ | :--------------------------------------------------- | :------------------------------------------------------------------------------------------------- |
-| `python3 snesdriver/doctor.py`              | None                                                 | 0 every check passed, 1 one did not                                                                |
-| `python3 -m conformance.against_cartridges` | An optional directory to read instead of the default | 0 every cartridge spoke to the part its header names, 1 one said nothing, 2 no cartridge was found |
-| `python3 -m conformance.speed`              | None                                                 | 0 the walk beat the floor of 20,000 routines walked per second, 1 it did not                       |
-| `python3 -m conformance.links`              | None                                                 | 1 when an address in this file answers HTTP 404 or 410, otherwise 0                                |
+| Command                                            | Arguments                                                                 | Exit codes                                                                                                                   |
+| :------------------------------------------------- | :------------------------------------------------------------------------ | :--------------------------------------------------------------------------------------------------------------------------- |
+| `python3 snesdriver/doctor.py`                     | None                                                                      | 0 every check passed, 1 one did not                                                                                          |
+| `python3 -m conformance.against_cartridges`        | An optional directory to read instead of the default                      | 0 every cartridge spoke to the part its header names, 1 one said nothing, 2 no cartridge was found                           |
+| `python3 -m conformance.speed`                     | None                                                                      | 0 the walk beat the floor of 20,000 routines walked per second, 1 it did not                                                 |
+| `python3 -m conformance.executed <image> [budget]` | A cartridge image, and how many instructions to run, 2,000,000 by default | 0 it ran and printed every instruction that reached the part, 1 the header names no part with a window, 2 no image was named |
+| `python3 -m conformance.links`                     | None                                                                      | 1 when an address in this file answers HTTP 404 or 410, otherwise 0                                                          |
+
+`conformance.executed` runs the image on the 65816 rather than reading it, against a console that answers every register with 0 except the blanking bits of `$4210` and `$4212`, which alternate, and raises NMI every 20,000 instructions and whenever the program waits for one. What it reports is a floor: instructions that really reach the part on that run, which settles a route the reading cannot follow and says nothing about routes the run never took.
 
 ## Why this cannot be guessed
 

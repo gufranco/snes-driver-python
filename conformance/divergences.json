@@ -58,7 +58,7 @@
       "documentSays": "Nothing. This is about what this package can claim.",
       "referenceDoes": "Nothing comparable: a reimplementation runs the code and never has to say where it thinks an access landed.",
       "packageFollows": "neither",
-      "reasoning": "A long load or store spells all three bytes of its address, so the bank is read. An ordinary absolute one spells two and takes the third from the data bank register, which nothing here tracks. Until the ST018 every part this package knew was reached long, so an absolute access read as no access at all. It now answers with the bank the routine executes in, and Step.banked and Conversation.banked are how a caller tells a read bank from an assumed one, because a shape that mixed the two silently would claim more than it knows.",
+      "reasoning": "A long load or store spells all three bytes of its address, so the bank is read. An ordinary absolute one spells two and takes the third from the data bank register, which nothing here tracks. Until the ST018 every part this package knew was reached long, so an absolute access read as no access at all. It now answers with the bank the routine executes in, and Step.banked and Conversation.banked are how a caller tells a read bank from an assumed one, because a shape that mixed the two silently would claim more than it knows. Measured on 2026-10-19 with conformance.executed: Hayazashi Nidan Morita Shougi 2 reaches the ST018 from three instructions in its first 2,000,000, and half of the addresses they reach carry data bank 2B while the routine runs in bank 00.",
       "wouldSettleIt": "Tracking the data bank register through a walk, which needs an entry state a walk starting at one routine does not have."
     },
     {
@@ -87,13 +87,13 @@
       "id": "a-sweep-cannot-follow-a-computed-jump",
       "parts": ["st018"],
       "severity": "medium",
-      "status": "open",
+      "status": "narrowed",
       "documentSays": "nothing",
       "referenceDoes": "nothing; this is about what this package can read, not about a part",
       "packageFollows": "neither",
-      "reasoning": "conversation.reached starts at every vector a low cartridge publishes and decodes only what control flow arrives at, which is how a part reached by an ordinary absolute access is found at all. jmp ($1234) and its two indexed relatives are not followed, so what comes back is the routines that were found rather than proof there are no others. Metal Combat is the measured case: seeding from reset alone reached 1,675 instructions and from all ten vectors 2,080, and neither run reached the OBC1 once, while a search of the same image for the bytes that spell a long access finds 129 sites. That cartridge dispatches its driver through something this cannot follow. A part the sweep finds nothing for is unread rather than uncontacted.",
+      "reasoning": "conversation.reached starts at every vector a low cartridge publishes and decodes only what control flow arrives at, which is how a part reached by an ordinary absolute access is found at all. jmp ($1234) and its two indexed relatives are not followed, so what comes back is the routines that were found rather than proof there are no others. Metal Combat is the measured case: seeding from reset alone reached 1,675 instructions and from all ten vectors 2,080, and neither run reached the OBC1 once, while a search of the same image for the bytes that spell a long access finds 129 sites. That cartridge dispatches its driver through something this cannot follow. A part the sweep finds nothing for is unread rather than uncontacted. Narrowed on 2026-10-19: conformance.executed runs the image on the 65816 core, and Metal Combat (USA) run for 2,000,000 instructions from reset reaches the OBC1 window and its mirror in banks 80 to BF from 147 distinct instructions, none of them among the byte search's sites or the vector walk's, all absolute accesses from routines running in bank 80. The run is a floor, against a console that answers every register but the blanking bits with 0.",
       "wouldSettleIt": [
-        "running the image rather than reading it, which belongs to another member",
+        "shapes read out of a run rather than a walk",
         "a jump table whose bounds this could read"
       ]
     },
