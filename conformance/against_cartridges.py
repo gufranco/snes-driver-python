@@ -6,6 +6,7 @@ if TYPE_CHECKING:  # pragma: no cover
     from collections.abc import Iterable, Mapping, Sequence
     from pathlib import Path
 
+import collections
 import sys
 from pathlib import Path
 
@@ -19,9 +20,15 @@ from mapper import header
 from conformance import cartridges
 from snesdriver import conversation, windows
 
-PART = "dsp"
-
 SHOWN = 4
+
+COPROCESSORS = {0x0: "dsp", 0x2: "obc1"}
+
+CUSTOM_CHIP = 0xF
+
+CUSTOM_CHIPS = {0x01: "st", 0x02: "st018"}
+
+REACHED_ONLY_BY_ABSOLUTE_ACCESS = frozenset({"st018"})
 
 WHY_NOT = cartridges.WHY_NOT
 
@@ -33,11 +40,13 @@ class Reading:
         layout: str,
         sites: Sequence[int],
         shapes: Mapping[str, int],
+        part: str | None = None,
     ) -> None:
         self.identity = identity
         self.layout = layout
         self.sites = sites
         self.shapes = shapes
+        self.part = part
 
     @property
     def speaks(self) -> bool:
@@ -48,23 +57,43 @@ class Reading:
         return f"<Reading {self.identity.name}, {len(self.shapes)} shapes>"
 
 
-def read(image: bytes, identity: Any, part: str = PART) -> Reading:
+def part_of(image: bytes) -> str | None:
     found = header.read(image)
-    window = windows.window_for(part, found.layout)
-    if window is None:
+    if not found.coprocessor:
+        return None
+    family = found.chipset >> 4
+    if family == CUSTOM_CHIP:
+        return CUSTOM_CHIPS.get(image[found.at - 1])
+    return COPROCESSORS.get(family)
+
+
+def windows_under(part: str, layout: str) -> list[Any]:
+    held = windows.WINDOWS[part]
+    return [held[name] for name in sorted(held) if name.split("-")[0] == layout]
+
+
+def finder(part: str) -> Any:
+    return conversation.reached if part in REACHED_ONLY_BY_ABSOLUTE_ACCESS else conversation.sites
+
+
+def read(image: bytes, identity: Any, part: str | None = None) -> Reading:
+    found = header.read(image)
+    named = part if part is not None else part_of(image)
+    if named is None:
         return Reading(identity, found.layout, (), {})
-    return Reading(
-        identity,
-        found.layout,
-        conversation.sites(image, window),
-        conversation.shapes(image, window),
-    )
+    find = finder(named)
+    tally: collections.Counter[str] = collections.Counter()
+    reached: list[int] = []
+    for window in windows_under(named, found.layout):
+        reached.extend(find(image, window))
+        tally.update(conversation.shapes(image, window, find=find))
+    return Reading(identity, found.layout, tuple(sorted(set(reached))), dict(tally), named)
 
 
 def sweep(
     where: Path | str | None = None,
     catalogue: Mapping[str, Any] | None = None,
-    part: str = PART,
+    part: str | None = None,
 ) -> list[Reading]:
     return [
         read(path.read_bytes(), identity, part)
@@ -76,7 +105,7 @@ def report(readings: Sequence[Reading]) -> list[str]:
     lines = []
     for reading in readings:
         lines.append(
-            f"  {reading.identity.name}: {reading.layout},"
+            f"  {reading.identity.name}: {reading.part or 'no known part'} {reading.layout},"
             f" {len(reading.sites)} sites, {len(reading.shapes)} shapes"
         )
         for shape, count in sorted(reading.shapes.items(), key=lambda held: -held[1])[:SHOWN]:
@@ -101,7 +130,10 @@ def main(argv: Sequence[str], catalogue: Mapping[str, Any] | None = None) -> int
         print(line)
 
     quiet = silent(readings)
-    print(f"  {len(readings)} cartridges read, {len(quiet)} said nothing to the {PART}")
+    print(
+        f"  {len(readings)} cartridges read,"
+        f" {len(quiet)} said nothing to the part their header names"
+    )
     for reading in quiet:
         print(f"    silent: {reading.identity.name} ({reading.layout})")
     return 1 if quiet else 0

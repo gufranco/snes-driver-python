@@ -8,7 +8,7 @@
 [![Release](https://img.shields.io/github/v/release/gufranco/snes-driver-python)](https://github.com/gufranco/snes-driver-python/releases)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-**42** 个卡带以四种摘要标识，**36** 个 DSP 卡带按 **2** 种布局读取，与自身摘要不符的 **0** 个，未与芯片通信的 **0** 个，**3** 种访问，**674** 个测试，**100%** 语句与分支覆盖率，无依赖
+**42** 个卡带以四种摘要标识，**42** 个卡带按各自文件头所指的芯片读取，与自身摘要不符的 **0** 个，未与芯片通信的 **0** 个，**3** 种访问，**683** 个测试，**100%** 语句与分支覆盖率，无依赖
 
 ```python
 from snesdriver import at, window_for
@@ -258,12 +258,12 @@ print(shapes(image, window, find=reached))
 
 ### 命令
 
-| 命令                                        | 参数                         | 退出码                                                                  |
-| :------------------------------------------ | :--------------------------- | :---------------------------------------------------------------------- |
-| `python3 snesdriver/doctor.py`              | 无                           | 0 表示所有检查通过，1 表示有一项未通过                                  |
-| `python3 -m conformance.against_cartridges` | 可选的目录，代替默认目录读取 | 0 表示每个卡带都与 DSP 通信，1 表示有一个卡带没有通信，2 表示未找到卡带 |
-| `python3 -m conformance.speed`              | 无                           | 0 表示遍历超过每秒 20,000 个例程的下限，1 表示未超过                    |
-| `python3 -m conformance.links`              | 无                           | 本文件中有地址返回 HTTP 404 或 410 时为 1，否则为 0                     |
+| 命令                                        | 参数                         | 退出码                                                                               |
+| :------------------------------------------ | :--------------------------- | :----------------------------------------------------------------------------------- |
+| `python3 snesdriver/doctor.py`              | 无                           | 0 表示所有检查通过，1 表示有一项未通过                                               |
+| `python3 -m conformance.against_cartridges` | 可选的目录，代替默认目录读取 | 0 表示每个卡带都与其文件头所指的芯片通信，1 表示有一个卡带没有通信，2 表示未找到卡带 |
+| `python3 -m conformance.speed`              | 无                           | 0 表示遍历超过每秒 20,000 个例程的下限，1 表示未超过                                 |
+| `python3 -m conformance.links`              | 无                           | 本文件中有地址返回 HTTP 404 或 410 时为 1，否则为 0                                  |
 
 ## 为什么这无法猜测
 
@@ -306,15 +306,16 @@ Dungeon Master     write1 write1 write1 write1 write1 read1 read1 read1 read1
 python3 -m conformance.against_cartridges
 ```
 
-扫描读取它找到的每个卡带，并打印每个卡带的布局、位点数、形态数及其最常见的四种形态。在作者的卡带库上，它读取了 36 个 DSP 卡带，其中 0 个没有通信。其中三个：
+扫描读取它找到的每个卡带，并打印每个卡带的布局、位点数、形态数及其最常见的四种形态。在作者的卡带库上，它读取了全部 42 个卡带，每个都按其文件头所指的芯片读取，其中 0 个没有通信。其中四个，最后一个搭载 OBC1：
 
-| 卡带                   | 布局  | 位点 | 不同形态 |
-| :--------------------- | :---- | ---: | -------: |
-| Super Mario Kart (USA) | hirom |  127 |       19 |
-| Pilotwings (USA)       | lorom |  212 |       22 |
-| Dungeon Master (USA)   | lorom |  192 |       15 |
+| 卡带                                  | 布局  | 位点 | 不同形态 |
+| :------------------------------------ | :---- | ---: | -------: |
+| Super Mario Kart (USA)                | hirom |  127 |       19 |
+| Pilotwings (USA)                      | lorom |  212 |       22 |
+| Dungeon Master (USA)                  | lorom |  192 |       15 |
+| Metal Combat - Falcon's Revenge (USA) | lorom |  129 |       14 |
 
-清单中其余 6 个卡带搭载 `st`、`st018` 和 `obc1` 芯片。扫描只读取 DSP，而这 6 个卡带都不在所读取的卡带库中。没有卡带时，扫描以 2 退出。CI 在每次推送时运行它，将退出码 2 视为跳过并加以标注。
+扫描从卡带类型字节确定芯片：Book I 第 1-2-18 页的表把它的高四位分配给协处理器。定制芯片按 `$FFBF` 处的子编号区分，清单中的四个定制芯片卡带对 ST010 和 ST011 设为 1，对 ST018 设为 2。没有卡带时，扫描以 2 退出。CI 在每次推送时运行它，将退出码 2 视为跳过并加以标注。
 
 [`conformance/hardware.json`](conformance/hardware.json) 记录每个窗口及其依据，[`conformance/hardware.test.py`](conformance/hardware.test.py) 让 `WINDOWS` 与其保持一致。两个 DSP 窗口被标记为已验证，因为 Book II 印出了两者。其他窗口都没有，因为没有任何厂商文档给出卡带电路板为 ST010、ST011、ST018 或 OBC1 解码的地址线。[`conformance/divergences.json`](conformance/divergences.json) 记录某个来源比表面上更不可靠的地方，[OPEN-QUESTIONS.md](OPEN-QUESTIONS.md) 列出每个未知项以及能够确定它的测量。
 
@@ -347,7 +348,7 @@ python3 -m conformance.speed
 - Nintendo 的 _SNES Development Manual, Book II_，用于图 3-1-4 和图 3-1-5 中的两个 DSP 窗口，因文字层只有标题而从扫描页读出。存档文本为 463,516 字节，SHA-256 为 `546f8e38caf6cb19c8aa9d5a1fef090d8cfc4a0a13b54c3b56d704975ab8398a`；带文字层的扫描为 29,575,127 字节，SHA-256 为 `05197923d9b73b63845fc5c2d609e753ec634dc1e4b403ce7a57326e1259c3ed`。两者都不在本仓库中，都位于 https://archive.org/details/SNESDevManual 。Book I 记录了内存映射和文件头，但没有记录卡带电路板为协处理器解码的地址线。
 - [`mos65xx-python`](https://github.com/gufranco/mos65xx-python)，取子模块固定的提交，用于 65816 指令集。
 - [`snes-mapper-python`](https://github.com/gufranco/snes-mapper-python)，取子模块固定的提交，用于卡带布局。
-- 作者拥有的零售版卡带库，用于所读取的 36 个卡带。其中任何内容都未提交。
+- 作者拥有的零售版卡带库，用于所读取的 42 个卡带。其中任何内容都未提交。
 
 ## 引用
 

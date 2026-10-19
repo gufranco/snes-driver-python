@@ -8,7 +8,7 @@ English | [日本語](README.ja.md) | [简体中文](README.zh-Hans.md) | [繁�
 [![Release](https://img.shields.io/github/v/release/gufranco/snes-driver-python)](https://github.com/gufranco/snes-driver-python/releases)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-**42** cartridges named by four digests, **36** DSP cartridges read under **2** layouts, **0** disagreements with their own digests, **0** that said nothing to the part, **3** kinds of access, **674** tests, **100%** statement and branch coverage, no dependencies
+**42** cartridges named by four digests, **42** cartridges read under the part each header names, **0** disagreements with their own digests, **0** that said nothing to the part, **3** kinds of access, **683** tests, **100%** statement and branch coverage, no dependencies
 
 ```python
 from snesdriver import at, window_for
@@ -258,12 +258,12 @@ The image is one low cartridge bank whose reset vector points at the routine. Th
 
 ### Commands
 
-| Command                                     | Arguments                                            | Exit codes                                                                       |
-| :------------------------------------------ | :--------------------------------------------------- | :------------------------------------------------------------------------------- |
-| `python3 snesdriver/doctor.py`              | None                                                 | 0 every check passed, 1 one did not                                              |
-| `python3 -m conformance.against_cartridges` | An optional directory to read instead of the default | 0 every cartridge spoke to the DSP, 1 one said nothing, 2 no cartridge was found |
-| `python3 -m conformance.speed`              | None                                                 | 0 the walk beat the floor of 20,000 routines walked per second, 1 it did not     |
-| `python3 -m conformance.links`              | None                                                 | 1 when an address in this file answers HTTP 404 or 410, otherwise 0              |
+| Command                                     | Arguments                                            | Exit codes                                                                                         |
+| :------------------------------------------ | :--------------------------------------------------- | :------------------------------------------------------------------------------------------------- |
+| `python3 snesdriver/doctor.py`              | None                                                 | 0 every check passed, 1 one did not                                                                |
+| `python3 -m conformance.against_cartridges` | An optional directory to read instead of the default | 0 every cartridge spoke to the part its header names, 1 one said nothing, 2 no cartridge was found |
+| `python3 -m conformance.speed`              | None                                                 | 0 the walk beat the floor of 20,000 routines walked per second, 1 it did not                       |
+| `python3 -m conformance.links`              | None                                                 | 1 when an address in this file answers HTTP 404 or 410, otherwise 0                                |
 
 ## Why this cannot be guessed
 
@@ -306,15 +306,16 @@ A shape says nothing about what the part answers. That belongs to the members th
 python3 -m conformance.against_cartridges
 ```
 
-The sweep reads every cartridge it finds and prints each one's layout, its site count, its shape count and its four most frequent shapes. On the author's library it read 36 DSP cartridges, 0 of them silent. Three of them:
+The sweep reads every cartridge it finds and prints each one's layout, its site count, its shape count and its four most frequent shapes. On the author's library it read all 42 cartridges, each under the part its header names, 0 of them silent. Four of them, the last carrying the OBC1:
 
-| Cartridge              | Layout | Sites | Distinct shapes |
-| :--------------------- | :----- | ----: | --------------: |
-| Super Mario Kart (USA) | hirom  |   127 |              19 |
-| Pilotwings (USA)       | lorom  |   212 |              22 |
-| Dungeon Master (USA)   | lorom  |   192 |              15 |
+| Cartridge                             | Layout | Sites | Distinct shapes |
+| :------------------------------------ | :----- | ----: | --------------: |
+| Super Mario Kart (USA)                | hirom  |   127 |              19 |
+| Pilotwings (USA)                      | lorom  |   212 |              22 |
+| Dungeon Master (USA)                  | lorom  |   192 |              15 |
+| Metal Combat - Falcon's Revenge (USA) | lorom  |   129 |              14 |
 
-The other 6 cartridges in the manifest carry the `st`, `st018` and `obc1` parts. The sweep reads the DSP only, and none of the 6 was in the library it read. With no cartridge present the sweep exits 2. CI runs it on every push, treats exit 2 as a skip and annotates it.
+The sweep takes the part from the cartridge type byte, whose upper nibble Book I's table at page 1-2-18 assigns to a coprocessor, and tells the custom chips apart by the sub-number at `$FFBF`, which the four custom-chip cartridges in the manifest set to 1 for the ST010 and ST011 and 2 for the ST018. With no cartridge present the sweep exits 2. CI runs it on every push, treats exit 2 as a skip and annotates it.
 
 [`conformance/hardware.json`](conformance/hardware.json) records every window with the evidence behind it, and [`conformance/hardware.test.py`](conformance/hardware.test.py) holds `WINDOWS` to it. The two DSP windows are marked verified, because Book II prints both. No other window is, because no manufacturer document gives the address lines a cartridge board decodes for the ST010, ST011, ST018 or OBC1. [`conformance/divergences.json`](conformance/divergences.json) records where a source is weaker than it looks, and [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md) lists each unknown with the measurement that would settle it.
 
@@ -347,7 +348,7 @@ Each module has a test file beside it, named `<module>.test.py`, and each runs o
 - Nintendo's _SNES Development Manual, Book II_, for the two DSP windows in Figures 3-1-4 and 3-1-5, read off the scanned pages because the text layer carries only the captions. The archived text is 463,516 bytes with SHA-256 `546f8e38caf6cb19c8aa9d5a1fef090d8cfc4a0a13b54c3b56d704975ab8398a`, and the scan with its text layer is 29,575,127 bytes with SHA-256 `05197923d9b73b63845fc5c2d609e753ec634dc1e4b403ce7a57326e1259c3ed`. Neither is in this repository; both are at https://archive.org/details/SNESDevManual. Book I documents the memory map and the header and not the address lines a cartridge board decodes for a coprocessor.
 - [`mos65xx-python`](https://github.com/gufranco/mos65xx-python), at the commit the submodule pins, for the 65816 instruction set.
 - [`snes-mapper-python`](https://github.com/gufranco/snes-mapper-python), at the commit the submodule pins, for the cartridge layouts.
-- A retail cartridge library the author owns, for the 36 cartridges read. Nothing from it is committed.
+- A retail cartridge library the author owns, for the 42 cartridges read. Nothing from it is committed.
 
 ## Citing this
 

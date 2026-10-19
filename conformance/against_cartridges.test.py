@@ -13,13 +13,16 @@ from conformance import against_cartridges, cartridges
 PRESENT = cartridges.present()
 
 
-def a_cartridge(layout: str = "lorom", drives: bool = True) -> bytes:
+def a_cartridge(
+    layout: str = "lorom", drives: bool = True, chipset: int = 0x03, sub: int = 0x00
+) -> bytes:
     at = 0x7FC0 if layout == "lorom" else 0xFFC0
     size = 0x100000 if layout == "lorom" else 0x200000
     rom = bytearray(size)
+    rom[at - 1] = sub
     rom[at : at + 21] = b"DRIVEN CARTRIDGE     "
     rom[at + 21] = 0x20 if layout == "lorom" else 0x21
-    rom[at + 22] = 0x03
+    rom[at + 22] = chipset
     rom[at + 23] = 0x0A
     rom[at + 25] = 0x01
     rom[at + 28] = 0xA5
@@ -66,6 +69,113 @@ class ReadTest(unittest.TestCase):
         found = against_cartridges.read(a_cartridge(), _an_identity())
 
         self.assertIn("made-up.sfc", repr(found))
+
+
+def an_obc1_cartridge() -> bytes:
+    rom = bytearray(a_cartridge(drives=False, chipset=0x25))
+    rom[0x1000:0x1007] = bytes([0xE2, 0x20, 0x8F, 0xF0, 0x7F, 0x00, 0x60])
+    return bytes(rom)
+
+
+class PartTest(unittest.TestCase):
+    def test_the_upper_nibble_of_the_cartridge_type_names_the_coprocessor(self) -> None:
+        # Arrange
+        images = [a_cartridge(chipset=one) for one in (0x03, 0x05, 0x25, 0x13, 0x35, 0xE3)]
+
+        # Act
+        found = [against_cartridges.part_of(one) for one in images]
+
+        # Assert
+        self.assertEqual(found, ["dsp", "dsp", "obc1", None, None, None])
+
+    def test_a_cartridge_with_no_coprocessor_names_none(self) -> None:
+        # Arrange
+        images = [a_cartridge(chipset=one) for one in (0x00, 0x01, 0x02)]
+
+        # Act
+        found = [against_cartridges.part_of(one) for one in images]
+
+        # Assert
+        self.assertEqual(found, [None, None, None])
+
+    def test_a_custom_chip_is_told_apart_by_its_sub_number(self) -> None:
+        # Arrange
+        images = [
+            a_cartridge(chipset=0xF6, sub=0x01),
+            a_cartridge(chipset=0xF5, sub=0x02),
+            a_cartridge(chipset=0xF5, sub=0x07),
+        ]
+
+        # Act
+        found = [against_cartridges.part_of(one) for one in images]
+
+        # Assert
+        self.assertEqual(found, ["st", "st018", None])
+
+    def test_a_cartridge_is_read_under_the_part_its_header_names(self) -> None:
+        # Arrange
+        image = an_obc1_cartridge()
+
+        # Act
+        found = against_cartridges.read(image, _an_identity())
+
+        # Assert
+        self.assertEqual((found.part, found.shapes), ("obc1", {"write1": 1}))
+
+    def test_and_not_under_the_dsp_window_its_lower_banks_share(self) -> None:
+        # Arrange
+        image = an_obc1_cartridge()
+
+        # Act
+        found = against_cartridges.read(image, _an_identity(), part="dsp")
+
+        # Assert
+        self.assertEqual(found.shapes, {})
+
+    def test_a_cartridge_naming_no_known_part_is_silent(self) -> None:
+        # Arrange
+        image = a_cartridge(chipset=0x13)
+
+        # Act
+        found = against_cartridges.read(image, _an_identity())
+
+        # Assert
+        self.assertEqual((found.part, found.speaks), (None, False))
+
+    def test_every_window_a_part_has_under_the_layout_is_read(self) -> None:
+        # Arrange
+        image = bytearray(a_cartridge(drives=False, chipset=0xF6, sub=0x01))
+        image[0x1000:0x100F] = bytes(
+            [0xE2, 0x20, 0x8F, 0x00, 0x00, 0x60, 0x8F, 0x20, 0x00, 0x68, 0x60, 0, 0, 0, 0]
+        )
+
+        # Act
+        found = against_cartridges.read(bytes(image), _an_identity())
+
+        # Assert
+        self.assertEqual((found.part, found.shapes), ("st", {"write1": 2}))
+
+    def test_the_absolutely_addressed_part_is_found_by_walking_from_the_vectors(self) -> None:
+        # Arrange
+        image = bytearray(a_cartridge(drives=False, chipset=0xF5, sub=0x02))
+        image[0x0000:0x0006] = bytes([0xE2, 0x20, 0x8D, 0x00, 0x38, 0x60])
+        image[0x7FFC:0x7FFE] = (0x8000).to_bytes(2, "little")
+
+        # Act
+        found = against_cartridges.read(bytes(image), _an_identity())
+
+        # Assert
+        self.assertEqual((found.part, found.sites, found.shapes), ("st018", (2,), {"write1": 1}))
+
+    def test_a_line_names_the_part_it_was_read_under(self) -> None:
+        # Arrange
+        readings = [against_cartridges.read(an_obc1_cartridge(), _an_identity())]
+
+        # Act
+        line = against_cartridges.report(readings)[0]
+
+        # Assert
+        self.assertIn("obc1 lorom", line)
 
 
 class CommandTest(unittest.TestCase):

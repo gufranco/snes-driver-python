@@ -34,6 +34,17 @@
       "sha256": "05197923d9b73b63845fc5c2d609e753ec634dc1e4b403ce7a57326e1259c3ed",
       "bytes": 29575127,
       "note": "File page 284 is printed page 3-1-4 and carries Figure 3-1-4, Mode 20/DSP Memory Map; file page 285 is printed page 3-1-5 and carries Figure 3-1-5, Mode 21/DSP Memory Map. Both were read off the page at 130 and again at 300 dots per inch, the page turned upright and the DSP AREA box cropped, and both readings agree."
+    },
+    "developmentManual": {
+      "publisher": "Nintendo",
+      "title": "Super Nintendo Entertainment System Development Manual, Book I",
+      "readOn": "2026-10-19",
+      "readVia": "archive.org/download/SNESDevManual/book1_djvu.txt",
+      "file": "book1_djvu.txt",
+      "sha256": "100beabe8e29d6e02b60b9a0f057a40063a4e33a83478f480ecc2e8696e77972",
+      "bytes": 298926,
+      "through": "snes-mapper-python",
+      "note": "The same archived text snes-mapper-python pins. Read here for the cartridge type table, 9. Cartridge Type (FFD6H), at page 1-2-18."
     }
   },
   "documentsNote": "Book II is declared because it prints the DSP's two windows, read off the scanned page since the text layer holds only the captions. Every other window below was read out of the driver routine in cartridges that carry it, which is the artifact rather than a document about it.",
@@ -172,5 +183,59 @@
     "Whether a window other than the DSP's extends past the addresses the drivers in the manifest reach. A driver shows where a part answers, never where it stops answering; Book II's figures give the DSP's whole span.",
     "Anything about timing. How long the console spends on one of these accesses belongs to snes-mapper-python, and how long the part then runs belongs to snes-dsp-python.",
     "Any part with no cartridge in the manifest. A window is only asserted where a driver was read."
-  ]
+  ],
+  "partFromHeader": {
+    "document": "developmentManual",
+    "section": "9. Cartridge Type (FFD6H), With Co-processor, page 1-2-18",
+    "rows": [
+      {
+        "upper": "0*H",
+        "coprocessor": "DSP",
+        "part": "dsp"
+      },
+      {
+        "upper": "1*H",
+        "coprocessor": "Super FX",
+        "part": null
+      },
+      {
+        "upper": "2*H",
+        "coprocessor": "OBC1",
+        "part": "obc1"
+      },
+      {
+        "upper": "3*H",
+        "coprocessor": "SA-1",
+        "part": null
+      },
+      {
+        "upper": "E*H",
+        "coprocessor": "Other",
+        "part": null
+      },
+      {
+        "upper": "F*H",
+        "coprocessor": "Custom Chip",
+        "part": "by sub-number"
+      }
+    ],
+    "lowerNibble": "*3H to *6H mark a co-processor; 00H, 01H and 02H mark none.",
+    "readFrom": "The text layer, which carries the table cell by cell, checked against the page image.",
+    "verified": true,
+    "heldBy": [
+      "conformance/against_cartridges.test.py::PartTest.test_the_upper_nibble_of_the_cartridge_type_names_the_coprocessor"
+    ]
+  },
+  "customChipBySubNumber": {
+    "values": {
+      "0x01": "st",
+      "0x02": "st018"
+    },
+    "verified": false,
+    "evidence": "Book I prints what the cartridge type sub-number at FFBFH is for, distinguishing games of one cartridge type, and no values. Read out of the four custom-chip cartridges in the manifest: the two ST010 cartridges and the ST011 cartridge carry F6H with sub-number 01H, and the ST018 cartridge carries F5H with 02H.",
+    "howToSettleIt": "A Nintendo or Seta list of the sub-numbers it assigned.",
+    "heldBy": [
+      "conformance/against_cartridges.test.py::PartTest.test_a_custom_chip_is_told_apart_by_its_sub_number"
+    ]
+  }
 }
