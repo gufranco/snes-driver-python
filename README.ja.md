@@ -8,7 +8,7 @@ SNESカートリッジがコプロセッサを駆動するために実行する6
 [![Release](https://img.shields.io/github/v/release/gufranco/snes-driver-python)](https://github.com/gufranco/snes-driver-python/releases)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-4つのダイジェストで特定されたカートリッジ**42**本、ヘッダーが示すパーツで読み取ったカートリッジ**42**本、自身のダイジェストとの不一致**0**件、パーツに何も送らなかったもの**0**本、アクセスの種類**3**種、テスト**693**件、ステートメントとブランチのカバレッジ**100%**、依存関係なし
+4つのダイジェストで特定されたカートリッジ**42**本、ヘッダーが示すパーツで読み取ったカートリッジ**42**本、自身のダイジェストとの不一致**0**件、パーツに何も送らなかったもの**0**本、アクセスの種類**3**種、テスト**694**件、ステートメントとブランチのカバレッジ**100%**、依存関係なし
 
 ```python
 from snesdriver import at, window_for
@@ -74,7 +74,7 @@ python3 snesdriver/doctor.py
 | `dsp`   | `hirom`        | `$00-$0F`, `$80-$8F` | `$6000` | `$7000`    | `$6FFF`      | `$7FFF`          |
 | `st`    | `lorom`        | `$60-$67`            | `$0000` | `$0001`    | `$0001`      | `$0001`          |
 | `st`    | `lorom-shared` | `$68-$6F`            | `$0000` | `$0020`    | `$0FFF`      | `$0021`          |
-| `obc1`  | `lorom`        | `$00-$3F`            | `$6000` | `$7FF0`    | `$7FFF`      | `$7FFF`          |
+| `obc1`  | `lorom`        | `$00-$3F`, `$80-$BF` | `$6000` | `$7FF0`    | `$7FFF`      | `$7FFF`          |
 | `st018` | `lorom`        | `$00-$3F`            | `$3800` | `$3804`    | `$3803`      | `$3804`          |
 
 ```python
@@ -98,7 +98,7 @@ except snesdriver.UnknownPart as error:
 ```
 dsp hirom <Window $00-$0f,$80-$8f:6000 data, 7000 status>
 dsp lorom <Window $30-$3f,$b0-$bf:8000 data, c000 status>
-obc1 lorom <Window $00-$3f:6000 data, 7ff0 status>
+obc1 lorom <Window $00-$3f,$80-$bf:6000 data, 7ff0 status>
 st lorom <Window $60-$67:0000 data, 0001 status>
 st lorom-shared <Window $68-$6f:0000 data, 0020 status>
 st018 lorom <Window $00-$3f:3800 data, 3804 status>
@@ -316,7 +316,7 @@ python3 -m conformance.against_cartridges
 | Super Mario Kart (USA)                | hirom      |    127 |             19 |
 | Pilotwings (USA)                      | lorom      |    212 |             22 |
 | Dungeon Master (USA)                  | lorom      |    192 |             15 |
-| Metal Combat - Falcon's Revenge (USA) | lorom      |    129 |             14 |
+| Metal Combat - Falcon's Revenge (USA) | lorom      |    313 |             20 |
 
 スイープはカートリッジタイプのバイトからパーツを決めます。その上位ニブルをコプロセッサに割り当てているのは、Book Iの1-2-18ページの表です。カスタムチップは`$FFBF`のサブナンバーで区別し、マニフェストにある4本のカスタムチップのカートリッジは、ST010とST011では1、ST018では2を設定しています。カートリッジがない場合、スイープは2で終了します。CIはプッシュのたびにこれを実行し、終了コード2をスキップとして扱い、注記を付けます。
 

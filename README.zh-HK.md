@@ -8,7 +8,7 @@
 [![Release](https://img.shields.io/github/v/release/gufranco/snes-driver-python)](https://github.com/gufranco/snes-driver-python/releases)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-**42** 個卡帶以四種摘要識別，**42** 個卡帶按各自標頭所指的部件讀取，與自身摘要不符者 **0** 個，未向部件發出任何存取者 **0** 個，**3** 種存取，**693** 項測試，**100%** 語句及分支覆蓋率，無依賴套件
+**42** 個卡帶以四種摘要識別，**42** 個卡帶按各自標頭所指的部件讀取，與自身摘要不符者 **0** 個，未向部件發出任何存取者 **0** 個，**3** 種存取，**694** 項測試，**100%** 語句及分支覆蓋率，無依賴套件
 
 ```python
 from snesdriver import at, window_for
@@ -74,7 +74,7 @@ python3 snesdriver/doctor.py
 | `dsp`   | `hirom`        | `$00-$0F`, `$80-$8F` | `$6000` | `$7000` | `$6FFF`  | `$7FFF`  |
 | `st`    | `lorom`        | `$60-$67`            | `$0000` | `$0001` | `$0001`  | `$0001`  |
 | `st`    | `lorom-shared` | `$68-$6F`            | `$0000` | `$0020` | `$0FFF`  | `$0021`  |
-| `obc1`  | `lorom`        | `$00-$3F`            | `$6000` | `$7FF0` | `$7FFF`  | `$7FFF`  |
+| `obc1`  | `lorom`        | `$00-$3F`, `$80-$BF` | `$6000` | `$7FF0` | `$7FFF`  | `$7FFF`  |
 | `st018` | `lorom`        | `$00-$3F`            | `$3800` | `$3804` | `$3803`  | `$3804`  |
 
 ```python
@@ -98,7 +98,7 @@ except snesdriver.UnknownPart as error:
 ```
 dsp hirom <Window $00-$0f,$80-$8f:6000 data, 7000 status>
 dsp lorom <Window $30-$3f,$b0-$bf:8000 data, c000 status>
-obc1 lorom <Window $00-$3f:6000 data, 7ff0 status>
+obc1 lorom <Window $00-$3f,$80-$bf:6000 data, 7ff0 status>
 st lorom <Window $60-$67:0000 data, 0001 status>
 st lorom-shared <Window $68-$6f:0000 data, 0020 status>
 st018 lorom <Window $00-$3f:3800 data, 3804 status>
@@ -316,7 +316,7 @@ python3 -m conformance.against_cartridges
 | Super Mario Kart (USA)                | hirom |  127 |       19 |
 | Pilotwings (USA)                      | lorom |  212 |       22 |
 | Dungeon Master (USA)                  | lorom |  192 |       15 |
-| Metal Combat - Falcon's Revenge (USA) | lorom |  129 |       14 |
+| Metal Combat - Falcon's Revenge (USA) | lorom |  313 |       20 |
 
 掃描從卡帶類型位元組決定部件：Book I 第 1-2-18 頁的表把它的高四位元分配給協處理器。定製晶片以 `$FFBF` 的子編號區分，清單中的四個定製晶片卡帶對 ST010 和 ST011 設為 1，對 ST018 設為 2。沒有任何卡帶時，掃描以 2 結束。CI 在每次推送時執行它，把結束代碼 2 視為略過並加上註記。
 

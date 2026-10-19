@@ -153,9 +153,10 @@
       "statusEnd": "0x7FFF",
       "selectBit": null,
       "verified": false,
-      "evidence": "Read out of the driver routine of the one cartridge that carries this part. Inside the eight kilobytes it answers in, that cartridge reaches exactly 0x7FF0 through 0x7FF3 and 0x7FF6, which is the register set the model of the part declares, and the American and European releases agree. This is the cartridge saying where the registers are rather than an emulator saying it.",
+      "evidence": "Read out of the driver routine of the one cartridge that carries this part. Inside the eight kilobytes it answers in, that cartridge reaches exactly 0x7FF0 through 0x7FF3 and 0x7FF6, which is the register set the model of the part declares, and the American and European releases agree. This is the cartridge saying where the registers are rather than an emulator saying it. Run rather than read, with conformance.executed for 2,000,000 instructions from reset, Metal Combat (USA) reaches the part from 147 absolute accesses in routines running in bank 0x80, at 0x80:6000 upward and at 0x80:7FF5 and 0x80:7FF7, and through banks 0x00 to 0x3F from one. The cartridge's own code therefore uses the part in banks 0x80 to 0xBF, and the window answers there.",
       "howToSettleIt": "A Nintendo application note naming the part, or a continuity reading across a real board.",
-      "selectedBy": "Not one line. The register file is the top sixteen bytes of an eight kilobyte window, so the decode is the top nine address lines being all ones rather than a single line going high the way it does on the other two parts."
+      "selectedBy": "Not one line. The register file is the top sixteen bytes of an eight kilobyte window, so the decode is the top nine address lines being all ones rather than a single line going high the way it does on the other two parts.",
+      "mirrorBanks": ["0x80", "0xBF"]
     },
     {
       "part": "st018",

@@ -190,10 +190,12 @@ relatives name a place to read the destination from rather than the destination,
 so the sweep stops there.
 
 **How much that costs, measured.** Metal Combat seeded from reset alone reaches
-1,675 instructions, and from all ten vectors 2,080. Neither run reaches the OBC1
-once, while a search of the same image for the bytes that spell a long access
-finds 129 sites. That cartridge dispatches its driver through something this
-cannot follow.
+1,675 instructions, and from all ten vectors 2,080. Through banks `$00` to `$3F`
+alone neither run reaches the OBC1 once; through the mirror banks `$80` to `$BF`
+the cartridge also uses, the walk from the vectors reaches it from 19
+instructions, while a search of the same image for the bytes that spell a long
+access finds 313 sites. That cartridge dispatches most of its driver through
+something this cannot follow.
 
 **Why it is not treated as a gap in the evidence.** What the sweep reports is
 still an instruction the console reaches. What it cannot do is prove the absence
@@ -202,11 +204,11 @@ uncontacted, and that difference is why this is written down.
 
 **What running the image shows.** `conformance.executed` follows every jump
 because it runs the code. Metal Combat (USA), run for 2,000,000 instructions from
-reset, reaches the OBC1's window and its mirror in banks `$80` to `$BF` from 147
-distinct instructions. None of them is among the 129 sites the byte search
-finds, and none is reached by the walk from the vectors: all are absolute
-accesses, made from routines running in bank `$80`. The run answers every
-register but the blanking bits with 0, so what it found is a floor.
+reset, reaches the OBC1 from 147 distinct instructions, every one an absolute
+access from a routine running in bank `$80`. The walk from the vectors finds 19
+of them and the byte search none, so 128 sit behind something the walk cannot
+follow. The run answers every register but the blanking bits with 0, so what it
+found is a floor.
 
 **What would settle or reopen it.** Shapes read out of a run, or a jump table
 whose bounds this could read.

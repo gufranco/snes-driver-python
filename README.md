@@ -8,7 +8,7 @@ English | [日本語](README.ja.md) | [简体中文](README.zh-Hans.md) | [繁�
 [![Release](https://img.shields.io/github/v/release/gufranco/snes-driver-python)](https://github.com/gufranco/snes-driver-python/releases)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-**42** cartridges named by four digests, **42** cartridges read under the part each header names, **0** disagreements with their own digests, **0** that said nothing to the part, **3** kinds of access, **693** tests, **100%** statement and branch coverage, no dependencies
+**42** cartridges named by four digests, **42** cartridges read under the part each header names, **0** disagreements with their own digests, **0** that said nothing to the part, **3** kinds of access, **694** tests, **100%** statement and branch coverage, no dependencies
 
 ```python
 from snesdriver import at, window_for
@@ -74,7 +74,7 @@ Every call takes the bytes of a cartridge image and returns what its code reache
 | `dsp`   | `hirom`        | `$00-$0F`, `$80-$8F` | `$6000` | `$7000` | `$6FFF`   | `$7FFF`     |
 | `st`    | `lorom`        | `$60-$67`            | `$0000` | `$0001` | `$0001`   | `$0001`     |
 | `st`    | `lorom-shared` | `$68-$6F`            | `$0000` | `$0020` | `$0FFF`   | `$0021`     |
-| `obc1`  | `lorom`        | `$00-$3F`            | `$6000` | `$7FF0` | `$7FFF`   | `$7FFF`     |
+| `obc1`  | `lorom`        | `$00-$3F`, `$80-$BF` | `$6000` | `$7FF0` | `$7FFF`   | `$7FFF`     |
 | `st018` | `lorom`        | `$00-$3F`            | `$3800` | `$3804` | `$3803`   | `$3804`     |
 
 ```python
@@ -98,7 +98,7 @@ except snesdriver.UnknownPart as error:
 ```
 dsp hirom <Window $00-$0f,$80-$8f:6000 data, 7000 status>
 dsp lorom <Window $30-$3f,$b0-$bf:8000 data, c000 status>
-obc1 lorom <Window $00-$3f:6000 data, 7ff0 status>
+obc1 lorom <Window $00-$3f,$80-$bf:6000 data, 7ff0 status>
 st lorom <Window $60-$67:0000 data, 0001 status>
 st lorom-shared <Window $68-$6f:0000 data, 0020 status>
 st018 lorom <Window $00-$3f:3800 data, 3804 status>
@@ -316,7 +316,7 @@ The sweep reads every cartridge it finds and prints each one's layout, its site 
 | Super Mario Kart (USA)                | hirom  |   127 |              19 |
 | Pilotwings (USA)                      | lorom  |   212 |              22 |
 | Dungeon Master (USA)                  | lorom  |   192 |              15 |
-| Metal Combat - Falcon's Revenge (USA) | lorom  |   129 |              14 |
+| Metal Combat - Falcon's Revenge (USA) | lorom  |   313 |              20 |
 
 The sweep takes the part from the cartridge type byte, whose upper nibble Book I's table at page 1-2-18 assigns to a coprocessor, and tells the custom chips apart by the sub-number at `$FFBF`, which the four custom-chip cartridges in the manifest set to 1 for the ST010 and ST011 and 2 for the ST018. With no cartridge present the sweep exits 2. CI runs it on every push, treats exit 2 as a skip and annotates it.
 

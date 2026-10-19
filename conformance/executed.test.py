@@ -177,7 +177,7 @@ class MainTest(unittest.TestCase):
             (
                 0,
                 [
-                    "  obc1 <Window $00-$3f:6000 data, 7ff0 status>",
+                    "  obc1 <Window $00-$3f,$80-$bf:6000 data, 7ff0 status>",
                     "  16 instructions run, 3 instructions reached the part",
                 ],
             ),

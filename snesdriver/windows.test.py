@@ -107,13 +107,23 @@ class CatalogueTest(unittest.TestCase):
 
     def test_a_window_that_does_not_mirror_prints_one_range(self) -> None:
         # Arrange
+        st018 = window("st018", "lorom")
+
+        # Act
+        printed = repr(st018)
+
+        # Assert
+        self.assertEqual(printed, "<Window $00-$3f:3800 data, 3804 status>")
+
+    def test_the_sprite_remapper_answers_in_the_upper_banks_its_cartridge_runs_in(self) -> None:
+        # Arrange
         obc1 = window("obc1", "lorom")
 
         # Act
-        printed = repr(obc1)
+        found = [obc1.reaches(bank, at) for bank in (0x80, 0xBF) for at in (0x6000, 0x7FF5)]
 
         # Assert
-        self.assertEqual(printed, "<Window $00-$3f:6000 data, 7ff0 status>")
+        self.assertEqual(found, [DATA, STATUS, DATA, STATUS])
 
     def test_a_window_built_by_hand_ends_its_status_range_where_its_data_ends(self) -> None:
         # Arrange
