@@ -40,7 +40,7 @@ jobs:
       - name: Install the release tooling
         run: pnpm install --frozen-lockfile
 
-      - name: Check that every JSON file is formatted
+      - name: Check that every file Prettier reads is formatted
         run: pnpm run format:check
 
       - name: Install ruff

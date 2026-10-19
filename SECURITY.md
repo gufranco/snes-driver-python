@@ -10,12 +10,12 @@ about what a malformed input can make the code do.
 
 ## What is in scope
 
-| Class | Example |
-|-------|---------|
-| Supply chain | A dependency, a submodule or a pinned action that has been compromised |
+| Class           | Example                                                                                                                            |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Supply chain    | A dependency, a submodule or a pinned action that has been compromised                                                             |
 | Malformed input | A crafted image that makes the walker allocate without bound, follow a branch without end, or read outside the window it was given |
-| Path handling | An input that causes a read outside the directory the caller named |
-| Disassembly | A byte sequence that drives the decoder past the end of what it was handed |
+| Path handling   | An input that causes a read outside the directory the caller named                                                                 |
+| Disassembly     | A byte sequence that drives the decoder past the end of what it was handed                                                         |
 
 ## What is not
 

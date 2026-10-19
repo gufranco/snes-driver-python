@@ -29,10 +29,10 @@ write1 poll2 read2
 
 ## 安裝
 
-| 要求 | 版本 |
-|:--|:--|
-| Python | 3.12 或更新 |
-| git | 任何版本，用於取得兩個子模組 |
+| 要求   | 版本                         |
+| :----- | :--------------------------- |
+| Python | 3.12 或更新                  |
+| git    | 任何版本，用於取得兩個子模組 |
 
 ```bash
 git clone --recurse-submodules https://github.com/gufranco/snes-driver-python.git
@@ -58,24 +58,24 @@ python3 snesdriver/doctor.py
 
 ### 部件在哪裏回應
 
-| 名稱 | 內容 |
-|:--|:--|
-| `window_for(part, layout)` | 該部件在該佈局下回應的 `Window`；若該部件在該佈局下沒有窗口，則為 `None`。若部件名稱不在 `WINDOWS` 中，則拋出 `UnknownPart` |
-| `WINDOWS` | 所有窗口，先以部件、再以佈局為鍵 |
-| `Window(first_bank, last_bank, data, status, end, status_end=None)` | 一個窗口。`status_end` 預設為 `end` |
-| `window.reaches(bank, address)` | 對單一位址返回 `DATA`、`STATUS` 或 `None`。先檢查狀態範圍 |
-| `busiest(layout, reaches)` | 在 `layout` 下，其窗口包含 `reaches` 中最多 `(bank, address)` 對的部件；若沒有窗口包含任何一對，則為 `None` |
-| `DATA`, `STATUS` | 字串 `"data"` 及 `"status"` |
-| `UnknownPart` | 由 `window_for` 拋出。訊息列出所有現有部件 |
+| 名稱                                                                | 內容                                                                                                                        |
+| :------------------------------------------------------------------ | :-------------------------------------------------------------------------------------------------------------------------- |
+| `window_for(part, layout)`                                          | 該部件在該佈局下回應的 `Window`；若該部件在該佈局下沒有窗口，則為 `None`。若部件名稱不在 `WINDOWS` 中，則拋出 `UnknownPart` |
+| `WINDOWS`                                                           | 所有窗口，先以部件、再以佈局為鍵                                                                                            |
+| `Window(first_bank, last_bank, data, status, end, status_end=None)` | 一個窗口。`status_end` 預設為 `end`                                                                                         |
+| `window.reaches(bank, address)`                                     | 對單一位址返回 `DATA`、`STATUS` 或 `None`。先檢查狀態範圍                                                                   |
+| `busiest(layout, reaches)`                                          | 在 `layout` 下，其窗口包含 `reaches` 中最多 `(bank, address)` 對的部件；若沒有窗口包含任何一對，則為 `None`                 |
+| `DATA`, `STATUS`                                                    | 字串 `"data"` 及 `"status"`                                                                                                 |
+| `UnknownPart`                                                       | 由 `window_for` 拋出。訊息列出所有現有部件                                                                                  |
 
-| 部件 | 佈局 | 記憶庫 | 數據 | 狀態 | 數據結束 | 狀態結束 |
-|:--|:--|:--|:--|:--|:--|:--|
-| `dsp` | `lorom` | `$30-$3F` | `$8000` | `$C000` | `$FFFF` | `$FFFF` |
-| `dsp` | `hirom` | `$00-$0F` | `$6000` | `$7000` | `$7FFF` | `$7FFF` |
-| `st` | `lorom` | `$60-$67` | `$0000` | `$0001` | `$0001` | `$0001` |
-| `st` | `lorom-shared` | `$68-$6F` | `$0000` | `$0020` | `$0FFF` | `$0021` |
-| `obc1` | `lorom` | `$00-$3F` | `$6000` | `$7FF0` | `$7FFF` | `$7FFF` |
-| `st018` | `lorom` | `$00-$3F` | `$3800` | `$3804` | `$3803` | `$3804` |
+| 部件    | 佈局           | 記憶庫    | 數據    | 狀態    | 數據結束 | 狀態結束 |
+| :------ | :------------- | :-------- | :------ | :------ | :------- | :------- |
+| `dsp`   | `lorom`        | `$30-$3F` | `$8000` | `$C000` | `$FFFF`  | `$FFFF`  |
+| `dsp`   | `hirom`        | `$00-$0F` | `$6000` | `$7000` | `$7FFF`  | `$7FFF`  |
+| `st`    | `lorom`        | `$60-$67` | `$0000` | `$0001` | `$0001`  | `$0001`  |
+| `st`    | `lorom-shared` | `$68-$6F` | `$0000` | `$0020` | `$0FFF`  | `$0021`  |
+| `obc1`  | `lorom`        | `$00-$3F` | `$6000` | `$7FF0` | `$7FFF`  | `$7FFF`  |
+| `st018` | `lorom`        | `$00-$3F` | `$3800` | `$3804` | `$3803`  | `$3804`  |
 
 ```python
 import snesdriver
@@ -114,31 +114,31 @@ sa1 is not a part with a known window; there are dsp, obc1, st, st018
 
 `through(rom, offset, narrow=True, limit=DEFAULT_LIMIT, address=None, bank=None, depth=8)` 從 `offset` 開始反組譯一個例程，每條指令產生一個 `Step`。
 
-| 參數 | 含義 |
-|:--|:--|
-| `rom` | 以位元組表示的映像檔 |
-| `offset` | 第一條指令的檔案偏移 |
-| `narrow` | 進入時的累加器寬度：`True` 為 8 位元，`False` 為 16 位元 |
-| `limit` | 在例程本身中最多走訪的指令數。`DEFAULT_LIMIT` 為 80。被呼叫者內部的指令不計算在內，整個走訪在 `limit` 的 16 倍處停止 |
-| `address` | `offset` 的處理器位址。預設為 `$8000` 加上 `offset` 除以 `$8000` 的餘數 |
-| `bank` | 例程所在的記憶庫。預設為 `offset` 除以 `$8000` |
-| `depth` | 走訪跟隨 `jsr` 及 `jsl` 的呼叫深度 |
+| 參數      | 含義                                                                                                                 |
+| :-------- | :------------------------------------------------------------------------------------------------------------------- |
+| `rom`     | 以位元組表示的映像檔                                                                                                 |
+| `offset`  | 第一條指令的檔案偏移                                                                                                 |
+| `narrow`  | 進入時的累加器寬度：`True` 為 8 位元，`False` 為 16 位元                                                             |
+| `limit`   | 在例程本身中最多走訪的指令數。`DEFAULT_LIMIT` 為 80。被呼叫者內部的指令不計算在內，整個走訪在 `limit` 的 16 倍處停止 |
+| `address` | `offset` 的處理器位址。預設為 `$8000` 加上 `offset` 除以 `$8000` 的餘數                                              |
+| `bank`    | 例程所在的記憶庫。預設為 `offset` 除以 `$8000`                                                                       |
+| `depth`   | 走訪跟隨 `jsr` 及 `jsl` 的呼叫深度                                                                                   |
 
 走訪在例程本身中遇到第一個 `rts`、`rtl`、`rti`、`jmp`、`jml`、`bra`、`brl` 或 `stp` 時結束。指明累加器位元的 `sep` 或 `rep` 會改變其後每次存取的寬度。只有當呼叫目標能在 200 條指令內走到 `rts` 或 `rtl` 時，才會跟隨該呼叫；其他呼叫則會跳過。
 
-| `Step` 屬性 | 含義 |
-|:--|:--|
-| `offset` | 指令的檔案偏移 |
-| `mnemonic` | 小寫，例如 `sta` |
-| `width` | 1 或 2，即一次累加器存取搬動的位元組數 |
-| `narrow` | `width` 為 1 時為 True |
-| `depth` | 在例程本身中為 0，在其呼叫內部為 1，如此類推 |
-| `bank` | 絕對或長存取所到達的記憶庫，否則為 `None` |
-| `address` | 絕對或長存取所到達的 16 位元位址，否則為 `None`。`pea` 及 `per` 不存取任何位址 |
-| `banked` | 長存取時為 True，其記憶庫寫在指令之中。絕對存取則使用例程本身的記憶庫 |
-| `reading` | 助記符以 `st` 開頭時為 False，否則為 True |
-| `immediate` | 立即數指令的運算元，否則為 `None` |
-| `waiting` | 向後分支時為 True，例程正是以此等待暫存器 |
+| `Step` 屬性 | 含義                                                                           |
+| :---------- | :----------------------------------------------------------------------------- |
+| `offset`    | 指令的檔案偏移                                                                 |
+| `mnemonic`  | 小寫，例如 `sta`                                                               |
+| `width`     | 1 或 2，即一次累加器存取搬動的位元組數                                         |
+| `narrow`    | `width` 為 1 時為 True                                                         |
+| `depth`     | 在例程本身中為 0，在其呼叫內部為 1，如此類推                                   |
+| `bank`      | 絕對或長存取所到達的記憶庫，否則為 `None`                                      |
+| `address`   | 絕對或長存取所到達的 16 位元位址，否則為 `None`。`pea` 及 `per` 不存取任何位址 |
+| `banked`    | 長存取時為 True，其記憶庫寫在指令之中。絕對存取則使用例程本身的記憶庫          |
+| `reading`   | 助記符以 `st` 開頭時為 False，否則為 True                                      |
+| `immediate` | 立即數指令的運算元，否則為 `None`                                              |
+| `waiting`   | 向後分支時為 True，例程正是以此等待暫存器                                      |
 
 ```python
 from snesdriver import through
@@ -167,21 +167,21 @@ for step in through(routine + bytes(2048), 0):
 
 `at(rom, offset, window, narrow=True, limit=DEFAULT_LIMIT)` 用 `through` 走訪一個例程，並返回一個 `Conversation`，其中包含每一次到達 `window` 的存取。
 
-| 種類 | 常數 | 存取屬於此種類的條件 |
-|:--|:--|:--|
+| 種類    | 常數    | 存取屬於此種類的條件       |
+| :------ | :------ | :------------------------- |
 | `write` | `WRITE` | 存入數據暫存器或狀態暫存器 |
-| `read` | `READ` | 從數據暫存器載入 |
-| `poll` | `POLL` | 從狀態暫存器載入 |
+| `read`  | `READ`  | 從數據暫存器載入           |
+| `poll`  | `POLL`  | 從狀態暫存器載入           |
 
-| `Conversation` 屬性 | 含義 |
-|:--|:--|
-| `shape` | 每次存取以其種類加寬度表示，以空格連接 |
-| `steps` | 每次存取一條記錄，包含 `what`、`width`、`bank`、`address`、`banked` 及 `whole`，即 24 位元位址 |
-| `covered` | 例程本身中所有已走訪指令的檔案偏移 |
-| `written` | 寫入的位元組數 |
-| `read` | 從數據暫存器讀取的位元組數 |
-| `polls` | 例程至少輪詢一次時為 True |
-| `banked` | 每次存取都寫明自身記憶庫時為 True |
+| `Conversation` 屬性 | 含義                                                                                           |
+| :------------------ | :--------------------------------------------------------------------------------------------- |
+| `shape`             | 每次存取以其種類加寬度表示，以空格連接                                                         |
+| `steps`             | 每次存取一條記錄，包含 `what`、`width`、`bank`、`address`、`banked` 及 `whole`，即 24 位元位址 |
+| `covered`           | 例程本身中所有已走訪指令的檔案偏移                                                             |
+| `written`           | 寫入的位元組數                                                                                 |
+| `read`              | 從數據暫存器讀取的位元組數                                                                     |
+| `polls`             | 例程至少輪詢一次時為 True                                                                      |
+| `banked`            | 每次存取都寫明自身記憶庫時為 True                                                              |
 
 當沒有任何存取到達窗口時，`Conversation` 為假。
 
@@ -215,11 +215,11 @@ print(shapes(image, window))
 
 ### 找出所有例程
 
-| 呼叫 | 返回 |
-|:--|:--|
-| `sites(rom, window)` | 每個位址到達 `window` 的長載入（操作碼 `$AF`）及長存入（操作碼 `$8F`）的檔案偏移。這是位元組搜尋：它也會在數據中找到這四個位元組 |
-| `reached(rom, window, entry=None, kind="lorom")` | 從十個原生及模擬模式向量或從 `entry` 開始走訪時，每條到達 `window` 的指令的檔案偏移；走訪會跟隨每個目標寫在指令中的呼叫、跳轉及分支。`kind` 是把位址對應到檔案偏移的佈局。走訪在 400,000 條指令後停止 |
-| `shapes(rom, window, narrow=True, limit=DEFAULT_LIMIT, find=sites)` | 每種不同的形態及產生它的例程數目。`find` 返回的每個偏移都會以 `at` 開始一次走訪，除非先前的走訪已覆蓋它 |
+| 呼叫                                                                | 返回                                                                                                                                                                                                  |
+| :------------------------------------------------------------------ | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sites(rom, window)`                                                | 每個位址到達 `window` 的長載入（操作碼 `$AF`）及長存入（操作碼 `$8F`）的檔案偏移。這是位元組搜尋：它也會在數據中找到這四個位元組                                                                      |
+| `reached(rom, window, entry=None, kind="lorom")`                    | 從十個原生及模擬模式向量或從 `entry` 開始走訪時，每條到達 `window` 的指令的檔案偏移；走訪會跟隨每個目標寫在指令中的呼叫、跳轉及分支。`kind` 是把位址對應到檔案偏移的佈局。走訪在 400,000 條指令後停止 |
+| `shapes(rom, window, narrow=True, limit=DEFAULT_LIMIT, find=sites)` | 每種不同的形態及產生它的例程數目。`find` 返回的每個偏移都會以 `at` 開始一次走訪，除非先前的走訪已覆蓋它                                                                                               |
 
 ```python
 from snesdriver import reached, shapes, sites, window_for
@@ -249,21 +249,21 @@ print(shapes(image, window, find=reached))
 
 ### 模組內容
 
-| 名稱 | 內容 |
-|:--|:--|
-| `snesdriver.DEFAULT_LIMIT` | 80，即 `through`、`at` 及 `shapes` 的預設 `limit` |
-| `snesdriver.VERSION`, `snesdriver.__version__` | 已安裝的版本 |
-| `snesdriver.walk.Step` | `through` 產生的類別 |
-| `snesdriver.conversation.Step` | `Conversation.steps` 中每個項目的類別 |
+| 名稱                                           | 內容                                              |
+| :--------------------------------------------- | :------------------------------------------------ |
+| `snesdriver.DEFAULT_LIMIT`                     | 80，即 `through`、`at` 及 `shapes` 的預設 `limit` |
+| `snesdriver.VERSION`, `snesdriver.__version__` | 已安裝的版本                                      |
+| `snesdriver.walk.Step`                         | `through` 產生的類別                              |
+| `snesdriver.conversation.Step`                 | `Conversation.steps` 中每個項目的類別             |
 
 ### 命令
 
-| 命令 | 參數 | 結束代碼 |
-|:--|:--|:--|
-| `python3 snesdriver/doctor.py` | 無 | 0 所有檢查通過，1 有一項未通過 |
+| 命令                                        | 參數                             | 結束代碼                                                            |
+| :------------------------------------------ | :------------------------------- | :------------------------------------------------------------------ |
+| `python3 snesdriver/doctor.py`              | 無                               | 0 所有檢查通過，1 有一項未通過                                      |
 | `python3 -m conformance.against_cartridges` | 可選的目錄，用以代替預設目錄讀取 | 0 所有卡帶都與 DSP 通訊，1 有一個卡帶沒有任何存取，2 找不到任何卡帶 |
-| `python3 -m conformance.speed` | 無 | 0 走訪速度超過每秒 20,000 個例程的下限，1 未超過 |
-| `python3 -m conformance.links` | 無 | 本檔案中有位址回應 HTTP 404 或 410 時為 1，否則為 0 |
+| `python3 -m conformance.speed`              | 無                               | 0 走訪速度超過每秒 20,000 個例程的下限，1 未超過                    |
+| `python3 -m conformance.links`              | 無                               | 本檔案中有位址回應 HTTP 404 或 410 時為 1，否則為 0                 |
 
 ## 為何無法靠猜測得知
 
@@ -291,12 +291,12 @@ Dungeon Master     write1 write1 write1 write1 write1 read1 read1 read1 read1
 
 ## 各項證據的價值
 
-| 證據 | 能確定的 | 不能確定的 |
-|:--|:--|:--|
-| 卡帶本身的程式碼，逐條指令走訪 | 已發行遊戲向部件發送甚麼 | 沒有遊戲發送的任何東西 |
-| 65816 指令集，經由反組譯器 | 每條指令是甚麼，以及其存取有多寬 | 另一端部件的任何事情 |
-| 標頭聲明的佈局，經由映射器 | 哪些位址到達部件 | 到達時會發生甚麼 |
-| 每個讀取的卡帶的四種摘要 | 讀取的檔案就是所指名的檔案 | 該版本是否就是你想要的版本 |
+| 證據                           | 能確定的                         | 不能確定的                 |
+| :----------------------------- | :------------------------------- | :------------------------- |
+| 卡帶本身的程式碼，逐條指令走訪 | 已發行遊戲向部件發送甚麼         | 沒有遊戲發送的任何東西     |
+| 65816 指令集，經由反組譯器     | 每條指令是甚麼，以及其存取有多寬 | 另一端部件的任何事情       |
+| 標頭聲明的佈局，經由映射器     | 哪些位址到達部件                 | 到達時會發生甚麼           |
+| 每個讀取的卡帶的四種摘要       | 讀取的檔案就是所指名的檔案       | 該版本是否就是你想要的版本 |
 
 形態並不說明部件會回應甚麼。那屬於模擬各部件的家族成員，例如 [`snes-dsp-python`](https://github.com/gufranco/snes-dsp-python)。
 
@@ -308,11 +308,11 @@ python3 -m conformance.against_cartridges
 
 掃描會讀取找到的每個卡帶，並列出每個卡帶的佈局、位置數目、形態數目及最常見的四種形態。在作者的卡帶庫上，它讀取了 36 個 DSP 卡帶，其中 0 個沒有存取。其中三個：
 
-| 卡帶 | 佈局 | 位置 | 不同形態 |
-|:--|:--|--:|--:|
-| Super Mario Kart (USA) | hirom | 122 | 18 |
-| Pilotwings (USA) | lorom | 122 | 17 |
-| Dungeon Master (USA) | lorom | 130 | 13 |
+| 卡帶                   | 佈局  | 位置 | 不同形態 |
+| :--------------------- | :---- | ---: | -------: |
+| Super Mario Kart (USA) | hirom |  122 |       18 |
+| Pilotwings (USA)       | lorom |  122 |       17 |
+| Dungeon Master (USA)   | lorom |  130 |       13 |
 
 清單中其餘 6 個卡帶搭載 `st`、`st018` 及 `obc1` 部件。掃描只讀取 DSP，而這 6 個卡帶都不在它所讀取的卡帶庫中。沒有任何卡帶時，掃描以 2 結束。CI 在每次推送時執行它，把結束代碼 2 視為略過並加上註記。
 
@@ -320,12 +320,12 @@ python3 -m conformance.against_cartridges
 
 ## 參與開發
 
-| 需要 | 位置 |
-|:--|:--|
-| 給程式編寫代理的所有關卡檢查及其執行順序 | [AGENTS.md](AGENTS.md) |
-| 本儲存庫與家族其他成員共用的標準 | [FAMILY.md](FAMILY.md) |
-| 錯誤報告 | [GitHub Issues](https://github.com/gufranco/snes-driver-python/issues) |
-| 安全報告 | [SECURITY.md](SECURITY.md) |
+| 需要                                     | 位置                                                                   |
+| :--------------------------------------- | :--------------------------------------------------------------------- |
+| 給程式編寫代理的所有關卡檢查及其執行順序 | [AGENTS.md](AGENTS.md)                                                 |
+| 本儲存庫與家族其他成員共用的標準         | [FAMILY.md](FAMILY.md)                                                 |
+| 錯誤報告                                 | [GitHub Issues](https://github.com/gufranco/snes-driver-python/issues) |
+| 安全報告                                 | [SECURITY.md](SECURITY.md)                                             |
 
 ```bash
 uvx ruff@0.16.3 format --check .
