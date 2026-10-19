@@ -125,6 +125,28 @@ the weaker claim is labelled rather than hidden.
 walk, which needs an entry state that a walk starting at one routine does not
 have.; A part whose driver sets the register somewhere this package can see.
 
+### The accumulator's width at a routine's entry is assumed rather than read.
+
+**The document says.** Nothing. The width is whatever the caller left.
+
+**What this project follows.** Neither. `shapes` walks every routine with an
+8-bit accumulator at entry, and the walk carries the width through every `sep`
+and `rep` after that.
+
+**What that costs, measured.** F1-ROC II's ST010 start routine is entered 16
+bits wide. Read 8 bits wide, the bytes at file offset `0x0D66`, `A9 06 80`,
+decode as `lda #$06` and a branch, and the walk leaves with `write1 write1`.
+Read 16 bits wide from the same entry, `at` reports
+`write2 write2 write2 poll2 read2 read2`, and the third store is one word of
+`$8006` to `$68:0020`. snes-st-python at commit `50c8414` recorded exactly that
+store with a headless MAME write tap: the command byte and the start bit in one
+16-bit write. Its `st010shapes.json` was read 8 bits wide and records the start
+as a one-byte write.
+
+**What would settle or reopen it.** Running the image rather than reading it, so
+each routine is entered with the width its caller left, or tracking the width
+from the vectors through every call.
+
 ### A call this cannot prove returns is stepped over rather than followed.
 
 **The document says.** Nothing.

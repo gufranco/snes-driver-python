@@ -96,6 +96,20 @@
         "running the image rather than reading it, which belongs to another member",
         "a jump table whose bounds this could read"
       ]
+    },
+    {
+      "id": "an-entry-width-is-assumed-not-read",
+      "parts": ["st010"],
+      "severity": "high",
+      "status": "open",
+      "documentSays": "Nothing. The accumulator's width at a routine's entry is set by whoever called it, and nothing in the routine says what it was.",
+      "referenceDoes": "snes-st-python at commit 50c8414 records a headless MAME write tap on the ST010 cartridge: the command start is one 16-bit store of 80nnH to 680020H, the command byte and the start bit in one word write, made by the cartridge's own bytes at file offset 0x0D66.",
+      "packageFollows": "neither",
+      "reasoning": "shapes walks every routine with an 8-bit accumulator at entry. F1-ROC II's start routine is entered 16-bit: read 8-bit, the bytes at 0x0D66, A9 06 80, decode as lda #$06 followed by a branch, the walk leaves the routine there and reports write1 write1; read 16-bit from the same entry, at reports write2 write2 write2 poll2 read2 read2, whose third store is the start word the tap recorded. The walk carries a width through sep and rep but cannot know the one it starts with, so every shape recorded from a routine entered wide is wrong in its widths and may be cut short. snes-st-python's st010shapes.json was taken that way.",
+      "wouldSettleIt": [
+        "running the image rather than reading it, so a routine is entered with the width its caller left",
+        "tracking the width from the vectors through every call, which a walk starting at one routine cannot do"
+      ]
     }
   ]
 }

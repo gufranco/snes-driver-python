@@ -64,7 +64,7 @@ and the part a naive reader gets wrong on every store.
 **Settled: that a routine is counted once.** A site an earlier walk already
 stepped over does not start a conversation of its own.
 
-**Not settled: 7 things**, each in [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md) with
+**Not settled: 8 things**, each in [OPEN-QUESTIONS.md](OPEN-QUESTIONS.md) with
 what would close it. Three of them are the same shape: no manufacturer document
 gives any window but the DSP's, so everything about where the other parts answer
 rests on what shipped drivers do. Do not close one by argument, and do not close one with
