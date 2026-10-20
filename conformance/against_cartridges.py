@@ -18,7 +18,7 @@ sys.path.append(str(ROOT / "snes-mapper-python"))
 from mapper import header
 
 from conformance import cartridges, corpus
-from snesdriver import conversation, windows
+from snesdriver import conversation, walk, windows
 
 SHOWN = 4
 
@@ -41,12 +41,14 @@ class Reading:
         sites: Sequence[int],
         shapes: Mapping[str, int],
         part: str | None = None,
+        overflow: int = 0,
     ) -> None:
         self.identity = identity
         self.layout = layout
         self.sites = sites
         self.shapes = shapes
         self.part = part
+        self.overflow = overflow
 
     @property
     def speaks(self) -> bool:
@@ -90,10 +92,13 @@ def read(
     seen = traced if traced is not None else corpus.widths(identity.sha256)
     tally: collections.Counter[str] = collections.Counter()
     reached: list[int] = []
+    spilled = 0
     for window in windows_under(named, found.layout):
         reached.extend(find(image, window))
-        tally.update(conversation.shapes(image, window, find=find, kind=found.layout, traced=seen))
-    return Reading(identity, found.layout, tuple(sorted(set(reached))), dict(tally), named)
+        told = conversation.heard(image, window, find=find, kind=found.layout, traced=seen)
+        tally.update(told.shapes)
+        spilled += told.overflow
+    return Reading(identity, found.layout, tuple(sorted(set(reached))), dict(tally), named, spilled)
 
 
 def sweep(
@@ -156,6 +161,10 @@ def main(argv: Sequence[str], catalogue: Mapping[str, Any] | None = None) -> int
     print(
         f"  {len(readings)} cartridges read,"
         f" {len(quiet)} said nothing to the part their header names"
+    )
+    print(
+        f"  {sum(reading.overflow for reading in readings)} branches left unfollowed"
+        f" past the cap of {walk.DEFAULT_FORKS:,} forks a walk"
     )
     for reading in quiet:
         print(f"    silent: {reading.identity.name} ({reading.layout})")

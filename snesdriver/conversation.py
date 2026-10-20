@@ -104,22 +104,11 @@ def seen_by_trace(step: walk.Step, traced: Mapping[int, int] | None) -> int | No
     return traced.get(step.offset)
 
 
-def at(
-    rom: bytes,
-    offset: int,
-    window: Reaching,
-    narrow: bool | None = None,
-    limit: int = walk.DEFAULT_LIMIT,
-    index: bool | None = None,
-    known: Mapping[int, frozenset[Flags]] | None = None,
-    ran: bool = False,
-    traced: Mapping[int, int] | None = None,
+def heard_in(
+    walked: Iterable[walk.Step], window: Reaching, traced: Mapping[int, int] | None
 ) -> Conversation:
     steps = []
     covered = []
-    walked = walk.through(
-        rom, offset, narrow=narrow, limit=limit, index=index, known=known, ran=ran
-    )
     for step in walked:
         if step.depth == 0:
             covered.append(step.offset)
@@ -135,6 +124,71 @@ def at(
         width = step.width if seen is None else seen
         steps.append(Step(what, width, address, bank, step.banked, step.ran, seen is not None))
     return Conversation(steps, covered)
+
+
+def at(
+    rom: bytes,
+    offset: int,
+    window: Reaching,
+    narrow: bool | None = None,
+    limit: int = walk.DEFAULT_LIMIT,
+    index: bool | None = None,
+    known: Mapping[int, frozenset[Flags]] | None = None,
+    ran: bool = False,
+    traced: Mapping[int, int] | None = None,
+) -> Conversation:
+    walked = walk.through(
+        rom, offset, narrow=narrow, limit=limit, index=index, known=known, ran=ran
+    )
+    return heard_in(walked, window, traced)
+
+
+class Arms:
+    __slots__ = ("conversations", "forks", "overflow")
+
+    def __init__(
+        self, conversations: Iterable[Conversation], overflow: int, forks: int = 0
+    ) -> None:
+        self.conversations = tuple(conversations)
+        self.overflow = overflow
+        self.forks = forks
+
+    @property
+    def covered(self) -> frozenset[int]:
+        return frozenset().union(*(one.covered for one in self.conversations))
+
+
+def every(
+    rom: bytes,
+    offset: int,
+    window: Reaching,
+    narrow: bool | None = None,
+    limit: int = walk.DEFAULT_LIMIT,
+    index: bool | None = None,
+    known: Mapping[int, frozenset[Flags]] | None = None,
+    ran: bool = False,
+    traced: Mapping[int, int] | None = None,
+    forks: int = walk.DEFAULT_FORKS,
+) -> Arms:
+    forked = walk.arms(
+        rom,
+        offset,
+        narrow=narrow,
+        limit=limit,
+        index=index,
+        known=known,
+        ran=ran,
+        forks=forks,
+        relevant=lambda step: reaching(step, window),
+    )
+    return Arms(
+        (heard_in(path, window, traced) for path in forked.paths), forked.overflow, forked.forks
+    )
+
+
+def reaching(step: walk.Step, window: Reaching) -> bool:
+    bank, address = step.bank, step.address
+    return bank is not None and address is not None and window.reaches(bank, address) is not None
 
 
 class Finding(Protocol):
@@ -193,6 +247,45 @@ def starts(
     return [*found, *(((narrow, state[1]), False) for state in open_ones)]
 
 
+class Heard:
+    __slots__ = ("overflow", "shapes", "walks")
+
+    def __init__(self, shapes: dict[str, int], overflow: int, walks: int) -> None:
+        self.shapes = shapes
+        self.overflow = overflow
+        self.walks = walks
+
+
+def heard(
+    rom: bytes,
+    window: Reaching,
+    narrow: bool | None = None,
+    limit: int = walk.DEFAULT_LIMIT,
+    find: Finding = sites,
+    kind: str | None = None,
+    ran: Mapping[int, frozenset[Flags]] | None = None,
+    traced: Mapping[int, int] | None = None,
+    forks: int = walk.DEFAULT_FORKS,
+) -> Heard:
+    known = sweep.contexts(rom, kind) if kind is not None else {}
+    counted: collections.Counter[str] = collections.Counter()
+    seen: set[int] = set()
+    spilled = 0
+    walks = 0
+    for offset in find(rom, window):
+        if offset in seen:
+            continue
+        told_here: set[str] = set()
+        for (wide, index), told in starts(offset, narrow, known, ran or {}):
+            found = every(rom, offset, window, wide, limit, index, known, told, traced, forks)
+            seen |= found.covered
+            spilled += found.overflow
+            walks += 1
+            told_here |= {one.shape for one in found.conversations if one}
+        counted.update(told_here)
+    return Heard(dict(counted), spilled, walks)
+
+
 def shapes(
     rom: bytes,
     window: Reaching,
@@ -202,17 +295,6 @@ def shapes(
     kind: str | None = None,
     ran: Mapping[int, frozenset[Flags]] | None = None,
     traced: Mapping[int, int] | None = None,
+    forks: int = walk.DEFAULT_FORKS,
 ) -> dict[str, int]:
-    known = sweep.contexts(rom, kind) if kind is not None else {}
-    counted: collections.Counter[str] = collections.Counter()
-    seen: set[int] = set()
-    for offset in find(rom, window):
-        if offset in seen:
-            continue
-        heard: set[str] = set()
-        for (wide, index), told in starts(offset, narrow, known, ran or {}):
-            found = at(rom, offset, window, wide, limit, index, known, told, traced)
-            seen |= found.covered
-            heard |= {found.shape} if found else set()
-        counted.update(heard)
-    return dict(counted)
+    return heard(rom, window, narrow, limit, find, kind, ran, traced, forks).shapes

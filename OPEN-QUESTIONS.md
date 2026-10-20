@@ -200,6 +200,19 @@ of 9. The trace agrees with both earlier taps: F1-ROC II's store at `0x0D69` and
 Metal Combat's stores at `0x10135` and `0x10143` each moved two bytes on every
 execution recorded.
 
+**Measured again on 2026-10-20, with both arms of every branch walked.** Until
+then a walk took only the arm a forward conditional branch falls through to.
+Hayazashi Nidan Morita Shougi 2 shows what that cost: its receive routine at
+`$E87E` opens with `JSR $E892` and `BCC $E886`, and the instruction it falls
+through to is `RTS` at `$E885`, so no walk that sends ever reached the read of
+`$3800` at `$E88D`, and the caller at `$F030` sends `$F1` and reaches its own
+receive at `$F03D` only on the taken arm of `BCC $F03D`. Walking both arms, the same 42 cartridges give
+6,769 exchanges rather than 5,160, and 42,034 accesses rather than 7,853, most of
+them the ST018's 1,546 exchanges in place of 9: 1,060 of its 1,543 distinct
+shapes write `$3802` and later read `$3800`. With the trace, 4,939 exchanges still hold a
+`?` and 6,743 accesses, against 5,172 and 7,149 without it. By part: DSP 4,251
+of 4,444, ST010 and ST011 97 of 166, OBC1 591 of 613, ST018 0 of 1,546.
+
 **What is left.** Most driver routines are entered through something the sweep
 cannot follow, and a run reaches only the routines its frames and its input
 drive. Six DSP cartridges, Hanguk Pro Yagu, Lock On, Super 3D Baseball, both
@@ -292,6 +305,17 @@ So the boundary is visible rather than implied:
   sweep from the vectors carries it through every call, and where neither shows
   it the access says `?` rather than guess. A walk that guessed would report an
   exchange the console never had.
+- **Which arm of a branch the console takes.** The walk follows both arms of
+  every forward conditional branch and reports each as a shape, because which
+  one runs can depend on what the part answered. A branch backwards is a loop and
+  is walked once. Two arms that reach the same instruction with the same widths,
+  the same calls pending and the same accesses behind them are walked once. A
+  walk forks at most 32,768 times, `walk.DEFAULT_FORKS`, and a branch past that
+  is counted and printed rather than followed. Measured on 2026-10-20 over 5,093
+  walks across the 42 cartridges: 4,119 forked never, 5,061 at most ten times,
+  the busiest DSP walk, in Battle Racers, 109 times, and one ST018 walk in
+  Hayazashi Nidan Morita Shougi 2 18,691 times. The cap sits above that maximum
+  with room to spare, and no branch was left unfollowed.
 - **That a routine is counted once.** A routine that writes and then reads is one
   exchange rather than two, so a site an earlier walk already stepped over does
   not start a conversation of its own.
@@ -308,7 +332,8 @@ Absent rather than unknown, and absent on purpose:
   back belongs to the members that model those parts, and mixing the two would
   make each harder to test.
 - **Anything executed.** Nothing here runs a program. A routine is walked from its
-  first instruction to the first one that leaves.
+  first instruction to the first one that leaves, along both arms of every
+  forward conditional branch.
 - **Any cartridge content.** [`cartridges/README.md`](cartridges/README.md)
   carries filenames and digests. No part of any cartridge is reconstructible from
   anything here.

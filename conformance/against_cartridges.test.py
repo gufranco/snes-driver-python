@@ -1,3 +1,5 @@
+import contextlib
+import io
 import sys
 import tempfile
 import unittest
@@ -301,6 +303,31 @@ class MainTest(unittest.TestCase):
         catalogue = self._supply()
 
         self.assertEqual(against_cartridges.main([str(self.where)], catalogue), 0)
+
+    def test_a_run_says_how_many_branches_it_left_unfollowed(self) -> None:
+        # Arrange
+        catalogue = self._supply()
+        printed = io.StringIO()
+
+        # Act
+        with contextlib.redirect_stdout(printed):
+            against_cartridges.main([str(self.where)], catalogue)
+
+        # Assert
+        self.assertIn(
+            "  0 branches left unfollowed past the cap of 32,768 forks a walk\n",
+            printed.getvalue(),
+        )
+
+    def test_a_reading_keeps_the_branches_its_walks_left_unfollowed(self) -> None:
+        # Arrange
+        image = a_cartridge()
+
+        # Act
+        found = against_cartridges.read(image, _an_identity())
+
+        # Assert
+        self.assertEqual(found.overflow, 0)
 
     def test_and_a_run_over_a_silent_one_reports_failure(self) -> None:
         catalogue = self._supply(drives=False)

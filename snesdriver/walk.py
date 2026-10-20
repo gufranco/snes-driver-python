@@ -3,9 +3,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, override
 
 if TYPE_CHECKING:  # pragma: no cover
-    from collections.abc import Iterator, Mapping
+    from collections.abc import Iterable, Iterator, Mapping, Sequence
 
 import sys
+from collections.abc import Callable
 from pathlib import Path
 
 sys.path.append(str(Path(__file__).resolve().parent.parent / "mos65xx-python"))
@@ -56,6 +57,8 @@ Width = bool | None
 Flags = tuple[Width, Width]
 
 Saved = tuple[Flags, ...]
+
+Walked = tuple["Step", ...]
 
 UNKNOWN: Flags = (None, None)
 
@@ -237,6 +240,12 @@ class Walker:
         self.stack: list[Frame] = []
         self.saved: Saved = ()
 
+    def copy(self) -> Walker:
+        twin = Walker(self.rom, self.offset, self.at, self.in_bank, self.state, self.known)
+        twin.stack = list(self.stack)
+        twin.saved = self.saved
+        return twin
+
     def descend(self, one: Any, depth: int) -> bool:
         if one.mnemonic not in CALLS:
             return False
@@ -269,6 +278,88 @@ class Walker:
         return False
 
 
+CONDITIONAL = frozenset({"bcc", "bcs", "beq", "bmi", "bne", "bpl", "bvc", "bvs"})
+
+DEFAULT_FORKS = 32_768
+
+
+def forks_at(one: Any) -> bool:
+    return one.mnemonic in CONDITIONAL and not one.operand & BACKWARDS[RELATIVE]
+
+
+class Arm:
+    __slots__ = ("prefix", "ran", "spent", "total", "walker")
+
+    def __init__(
+        self, walker: Walker, ran: bool, spent: int = 0, total: int = 0, prefix: Walked = ()
+    ) -> None:
+        self.walker = walker
+        self.ran = ran
+        self.spent = spent
+        self.total = total
+        self.prefix = prefix
+
+    def branch(self, one: Any) -> Arm | None:
+        if not forks_at(one):
+            return None
+        target = target_of(one, self.walker.in_bank)
+        assert target is not None
+        landing = offset_of(*target, self.walker.banks)
+        if landing is None:
+            return None
+        twin = self.walker.copy()
+        twin.offset, twin.in_bank, twin.at = landing, *target
+        return Arm(twin, self.ran, self.spent, self.total)
+
+
+class Forked:
+    __slots__ = ("forks", "merged", "overflow", "paths")
+
+    def __init__(
+        self, paths: Iterable[Walked], overflow: int, forks: int = 0, merged: int = 0
+    ) -> None:
+        self.paths = tuple(paths)
+        self.overflow = overflow
+        self.forks = forks
+        self.merged = merged
+
+
+def _start(
+    rom: bytes,
+    offset: int,
+    flags_at: Flags,
+    address: int | None,
+    bank: int | None,
+    known: Mapping[int, frozenset[Flags]] | None,
+) -> Walker:
+    at = address if address is not None else BANK + offset % BANK
+    in_bank = bank if bank is not None else offset // BANK
+    return Walker(rom, offset, at, in_bank, flags_at, known)
+
+
+def _advance(arm: Arm, limit: int, depth: int) -> Iterator[tuple[Step, Arm | None]]:
+    walker = arm.walker
+    while arm.spent < limit and arm.total < limit * DESCENT_ROOM:
+        arm.total += 1
+        one = decoded(walker.rom, walker.offset, walker.at, walker.state)
+        if one is None:
+            return
+        arm.spent += 1 if not walker.stack else 0
+        step = Step(one, walker.state[0], walker.in_bank, len(walker.stack), arm.ran)
+        if unplaceable(one, walker.state):
+            yield step, None
+            return
+        arm.ran = arm.ran and not sets_width(one)
+        walker.state, walker.saved = flags(one, walker.state, walker.saved)
+        if walker.descend(one, depth):
+            yield step, None
+            continue
+        arm.ran = arm.ran and one.mnemonic not in CALLS
+        yield step, arm.branch(one)
+        if walker.leave(one):
+            return
+
+
 def through(
     rom: bytes,
     offset: int,
@@ -281,27 +372,73 @@ def through(
     known: Mapping[int, frozenset[Flags]] | None = None,
     ran: bool = False,
 ) -> Iterator[Step]:
-    at = address if address is not None else BANK + offset % BANK
-    in_bank = bank if bank is not None else offset // BANK
-    walker = Walker(rom, offset, at, in_bank, (narrow, index), known)
-    spent = 0
-    total = 0
-    while spent < limit and total < limit * DESCENT_ROOM:
-        total += 1
-        one = decoded(rom, walker.offset, walker.at, walker.state)
-        if one is None:
+    arm = Arm(_start(rom, offset, (narrow, index), address, bank, known), ran)
+    for step, _taken in _advance(arm, limit, depth):
+        yield step
+
+
+def addressed(step: Step) -> bool:
+    return step.bank is not None and step.address is not None
+
+
+Relevant = Callable[[Step], bool]
+
+
+class Forking:
+    __slots__ = ("forks", "merged", "pending", "relevant", "spilled", "taken", "visited")
+
+    def __init__(self, first: Arm, forks: int, relevant: Relevant) -> None:
+        self.pending = [first]
+        self.forks = forks
+        self.relevant = relevant
+        self.taken = 0
+        self.spilled = 0
+        self.merged = 0
+        self.visited: set[tuple[Any, ...]] = set()
+
+    def key(self, twin: Arm, walked: Sequence[Step]) -> tuple[Any, ...]:
+        held = twin.walker
+        frames = tuple((one.offset, one.address, one.bank) for one in held.stack)
+        heard = tuple((one.offset, one.width) for one in walked if self.relevant(one))
+        return (held.offset, held.in_bank, held.state, held.saved, frames, twin.ran, heard)
+
+    def offer(self, twin: Arm, walked: Sequence[Step]) -> None:
+        key = self.key(twin, walked)
+        if key in self.visited:
+            self.merged += 1
             return
-        spent += 1 if not walker.stack else 0
-        yield Step(one, walker.state[0], walker.in_bank, len(walker.stack), ran)
-        if unplaceable(one, walker.state):
+        if self.taken >= self.forks:
+            self.spilled += 1
             return
-        ran = ran and not sets_width(one)
-        walker.state, walker.saved = flags(one, walker.state, walker.saved)
-        if walker.descend(one, depth):
-            continue
-        ran = ran and one.mnemonic not in CALLS
-        if walker.leave(one):
-            return
+        self.visited.add(key)
+        self.taken += 1
+        self.pending.append(Arm(twin.walker, twin.ran, twin.spent, twin.total, tuple(walked)))
+
+
+def arms(
+    rom: bytes,
+    offset: int,
+    narrow: Width = None,
+    limit: int = DEFAULT_LIMIT,
+    depth: int = DEFAULT_DEPTH,
+    index: Width = None,
+    known: Mapping[int, frozenset[Flags]] | None = None,
+    ran: bool = False,
+    forks: int = DEFAULT_FORKS,
+    relevant: Relevant = addressed,
+) -> Forked:
+    first = Arm(_start(rom, offset, (narrow, index), None, None, known), ran)
+    forking = Forking(first, forks, relevant)
+    paths: list[Walked] = []
+    while forking.pending:
+        arm = forking.pending.pop()
+        walked = list(arm.prefix)
+        for step, twin in _advance(arm, limit, depth):
+            walked.append(step)
+            if twin is not None:
+                forking.offer(twin, walked)
+        paths.append(tuple(walked))
+    return Forked(paths, forking.spilled, forking.taken, forking.merged)
 
 
 def _inside_a_helper(one: Any, bank: int, banks: int) -> tuple[int, int, int] | None:

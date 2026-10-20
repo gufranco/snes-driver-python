@@ -27,7 +27,11 @@ cartridge's own code, and none of it executes anything.
   each access, where it landed, how wide it was, and the sites it accounted for.
 - `shapes(rom, window, kind=layout)` is every distinct exchange in the image with
   how often each occurs, each routine walked at every width the sweep from the
-  vectors arrived at it with.
+  vectors arrived at it with, along both arms of every forward conditional
+  branch. `at` walks the one arm a branch falls through to.
+- `walk.arms(rom, offset)` is the forked walk itself. It forks at most
+  `walk.DEFAULT_FORKS` times, 32,768, and counts every branch past that rather
+  than dropping it; OPEN-QUESTIONS.md records the measurement behind the cap.
 - `widths(rom, kind)` is that sweep's answer: every instruction it decoded, with
   the accumulator and index widths it arrived there with.
 - `through(rom, offset)` is the walk itself, instruction by instruction, for a
