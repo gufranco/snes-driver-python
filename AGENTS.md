@@ -56,9 +56,11 @@ There is no clock. Nothing here is a model of a part.
 
 ## What is settled and what is not
 
-**Settled: what a shipped cartridge sends.** Read across the 36 DSP cartridges on
-hand, each confirmed against all four of its digests before a byte of it is
-disassembled.
+**Settled: what a shipped cartridge sends.** Read across the 42 cartridges the
+manifest names, 36 of them DSP cartridges, each confirmed against all four of its
+digests before a byte of it is disassembled. The sweep reads whatever matching
+cartridges the folder it is given holds, so a folder holding only the DSP set
+reads 36 and says so.
 
 **Settled: the width of every access the code determines.** The walk carries the
 accumulator's and the index registers' widths through the `sep`, `rep`, `php`
