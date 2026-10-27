@@ -21,6 +21,7 @@ jobs:
   lint:
     name: Format and lint
     runs-on: ubuntu-26.04
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
         with:
@@ -69,6 +70,7 @@ jobs:
   types:
     name: Types
     runs-on: ubuntu-26.04
+    timeout-minutes: 10
     steps:
       - name: Check out the submodules the checker follows imports into
         uses: actions/checkout@v7
@@ -88,6 +90,7 @@ jobs:
   test:
     name: Tests on Python ${{ matrix.python }}
     runs-on: ubuntu-26.04
+    timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
@@ -122,6 +125,7 @@ jobs:
   speed:
     name: Throughput
     runs-on: ubuntu-26.04
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
         with:
@@ -137,6 +141,7 @@ jobs:
   cartridges:
     name: Cartridges
     runs-on: ubuntu-26.04
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
         with:
