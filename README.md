@@ -8,7 +8,7 @@ English | [日本語](README.ja.md) | [简体中文](README.zh-Hans.md) | [繁�
 [![Release](https://img.shields.io/github/v/release/gufranco/snes-driver-python)](https://github.com/gufranco/snes-driver-python/releases)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-**42** cartridges named by four digests, **42** cartridges read under the part each header names, **0** disagreements with their own digests, **0** that said nothing to the part, **3** kinds of access, **861** tests, **100%** statement and branch coverage, no dependencies
+**42** cartridges named by four digests, **42** cartridges read under the part each header names, **0** disagreements with their own digests, **0** that said nothing to the part, **3** kinds of access, **911** tests, **100%** statement and branch coverage, no dependencies
 
 ```python
 from snesdriver import at, window_for
@@ -319,7 +319,7 @@ The layout decides which register an access lands on. The DSP answers at `$30-$3
 
 Every cartridge is identified by its `sha256` and then confirmed against its `crc32`, `md5` and `sha1` before a byte of it is disassembled. A file whose `sha256` matches and whose other digests do not stops the sweep with an error. A file the manifest does not know is skipped. Called on such a file directly, `conformance.cartridges.identify` names the likely cause: a copier header, swapped bytes, a known bad dump or a modified release.
 
-Put copies you own in [`cartridges/`](cartridges/README.md), in a `cartridges` directory beside this repository, or wherever `SNES_CARTRIDGE_DIR` points. When the variable is unset the sibling directory is tried first. [`cartridges/README.md`](cartridges/README.md) lists every filename and all four digests, and [`cartridges.manifest.json`](cartridges.manifest.json) holds the same in a form a program reads. Nothing in the repository reconstructs any part of a cartridge.
+Put copies you own in `external/cartridges/`, in the `external/cartridges/` of the project this repository sits inside, or wherever `SNES_CARTRIDGE_DIR` points. When the variable is unset the enclosing project's folder is tried first. [CARTRIDGES.md](CARTRIDGES.md) lists every filename and all four digests, and [`cartridges.manifest.json`](cartridges.manifest.json) holds the same in a form a program reads. Nothing in the repository reconstructs any part of a cartridge.
 
 ## What each piece of evidence is worth
 

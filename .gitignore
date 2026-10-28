@@ -21,4 +21,4 @@ specs/
 *.sfc
 *.smc
 cartridges/*
-!cartridges/README.md
+external/

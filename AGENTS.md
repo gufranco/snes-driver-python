@@ -112,8 +112,9 @@ and a layout. It is a hardware fact, so it needs a source.
 
 [`conformance/testroms.json`](conformance/testroms.json) lists the one test
 cartridge that exercises what this package reads, keyed by the SHA-256 of the
-file and never committed. It lives in `snes-roms/5 Tools & Service Test Carts/`
-in the local library. None of the other files there carries a part this package
+file and never committed. A copy sits in `external/tools/`, taken from the
+`5 Tools & Service Test Carts/` folder of the cartridge library. None of the
+other files in that folder carries a part this package
 has a window for: the SA-1 programs have no window here, and the rest carry no
 coprocessor at all.
 
@@ -122,7 +123,7 @@ coprocessor at all.
   the data bank set to `$BF`, which the walk does not track.
 
 ```bash
-python3 -m conformance.testroms "../snes-roms/5 Tools & Service Test Carts"
+python3 -m conformance.testroms external/tools
 python3 -m conformance.testroms FOLDER --record   # only after the measurement changed
 ```
 
@@ -137,6 +138,27 @@ instructions, every one through bank `$BF`, and both readings found none. With
 no folder, or a folder holding none of the images, it exits 2, and CI annotates
 that as a skip. `conformance/testroms.test.py` replays the recorded measurement
 on a machine that holds no image. Nothing here waits on another member.
+
+## Files kept in `external/`
+
+Everything this member reads and may not ship sits in `external/`, which git
+ignores and Dropbox is told to leave alone, per FAMILY.md's "Where the files a
+member reads are kept". [`artifacts.manifest.json`](artifacts.manifest.json)
+names all 43 by size, CRC32, MD5, SHA-1 and SHA-256:
+
+- `external/cartridges/`, the 42 retail cartridges the reader walks, as
+  [CARTRIDGES.md](CARTRIDGES.md) lists them.
+- `external/tools/`, the DSP1 Tech Demo the cartridge record reads, copied
+  from the cartridge library.
+
+```bash
+python3 -m conformance.external
+python3 -m conformance.external --describe external/<file>
+```
+
+The first says which are here, verified, missing or wrong. The second prints
+the manifest entry for a file being added, which gets its entry in the same
+change.
 
 ## Every gate, in the order to run them
 
@@ -296,9 +318,12 @@ conformance/
   traced.json            what the runs recorded: sites and widths, never a byte of a game
   testroms.py            the test cartridges this reads, run on the stub console
   testroms.json          which test cartridges exercise this package, and how
+  external.py       which files in external/ are here, verified, missing or wrong
 mos65xx-python/          the disassembler, as a submodule
 snes-mapper-python/      the header and address decoding, as a submodule
 cartridges/              a user's own copies; nothing here is ever committed
+external/           the retail cartridges and the tech demo, never committed
+artifacts.manifest.json  every file in external/, by size and every digest
 ```
 
 ## Things that will bite you

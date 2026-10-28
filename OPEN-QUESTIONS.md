@@ -334,6 +334,6 @@ Absent rather than unknown, and absent on purpose:
 - **Anything executed.** Nothing here runs a program. A routine is walked from its
   first instruction to the first one that leaves, along both arms of every
   forward conditional branch.
-- **Any cartridge content.** [`cartridges/README.md`](cartridges/README.md)
+- **Any cartridge content.** [CARTRIDGES.md](CARTRIDGES.md)
   carries filenames and digests. No part of any cartridge is reconstructible from
   anything here.

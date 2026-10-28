@@ -296,7 +296,7 @@ class SharedDirectoryRuleTest(unittest.TestCase):
 
 class PublishedTableTest(unittest.TestCase):
     def names(self) -> set[str]:
-        held = Path(__file__).resolve().parent.parent / "cartridges" / "README.md"
+        held = Path(__file__).resolve().parent.parent / "CARTRIDGES.md"
         rows = [one for one in held.read_text().split("\n") if one.startswith("| `")]
         return {one.split("`")[1] for one in rows}
 
@@ -310,9 +310,14 @@ class PublishedTableTest(unittest.TestCase):
         self.assertEqual(sorted(self.names() - self.declared()), [])
 
     def test_the_heading_counts_the_cartridges_there_are(self) -> None:
-        held = Path(__file__).resolve().parent.parent / "cartridges" / "README.md"
+        # Arrange
+        held = Path(__file__).resolve().parent.parent / "CARTRIDGES.md"
 
-        self.assertIn(f"## The {len(self.declared())} cartridges", held.read_text())
+        # Act
+        text = held.read_text()
+
+        # Assert
+        self.assertIn(f"## The {len(self.declared())} cartridges", text)
 
 
 class DecidingDigestTest(unittest.TestCase):

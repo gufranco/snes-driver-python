@@ -1,12 +1,12 @@
 # Cartridges
 
-Nothing in this directory is shared. A cartridge belongs to whoever made it, and
+The images go in `external/cartridges/`, and nothing in that folder is shared. A cartridge belongs to whoever made it, and
 no part of one is carried by this repository, published in the manifest, or
 reconstructible from anything here. What the manifest holds is a name, a length
 and four digests, and a digest reconstructs nothing.
 
-Put copies you already own here and the reader runs against them. Leave the
-directory empty and the checks that need one report as skipped rather than as
+Put copies you already own in `external/cartridges/` and the reader runs
+against them. Leave it empty and the checks that need one report as skipped rather than as
 passed, so a run that proved nothing never reads as a run that proved something.
 
 ## Why a cartridge is the input rather than a fixture
@@ -22,7 +22,8 @@ why every cartridge is confirmed against four digests before a byte of it is rea
 
 ## Where they go
 
-Here, keeping the filenames below, or anywhere `SNES_CARTRIDGE_DIR` points.
+In `external/cartridges/`, keeping the filenames below, or anywhere
+`SNES_CARTRIDGE_DIR` points.
 Subdirectories are walked. A named directory wins even when it turns out to be
 empty, because quietly falling back from a path somebody typed turns a typo into a
 run that reports nothing needed doing.

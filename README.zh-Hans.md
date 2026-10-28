@@ -8,7 +8,7 @@
 [![Release](https://img.shields.io/github/v/release/gufranco/snes-driver-python)](https://github.com/gufranco/snes-driver-python/releases)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-**42** 个卡带以四种摘要标识，**42** 个卡带按各自文件头所指的芯片读取，与自身摘要不符的 **0** 个，未与芯片通信的 **0** 个，**3** 种访问，**861** 个测试，**100%** 语句与分支覆盖率，无依赖
+**42** 个卡带以四种摘要标识，**42** 个卡带按各自文件头所指的芯片读取，与自身摘要不符的 **0** 个，未与芯片通信的 **0** 个，**3** 种访问，**911** 个测试，**100%** 语句与分支覆盖率，无依赖
 
 ```python
 from snesdriver import at, window_for
@@ -319,7 +319,7 @@ Dungeon Master     write1 write1 write1 write1 write1 write1 write1 write1 write
 
 每个卡带先由其 `sha256` 识别，然后在反汇编任何一个字节之前，用其 `crc32`、`md5` 和 `sha1` 进行确认。`sha256` 匹配而其他摘要不匹配的文件会使扫描以错误终止。清单中没有的文件会被跳过。直接对这样的文件调用 `conformance.cartridges.identify` 时，它会指出可能的原因：拷贝机文件头、字节交换、已知的坏 dump 或修改过的发行版。
 
-将你拥有的副本放在 [`cartridges/`](cartridges/README.md)、本仓库旁边的 `cartridges` 目录，或 `SNES_CARTRIDGE_DIR` 指向的位置。该变量未设置时，先尝试同级目录。[`cartridges/README.md`](cartridges/README.md) 列出每个文件名和全部四种摘要，[`cartridges.manifest.json`](cartridges.manifest.json) 以程序可读的形式保存相同内容。仓库中没有任何内容会重建卡带的任何部分。
+将你拥有的副本放在 `external/cartridges/`、包含本仓库的项目的 `external/cartridges/`，或 `SNES_CARTRIDGE_DIR` 指向的位置。该变量未设置时，先尝试包含它的项目中的文件夹。[CARTRIDGES.md](CARTRIDGES.md) 列出每个文件名和全部四种摘要，[`cartridges.manifest.json`](cartridges.manifest.json) 以程序可读的形式保存相同内容。仓库中没有任何内容会重建卡带的任何部分。
 
 ## 每项证据的价值
 

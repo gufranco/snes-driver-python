@@ -8,7 +8,7 @@ SNESカートリッジがコプロセッサを駆動するために実行する6
 [![Release](https://img.shields.io/github/v/release/gufranco/snes-driver-python)](https://github.com/gufranco/snes-driver-python/releases)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-4つのダイジェストで特定されたカートリッジ**42**本、ヘッダーが示すパーツで読み取ったカートリッジ**42**本、自身のダイジェストとの不一致**0**件、パーツに何も送らなかったもの**0**本、アクセスの種類**3**種、テスト**861**件、ステートメントとブランチのカバレッジ**100%**、依存関係なし
+4つのダイジェストで特定されたカートリッジ**42**本、ヘッダーが示すパーツで読み取ったカートリッジ**42**本、自身のダイジェストとの不一致**0**件、パーツに何も送らなかったもの**0**本、アクセスの種類**3**種、テスト**911**件、ステートメントとブランチのカバレッジ**100%**、依存関係なし
 
 ```python
 from snesdriver import at, window_for
@@ -319,7 +319,7 @@ MAMEで実行すると、カートリッジは残りの一部を確定させま�
 
 すべてのカートリッジは、1バイトでも逆アセンブルする前に、`sha256`で特定され、続いて`crc32`、`md5`、`sha1`で確認されます。`sha256`が一致して他のダイジェストが一致しないファイルは、エラーでスイープを停止させます。マニフェストにないファイルはスキップされます。そのようなファイルに対して`conformance.cartridges.identify`を直接呼び出すと、コピー機のヘッダ、バイトの入れ替わり、既知の不良ダンプ、改変されたリリースといった、考えられる原因を示します。
 
-所有しているコピーを、[`cartridges/`](cartridges/README.md)、このリポジトリと同じ階層の`cartridges`ディレクトリ、または`SNES_CARTRIDGE_DIR`が指す場所に置いてください。この変数が未設定の場合は、同じ階層のディレクトリが最初に試されます。[`cartridges/README.md`](cartridges/README.md)にはすべてのファイル名と4つのダイジェストすべてが記載されており、[`cartridges.manifest.json`](cartridges.manifest.json)は同じ内容をプログラムが読める形式で保持しています。リポジトリ内のものは、カートリッジのどの部分も再構成しません。
+所有しているコピーを、`external/cartridges/`、このリポジトリを含むプロジェクトの`external/cartridges/`、または`SNES_CARTRIDGE_DIR`が指す場所に置いてください。この変数が未設定の場合は、それを含むプロジェクトのフォルダが最初に試されます。[CARTRIDGES.md](CARTRIDGES.md)にはすべてのファイル名と4つのダイジェストすべてが記載されており、[`cartridges.manifest.json`](cartridges.manifest.json)は同じ内容をプログラムが読める形式で保持しています。リポジトリ内のものは、カートリッジのどの部分も再構成しません。
 
 ## 各証拠の価値
 
