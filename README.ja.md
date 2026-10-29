@@ -4,9 +4,11 @@ SNESカートリッジがコプロセッサを駆動するために実行する6
 
 [English](README.md) | 日本語 | [简体中文](README.zh-Hans.md) | [繁體中文（香港）](README.zh-HK.md)
 
-[![CI](https://github.com/gufranco/snes-driver-python/actions/workflows/ci.yml/badge.svg)](https://github.com/gufranco/snes-driver-python/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/gufranco/snes-driver-python)](https://github.com/gufranco/snes-driver-python/releases)
-[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+[![ci](https://img.shields.io/github/actions/workflow/status/gufranco/snes-driver-python/ci.yml?branch=main&style=flat-square&label=ci)](https://github.com/gufranco/snes-driver-python/actions/workflows/ci.yml)
+[![release](https://img.shields.io/github/v/release/gufranco/snes-driver-python?style=flat-square&label=release)](https://github.com/gufranco/snes-driver-python/releases/latest)
+[![coverage](https://img.shields.io/badge/coverage-100%25-brightgreen?style=flat-square)](https://github.com/gufranco/snes-driver-python/actions/workflows/ci.yml)
+[![openssf scorecard](https://img.shields.io/ossf-scorecard/github.com/gufranco/snes-driver-python?style=flat-square&label=openssf%20scorecard)](https://scorecard.dev/viewer/?uri=github.com/gufranco/snes-driver-python)
+[![license](https://img.shields.io/github/license/gufranco/snes-driver-python?style=flat-square&label=license)](LICENSE)
 
 4つのダイジェストで特定されたカートリッジ**42**本、ヘッダーが示すパーツで読み取ったカートリッジ**42**本、自身のダイジェストとの不一致**0**件、パーツに何も送らなかったもの**0**本、アクセスの種類**3**種、テスト**913**件、ステートメントとブランチのカバレッジ**100%**、依存関係なし
 

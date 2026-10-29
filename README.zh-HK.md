@@ -4,9 +4,11 @@
 
 [English](README.md) | [日本語](README.ja.md) | [简体中文](README.zh-Hans.md) | 繁體中文（香港）
 
-[![CI](https://github.com/gufranco/snes-driver-python/actions/workflows/ci.yml/badge.svg)](https://github.com/gufranco/snes-driver-python/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/gufranco/snes-driver-python)](https://github.com/gufranco/snes-driver-python/releases)
-[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+[![ci](https://img.shields.io/github/actions/workflow/status/gufranco/snes-driver-python/ci.yml?branch=main&style=flat-square&label=ci)](https://github.com/gufranco/snes-driver-python/actions/workflows/ci.yml)
+[![release](https://img.shields.io/github/v/release/gufranco/snes-driver-python?style=flat-square&label=release)](https://github.com/gufranco/snes-driver-python/releases/latest)
+[![coverage](https://img.shields.io/badge/coverage-100%25-brightgreen?style=flat-square)](https://github.com/gufranco/snes-driver-python/actions/workflows/ci.yml)
+[![openssf scorecard](https://img.shields.io/ossf-scorecard/github.com/gufranco/snes-driver-python?style=flat-square&label=openssf%20scorecard)](https://scorecard.dev/viewer/?uri=github.com/gufranco/snes-driver-python)
+[![license](https://img.shields.io/github/license/gufranco/snes-driver-python?style=flat-square&label=license)](LICENSE)
 
 **42** 個卡帶以四種摘要識別，**42** 個卡帶按各自標頭所指的部件讀取，與自身摘要不符者 **0** 個，未向部件發出任何存取者 **0** 個，**3** 種存取，**913** 項測試，**100%** 語句及分支覆蓋率，無依賴套件
 

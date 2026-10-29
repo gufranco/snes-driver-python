@@ -4,9 +4,11 @@ Reads the 65816 routine a SNES cartridge runs to drive its coprocessor and repor
 
 English | [日本語](README.ja.md) | [简体中文](README.zh-Hans.md) | [繁體中文（香港）](README.zh-HK.md)
 
-[![CI](https://github.com/gufranco/snes-driver-python/actions/workflows/ci.yml/badge.svg)](https://github.com/gufranco/snes-driver-python/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/gufranco/snes-driver-python)](https://github.com/gufranco/snes-driver-python/releases)
-[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+[![ci](https://img.shields.io/github/actions/workflow/status/gufranco/snes-driver-python/ci.yml?branch=main&style=flat-square&label=ci)](https://github.com/gufranco/snes-driver-python/actions/workflows/ci.yml)
+[![release](https://img.shields.io/github/v/release/gufranco/snes-driver-python?style=flat-square&label=release)](https://github.com/gufranco/snes-driver-python/releases/latest)
+[![coverage](https://img.shields.io/badge/coverage-100%25-brightgreen?style=flat-square)](https://github.com/gufranco/snes-driver-python/actions/workflows/ci.yml)
+[![openssf scorecard](https://img.shields.io/ossf-scorecard/github.com/gufranco/snes-driver-python?style=flat-square&label=openssf%20scorecard)](https://scorecard.dev/viewer/?uri=github.com/gufranco/snes-driver-python)
+[![license](https://img.shields.io/github/license/gufranco/snes-driver-python?style=flat-square&label=license)](LICENSE)
 
 **42** cartridges named by four digests, **42** cartridges read under the part each header names, **0** disagreements with their own digests, **0** that said nothing to the part, **3** kinds of access, **913** tests, **100%** statement and branch coverage, no dependencies
 
