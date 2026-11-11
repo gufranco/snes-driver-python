@@ -81,7 +81,7 @@ class ExecutedTest(unittest.TestCase):
                 [
                     (0x00, 0x8004, 0x307FF0, "write"),
                     (0x00, 0x8100, 0x306000, "read"),
-                    (0x00, 0x8200, 0x307FF1, "write"),
+                    (0x00, 0x8200, 0x007FF1, "write"),
                 ],
             ),
         )
@@ -191,7 +191,7 @@ class ReportTest(unittest.TestCase):
                 "  16 instructions run, 3 instructions reached the part",
                 "    00:8004 at 0x000004: write 307ff0",
                 "    00:8100 at 0x000100: read 306000",
-                "    00:8200 at 0x000200: write 307ff1",
+                "    00:8200 at 0x000200: write 007ff1",
             ],
         )
 
