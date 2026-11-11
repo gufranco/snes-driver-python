@@ -10,7 +10,7 @@
 [![openssf scorecard](https://img.shields.io/ossf-scorecard/github.com/gufranco/snes-driver-python?style=flat-square&label=openssf%20scorecard)](https://scorecard.dev/viewer/?uri=github.com/gufranco/snes-driver-python)
 [![license](https://img.shields.io/github/license/gufranco/snes-driver-python?style=flat-square&label=license)](LICENSE)
 
-**42** 個卡帶以四種摘要識別，**42** 個卡帶按各自標頭所指的部件讀取，與自身摘要不符者 **0** 個，未向部件發出任何存取者 **0** 個，**3** 種存取，**913** 項測試，**100%** 語句及分支覆蓋率，無依賴套件
+**42** 個卡帶以四種摘要識別，**42** 個卡帶按各自標頭所指的部件讀取，與自身摘要不符者 **0** 個，未向部件發出任何存取者 **0** 個，**3** 種存取，**914** 項測試，**100%** 語句及分支覆蓋率，無依賴套件
 
 ```python
 from snesdriver import at, window_for

@@ -10,7 +10,7 @@ SNESカートリッジがコプロセッサを駆動するために実行する6
 [![openssf scorecard](https://img.shields.io/ossf-scorecard/github.com/gufranco/snes-driver-python?style=flat-square&label=openssf%20scorecard)](https://scorecard.dev/viewer/?uri=github.com/gufranco/snes-driver-python)
 [![license](https://img.shields.io/github/license/gufranco/snes-driver-python?style=flat-square&label=license)](LICENSE)
 
-4つのダイジェストで特定されたカートリッジ**42**本、ヘッダーが示すパーツで読み取ったカートリッジ**42**本、自身のダイジェストとの不一致**0**件、パーツに何も送らなかったもの**0**本、アクセスの種類**3**種、テスト**913**件、ステートメントとブランチのカバレッジ**100%**、依存関係なし
+4つのダイジェストで特定されたカートリッジ**42**本、ヘッダーが示すパーツで読み取ったカートリッジ**42**本、自身のダイジェストとの不一致**0**件、パーツに何も送らなかったもの**0**本、アクセスの種類**3**種、テスト**914**件、ステートメントとブランチのカバレッジ**100%**、依存関係なし
 
 ```python
 from snesdriver import at, window_for
